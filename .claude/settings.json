@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "browser": {
+      "command": "node",
+      "args": ["e:\\ReactAPP\\mcp-browser\\dist\\index.js"],
+      "env": {}
+    }
+  }
+}
