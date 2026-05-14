@@ -5,6 +5,10 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { chromium, Browser, Page } from "playwright";
+import * as fs from "fs";
+import * as path from "path";
+
+const SCREENSHOTS_DIR = path.resolve("e:/ReactAPP/screenshots");
 
 interface LogEntry {
   type: string;
@@ -104,6 +108,36 @@ async function getPageSource(): Promise<string> {
   return await pg.content();
 }
 
+async function screenshotXdScreen(screenNumber: number): Promise<{ base64: string; filePath: string }> {
+  const XD_GRID_URL =
+    "https://xd.adobe.com/view/69ef15d5-8d52-44a5-a8fe-bc1e64d0ac10-3cbc/grid/";
+  const pg = await getPage();
+
+  await pg.setViewportSize({ width: 1440, height: 900 });
+  await pg.goto(XD_GRID_URL, { waitUntil: "networkidle", timeout: 60000 });
+
+  await pg.waitForSelector('a[href*="/screen/"]', { timeout: 30000 });
+  const links = await pg.locator('a[href*="/screen/"]').all();
+
+  if (screenNumber < 1 || screenNumber > links.length) {
+    throw new Error(
+      `Screen ${screenNumber} not found. Grid contains ${links.length} screens.`
+    );
+  }
+
+  await links[screenNumber - 1].click();
+  await pg.waitForURL(/\/screen\//, { timeout: 15000 });
+  await pg.waitForLoadState("networkidle", { timeout: 30000 });
+
+  const buffer = await pg.screenshot({ type: "png", fullPage: false });
+
+  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+  const filePath = path.join(SCREENSHOTS_DIR, `screen-${screenNumber}.png`);
+  fs.writeFileSync(filePath, buffer);
+
+  return { base64: buffer.toString("base64"), filePath };
+}
+
 const server = new Server(
   { name: "mcp-browser", version: "1.0.0" },
   { capabilities: { tools: {} } }
@@ -143,6 +177,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: "object",
         properties: {},
         required: [],
+      },
+    },
+    {
+      name: "screenshot_xd_screen",
+      description:
+        "Navigates to a specific screen in the Adobe XD prototype grid and returns a screenshot as base64 PNG.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          screen_number: {
+            type: "number",
+            description:
+              "1-based index of the screen in the XD grid (e.g. 27 for the 27th screen)",
+          },
+        },
+        required: ["screen_number"],
       },
     },
   ],
@@ -187,6 +237,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: "text",
             text: html,
           },
+        ],
+      };
+    }
+
+    if (name === "screenshot_xd_screen") {
+      const screenNumber = (args as { screen_number: number }).screen_number;
+      if (!screenNumber) throw new Error("screen_number parameter is required");
+      const { base64, filePath } = await screenshotXdScreen(screenNumber);
+      return {
+        content: [
+          { type: "image", data: base64, mimeType: "image/png" },
+          { type: "text", text: `Saved to: ${filePath}` },
         ],
       };
     }

@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { dataStore } from "./data/datastore";
 
-
 export function createWidget(
   UC: any[],
 ) {
@@ -14,4 +13,8 @@ export function createWidget(
       <App />
     </StrictMode>,
   );
+}
+
+if (import.meta.env.DEV) {
+  createWidget([]);
 }

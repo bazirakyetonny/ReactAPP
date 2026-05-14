@@ -1,0 +1,65 @@
+.app-canvas {
+  flex: 1;
+  background: #6b7788;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.canvas-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s;
+}
+
+.canvas-nav:hover {
+  background: #ffffff;
+}
+
+.canvas-frames {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.phone-frame {
+  width: 140px;
+  height: 288px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px solid #9ca3af;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.phone-frame.phone-frame-active {
+  border-color: #1a3a6e;
+  box-shadow: 0 4px 24px rgba(26, 58, 110, 0.5);
+}
+
+.phone-status-bar {
+  height: 20px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.phone-screen {
+  flex: 1;
+  background: #f9fafb;
+}
