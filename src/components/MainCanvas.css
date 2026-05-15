@@ -181,6 +181,12 @@
   word-break: break-word;
 }
 
+/* Placeholder tile — no background, dashed border */
+.phone-tile--placeholder {
+  border: 1.5px dashed rgba(61, 90, 158, 0.45);
+  color: #9ca3af;
+}
+
 /* Selected tile border — always visible once clicked */
 .phone-tile-wrap.selected .phone-tile {
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import './MainCanvas.css';
 import { dataStore } from '../data/datastore';
 import type { ThemeColors } from '../types';
@@ -73,102 +72,129 @@ interface TileGridsProps {
   selectedTileId?: string | null;
   onSelectTile?: (id: string) => void;
   interactive?: boolean;
+  onAddColumn?: (gridId: string, afterColId: string) => void;
 }
 
-function TileGrids({ tileGrids, themeColors, selectedTileId, onSelectTile, interactive = false }: TileGridsProps) {
+function TileGrids({
+  tileGrids,
+  themeColors,
+  selectedTileId,
+  onSelectTile,
+  interactive = false,
+  onAddColumn,
+}: TileGridsProps) {
   return (
     <>
-      {tileGrids.map((grid: any) => (
-        <div key={grid.InfoId}>
-          <div className="phone-tilegrid">
-            {(grid.Columns ?? []).map((col: any) => (
-              <div key={col.ColId} className="phone-column">
-                {(col.Tiles ?? []).map((tile: any) => {
-                  const bg = resolveColor(tile.BGColor, themeColors);
-                  const height = tile.Height ? `${tile.Height}px` : undefined;
-                  const isSelected = interactive && selectedTileId === tile.Id;
-                  return (
-                    <div
-                      key={tile.Id}
-                      className={`phone-tile-wrap${isSelected ? ' selected' : ''}`}
-                      style={{ height, flex: height ? undefined : 1 }}
-                      onClick={interactive && onSelectTile ? () => onSelectTile(tile.Id) : undefined}
-                    >
+      {tileGrids.map((grid: any) => {
+        const cols: any[] = grid.Columns ?? [];
+        const atMax = cols.length >= 3;
+        return (
+          <div key={grid.InfoId}>
+            <div className="phone-tilegrid">
+              {cols.map((col: any) => (
+                <div key={col.ColId} className="phone-column">
+                  {(col.Tiles ?? []).map((tile: any) => {
+                    const isPlaceholder = tile._new === true;
+                    const bg = resolveColor(tile.BGColor, themeColors);
+                    const height = tile.Height ? `${tile.Height}px` : undefined;
+                    const isSelected = interactive && selectedTileId === tile.Id;
+                    return (
                       <div
-                        className="phone-tile"
-                        style={{
-                          background: bg,
-                          color: tile.Color ?? '#ffffff',
-                          textAlign: tile.Align ?? 'center',
-                        }}
+                        key={tile.Id}
+                        className={`phone-tile-wrap${isSelected ? ' selected' : ''}`}
+                        style={{ height, flex: height ? undefined : 1 }}
+                        onClick={interactive && onSelectTile ? () => onSelectTile(tile.Id) : undefined}
                       >
-                        <span className="phone-tile-text">{tile.Text}</span>
+                        <div
+                          className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : ''}`}
+                          style={{
+                            background: bg,
+                            color: tile.Color ?? '#ffffff',
+                            textAlign: tile.Align ?? 'center',
+                          }}
+                        >
+                          <span className="phone-tile-text">{tile.Text}</span>
+                        </div>
+                        {interactive && (
+                          <>
+                            <button
+                              className="phone-tile-options-btn"
+                              type="button"
+                              aria-label="Tile options"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
+                                <circle cx="1.5" cy="1.5" r="1.5" />
+                                <circle cx="6" cy="1.5" r="1.5" />
+                                <circle cx="10.5" cy="1.5" r="1.5" />
+                              </svg>
+                            </button>
+                            <button
+                              className="phone-tile-delete-btn"
+                              type="button"
+                              aria-label="Delete tile"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
+                                <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
+                              </svg>
+                            </button>
+                            {!atMax && (
+                              <button
+                                className="phone-tile-add-btn"
+                                type="button"
+                                aria-label="Add column to right"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddColumn?.(grid.InfoId, col.ColId);
+                                }}
+                              >
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                                  <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                                  <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                                </svg>
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
-                      {interactive && (
-                        <>
-                          <button className="phone-tile-options-btn" type="button" aria-label="Tile options">
-                            <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
-                              <circle cx="1.5" cy="1.5" r="1.5" />
-                              <circle cx="6" cy="1.5" r="1.5" />
-                              <circle cx="10.5" cy="1.5" r="1.5" />
-                            </svg>
-                          </button>
-                          <button className="phone-tile-delete-btn" type="button" aria-label="Delete tile">
-                            <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
-                              <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
-                            </svg>
-                          </button>
-                          <button className="phone-tile-add-btn" type="button" aria-label="Add tile to right">
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                              <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                              <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          {interactive && (
-            <div className="phone-add-row">
-              <button className="phone-add-btn" type="button" aria-label="Add content">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      ))}
+            {interactive && (
+              <div className="phone-add-row">
+                <button className="phone-add-btn" type="button" aria-label="Add content">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
 
 interface MainCanvasProps {
   themeColors?: ThemeColors;
+  infoContent: any[];
+  selectedTileId: string | null;
+  onSelectTile: (id: string) => void;
+  onAddColumn: (gridId: string, afterColId: string) => void;
 }
 
-export function MainCanvas({ themeColors }: MainCanvasProps) {
-  const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
-  const currentVersion = dataStore.get('Current_Version');
-
-  const pages: any[] = currentVersion?.Page ?? [];
-  const homePage = pages.find((p: any) => p.PageName?.toLowerCase() === 'home');
-
-  let infoContent: any[] = [];
-  if (homePage?.PageStructure) {
-    try {
-      const parsed = JSON.parse(homePage.PageStructure);
-      infoContent = parsed.InfoContent ?? [];
-    } catch {
-      // invalid JSON — leave empty
-    }
-  }
-
+export function MainCanvas({
+  themeColors,
+  infoContent,
+  selectedTileId,
+  onSelectTile,
+  onAddColumn,
+}: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
   return (
@@ -189,14 +215,15 @@ export function MainCanvas({ themeColors }: MainCanvasProps) {
               tileGrids={tileGrids}
               themeColors={themeColors}
               selectedTileId={selectedTileId}
-              onSelectTile={setSelectedTileId}
+              onSelectTile={onSelectTile}
               interactive={true}
+              onAddColumn={onAddColumn}
             />
           </div>
         </div>
       </div>
 
-      {/* Page thumbnail — pinned to bottom center of canvas */}
+      {/* Page thumbnail */}
       <div className="page-thumbnails">
         <div className="page-thumb-clip">
           <div className="phone-frame page-thumb-frame" style={{ width: '240px' }}>

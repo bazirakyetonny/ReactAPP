@@ -101,16 +101,25 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
+export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   moods?: Mood[];
+  selectedTile?: any;
+  onEditTile?: (tileId: string, patch: Record<string, any>) => void;
 }) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+
+  // Resolve the selected tile's current BGColor to a hex so we can highlight the active chip
+  const activeBgHex: string | undefined = selectedTile?.BGColor
+    ? selectedTile.BGColor.startsWith('#')
+      ? selectedTile.BGColor
+      : themeColors?.[selectedTile.BGColor as keyof ThemeColors]
+    : undefined;
 
   const categories = useMemo(
     () => Array.from(new Set(themeIcons.map(i => i.IconCategory))).sort(),
@@ -147,25 +156,30 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
               <span className="sr-zoom-label">No moods</span>
             ) : (
               moods.map(mood => (
-                <button
-                  key={mood.MoodId}
-                  className="sr-mood-chip"
-                  type="button"
-                  title={mood.MoodName}
-                >
+                <div key={mood.MoodId} className="sr-mood-chip" title={mood.MoodName}>
                   {mood.MoodColors.slice(0, 4).map(mc => (
-                    <span
+                    <button
                       key={mc.MoodColorId}
-                      className="sr-mood-dot"
+                      className={`sr-mood-dot${activeBgHex === mc.ColorCode ? ' sr-mood-dot--active' : ''}`}
                       style={{ background: mc.ColorCode }}
+                      type="button"
+                      aria-label={`Apply colour ${mc.ColorCode}`}
+                      onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: mc.ColorCode })}
                     />
                   ))}
-                </button>
+                </div>
               ))
             )
           ) : (
             palette.map(c => (
-              <button key={c} className="sr-palette-chip" style={{ background: c }} type="button" aria-label={c} />
+              <button
+                key={c}
+                className={`sr-palette-chip${activeBgHex === c ? ' sr-palette-chip--active' : ''}`}
+                style={{ background: c }}
+                type="button"
+                aria-label={c}
+                onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: c })}
+              />
             ))
           )}
         </div>
@@ -187,9 +201,16 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
         <span className="sr-zoom-label">100 %</span>
       </div>
 
-      {/* 2c. Text input */}
+      {/* 2c. Text input — bound to selected tile */}
       <div className="sr-section">
-        <input className="sr-input" type="text" placeholder="Enter title" />
+        <input
+          className="sr-input"
+          type="text"
+          placeholder={selectedTile ? 'Enter title' : 'Select a tile to edit'}
+          value={selectedTile?.Text ?? ''}
+          disabled={!selectedTile}
+          onChange={e => selectedTile && onEditTile?.(selectedTile.Id, { Text: e.target.value })}
+        />
       </div>
 
       {/* 3. Format toolbar */}

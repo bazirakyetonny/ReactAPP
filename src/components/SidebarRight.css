@@ -74,6 +74,11 @@
   transform: scale(1.2);
 }
 
+.sr-palette-chip--active {
+  outline: 2px solid #1a3a6e;
+  outline-offset: 2px;
+}
+
 .sr-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -125,6 +130,19 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: outline 0.1s, transform 0.1s;
+}
+
+.sr-mood-dot:hover {
+  transform: scale(1.25);
+}
+
+.sr-mood-dot--active {
+  outline: 2px solid #1a3a6e;
+  outline-offset: 1px;
 }
 
 .sr-zoom-label {
