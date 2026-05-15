@@ -73,6 +73,7 @@ interface TileGridsProps {
   onSelectTile?: (id: string) => void;
   interactive?: boolean;
   onAddColumn?: (gridId: string, afterColId: string) => void;
+  onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
 }
 
 function TileGrids({
@@ -82,6 +83,7 @@ function TileGrids({
   onSelectTile,
   interactive = false,
   onAddColumn,
+  onDeleteTile,
 }: TileGridsProps) {
   return (
     <>
@@ -133,7 +135,10 @@ function TileGrids({
                               className="phone-tile-delete-btn"
                               type="button"
                               aria-label="Delete tile"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteTile?.(grid.InfoId, col.ColId, tile.Id);
+                              }}
                             >
                               <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
                                 <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
@@ -186,6 +191,7 @@ interface MainCanvasProps {
   selectedTileId: string | null;
   onSelectTile: (id: string) => void;
   onAddColumn: (gridId: string, afterColId: string) => void;
+  onDeleteTile: (gridId: string, colId: string, tileId: string) => void;
 }
 
 export function MainCanvas({
@@ -194,6 +200,7 @@ export function MainCanvas({
   selectedTileId,
   onSelectTile,
   onAddColumn,
+  onDeleteTile,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -218,6 +225,7 @@ export function MainCanvas({
               onSelectTile={onSelectTile}
               interactive={true}
               onAddColumn={onAddColumn}
+              onDeleteTile={onDeleteTile}
             />
           </div>
         </div>

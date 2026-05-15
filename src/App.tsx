@@ -83,6 +83,31 @@ function App() {
     });
   }
 
+  function handleDeleteTile(gridId: string, colId: string, tileId: string) {
+    if (selectedTileId === tileId) setSelectedTileId(null);
+    setInfoContent(prev =>
+      prev.flatMap(block => {
+        if (block.InfoId !== gridId || block.InfoType !== 'TileGrid') return [block];
+
+        const totalTiles = (block.Columns ?? []).reduce(
+          (sum: number, col: any) => sum + (col.Tiles ?? []).length, 0
+        );
+
+        // Last tile — remove the whole grid
+        if (totalTiles <= 1) return [];
+
+        const newCols = (block.Columns ?? [])
+          .map((col: any) => col.ColId !== colId ? col : {
+            ...col,
+            Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
+          })
+          .filter((col: any) => (col.Tiles ?? []).length > 0);
+
+        return [{ ...block, Columns: newCols }];
+      })
+    );
+  }
+
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => prev.map(block => {
       if (block.InfoType !== 'TileGrid') return block;
@@ -112,6 +137,7 @@ function App() {
           selectedTileId={selectedTileId}
           onSelectTile={setSelectedTileId}
           onAddColumn={handleAddColumn}
+          onDeleteTile={handleDeleteTile}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
