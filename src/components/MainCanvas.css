@@ -6,6 +6,86 @@
   justify-content: center;
   gap: 20px;
   overflow: hidden;
+  position: relative;
+  min-width: 0;
+  padding: 0 16px;
+}
+
+.canvas-menu-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+.canvas-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 24px 0;
+  min-width: 0;
+}
+
+.phone-frame {
+  width: clamp(160px, 22vw, 240px);
+  aspect-ratio: 9 / 19.5;
+  background: #0d0d0d;
+  border-radius: clamp(22px, 3vw, 34px);
+  border: 3px solid #080808;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.6),
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.phone-status-bar {
+  height: 28px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.phone-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111111;
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.phone-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #111111;
+}
+
+.phone-screen {
+  flex: 1;
+  background: #f9fafb;
 }
 
 .canvas-nav {
@@ -16,50 +96,48 @@
   height: 36px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.82);
   border: none;
   color: #374151;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  transition: background 0.15s;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, transform 0.1s;
+  z-index: 1;
 }
 
 .canvas-nav:hover {
   background: #ffffff;
+  transform: scale(1.06);
 }
 
-.canvas-frames {
-  display: flex;
-  gap: 20px;
-  align-items: center;
+.canvas-nav:active {
+  transform: scale(0.95);
 }
 
-.phone-frame {
-  width: 140px;
-  height: 288px;
-  background: #ffffff;
-  border-radius: 20px;
-  border: 2px solid #9ca3af;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  flex-shrink: 0;
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .canvas-nav {
+    width: 30px;
+    height: 30px;
+  }
+
+  .canvas-menu-label {
+    display: none;
+  }
 }
 
-.phone-frame.phone-frame-active {
-  border-color: #1a3a6e;
-  box-shadow: 0 4px 24px rgba(26, 58, 110, 0.5);
-}
+@media (max-width: 600px) {
+  .app-canvas {
+    gap: 10px;
+    padding: 0 8px;
+  }
 
-.phone-status-bar {
-  height: 20px;
-  background: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
+  .phone-status-bar {
+    height: 22px;
+  }
 
-.phone-screen {
-  flex: 1;
-  background: #f9fafb;
+  .phone-time {
+    font-size: 9px;
+  }
 }
