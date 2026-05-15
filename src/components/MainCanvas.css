@@ -203,6 +203,28 @@
   word-break: break-word;
 }
 
+/* Height resize handle — bottom of solo selected tile */
+.phone-tile-resize-handle {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  opacity: 0;
+  transition: opacity 0.15s 80ms;
+  z-index: 4;
+  color: #3d5a9e;
+}
+
+.phone-tile-wrap.selected:hover .phone-tile-resize-handle {
+  opacity: 1;
+}
+
 /* Per-element (icon / text) delete button */
 .phone-tile-element {
   position: relative;
