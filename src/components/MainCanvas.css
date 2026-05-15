@@ -262,6 +262,12 @@
   opacity: 1;
 }
 
+/* Ghost tile — shown faded in opposite column during free-resize drag */
+.phone-tile-wrap--ghost {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
 /* Skeleton tile — shown in opposite column during split drag preview */
 .phone-tile--skeleton {
   background: rgba(61, 90, 158, 0.07);

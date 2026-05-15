@@ -171,6 +171,63 @@ function App() {
     }));
   }
 
+  function handleFreeResizeRelease(gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) {
+    const ts = Date.now();
+    setInfoContent(prev => {
+      const idx = prev.findIndex(b => b.InfoId === gridId);
+      if (idx === -1) return prev;
+      const block = prev[idx];
+
+      const updateLongTile = (col: any) => ({
+        ...col,
+        Tiles: (col.Tiles ?? []).map((t: any) => t.Id === longTileId ? { ...t, Height: snapH } : t),
+      });
+
+      if (zoneCount > initialCount) {
+        // Stretch: add extra tiles to the opposite column
+        const extraCount = zoneCount - initialCount;
+        const extraTiles = Array.from({ length: extraCount }, (_, i) => ({
+          Id: `tile-extra-${ts}-${i}`,
+          Text: 'Title',
+          BGColor: '',
+          Color: '#333333',
+          Align: 'center',
+          Height: TILE_H,
+          _new: true,
+        }));
+        const newCols = (block.Columns ?? []).map((col: any) =>
+          col.ColId === oppColId
+            ? { ...col, Tiles: [...(col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })), ...extraTiles] }
+            : updateLongTile(col)
+        );
+        return [...prev.slice(0, idx), { ...block, Columns: newCols }, ...prev.slice(idx + 1)];
+      }
+
+      if (zoneCount === initialCount) {
+        // No structural change — just update the long tile height
+        const newCols = (block.Columns ?? []).map((col: any) => updateLongTile(col));
+        return [...prev.slice(0, idx), { ...block, Columns: newCols }, ...prev.slice(idx + 1)];
+      }
+
+      // Shrink: release excess tiles as standalone TileGrids
+      const tilesToKeep = allOppTiles.slice(0, zoneCount).map((t: any) => ({ ...t, Height: TILE_H }));
+      const tilesToRelease = allOppTiles.slice(zoneCount);
+      const newCols = (block.Columns ?? [])
+        .map((col: any) =>
+          col.ColId === oppColId
+            ? (tilesToKeep.length > 0 ? { ...col, Tiles: tilesToKeep } : null)
+            : updateLongTile(col)
+        )
+        .filter(Boolean);
+      const standaloneGrids = tilesToRelease.map((tile: any, i: number) => ({
+        InfoId: `grid-rel-${ts}-${i}`,
+        InfoType: 'TileGrid',
+        Columns: [{ ColId: `col-rel-${ts}-${i}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+      }));
+      return [...prev.slice(0, idx), { ...block, Columns: newCols }, ...standaloneGrids, ...prev.slice(idx + 1)];
+    });
+  }
+
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => prev.map(block => {
       if (block.InfoType !== 'TileGrid') return block;
@@ -204,6 +261,7 @@ function App() {
           onEditTile={handleEditTile}
           onAddTilesToColumn={handleAddTilesToColumn}
           onAddStandaloneTile={handleAddStandaloneTile}
+          onFreeResizeRelease={handleFreeResizeRelease}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

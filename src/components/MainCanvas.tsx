@@ -93,6 +93,13 @@ interface SplitPreview {
   count: number; // 1 = no extra tiles, 2 = 1 skeleton, 3 = 2 skeletons
 }
 
+interface FreeResizePreview {
+  gridId: string;
+  oppColId: string;
+  activeCount: number;       // real tiles at index >= activeCount are ghosts (will be released)
+  extraSkeletonCount: number; // skeleton tiles to show beyond existing tiles (will be added)
+}
+
 interface TileGridsProps {
   tileGrids: any[];
   themeColors: ThemeColors | undefined;
@@ -105,6 +112,7 @@ interface TileGridsProps {
   onResizeDragStart?: (tileId: string, startY: number, startHeight: number) => void;
   activeDragTileId?: string | null;
   splitPreview?: SplitPreview | null;
+  freeResizePreview?: FreeResizePreview | null;
 }
 
 function TileGrids({
@@ -119,6 +127,7 @@ function TileGrids({
   onResizeDragStart,
   activeDragTileId,
   splitPreview,
+  freeResizePreview,
 }: TileGridsProps) {
   return (
     <>
@@ -134,20 +143,26 @@ function TileGrids({
               {cols.map((col: any) => {
                 const canResize =
                   (cols.length === 1 && (col.Tiles ?? []).length === 1) ||
-                  (cols.length === 2 && cols.every((c: any) => (c.Tiles ?? []).length === 1));
+                  (cols.length === 2 && (col.Tiles ?? []).length === 1);
                 const isSplitOpposite = !!(
                   splitPreview &&
                   grid.InfoId === splitPreview.gridId &&
                   col.ColId === splitPreview.oppositeColId
                 );
+                const isFreeResizeOppCol = !!(
+                  freeResizePreview &&
+                  grid.InfoId === freeResizePreview.gridId &&
+                  col.ColId === freeResizePreview.oppColId
+                );
                 return (
                   <div key={col.ColId} className="phone-column">
-                    {(col.Tiles ?? []).map((tile: any) => {
+                    {(col.Tiles ?? []).map((tile: any, tileIndex: number) => {
                       const isPlaceholder = tile._new === true;
                       const bg = resolveColor(tile.BGColor, themeColors);
                       const height = `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
+                      const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const hasIcon = !!tile.IconSVG;
                       const hasText = !!tile.Text;
                       const showDel = isSelected && !isDraggingThis && hasIcon && hasText;
@@ -169,7 +184,7 @@ function TileGrids({
                       return (
                         <div
                           key={tile.Id}
-                          className={`phone-tile-wrap${isSelected ? ' selected' : ''}`}
+                          className={`phone-tile-wrap${isSelected ? ' selected' : ''}${isGhost ? ' phone-tile-wrap--ghost' : ''}`}
                           style={{ height }}
                           onClick={interactive && onSelectTile ? () => onSelectTile(tile.Id) : undefined}
                         >
@@ -267,6 +282,12 @@ function TileGrids({
                         <div className="phone-tile phone-tile--skeleton" />
                       </div>
                     ))}
+                    {/* Extra skeleton tiles during free-resize drag when stretching beyond current tile count */}
+                    {isFreeResizeOppCol && (freeResizePreview?.extraSkeletonCount ?? 0) > 0 && Array.from({ length: freeResizePreview!.extraSkeletonCount }).map((_, i) => (
+                      <div key={`fr-skeleton-${i}`} className="phone-tile-wrap" style={{ height: `${TILE_H}px` }}>
+                        <div className="phone-tile phone-tile--skeleton" />
+                      </div>
+                    ))}
                   </div>
                 );
               })}
@@ -298,6 +319,7 @@ interface MainCanvasProps {
   onEditTile: (tileId: string, patch: Record<string, any>) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onAddStandaloneTile?: () => void;
+  onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
 }
 
 export function MainCanvas({
@@ -310,28 +332,40 @@ export function MainCanvas({
   onEditTile,
   onAddTilesToColumn,
   onAddStandaloneTile,
+  onFreeResizeRelease,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
   const [dragTileId, setDragTileId] = useState<string | null>(null);
   const [splitPreview, setSplitPreview] = useState<SplitPreview | null>(null);
+  const [freeResizePreview, setFreeResizePreview] = useState<FreeResizePreview | null>(null);
 
   // Stable refs so the drag effect never needs to re-run due to callback identity changes
   const onEditTileRef = useRef(onEditTile);
   const onAddTilesToColumnRef = useRef(onAddTilesToColumn);
   const onAddStandaloneTileRef = useRef(onAddStandaloneTile);
+  const onFreeResizeReleaseRef = useRef(onFreeResizeRelease);
   useEffect(() => { onEditTileRef.current = onEditTile; });
   useEffect(() => { onAddTilesToColumnRef.current = onAddTilesToColumn; });
   useEffect(() => { onAddStandaloneTileRef.current = onAddStandaloneTile; });
+  useEffect(() => { onFreeResizeReleaseRef.current = onFreeResizeRelease; });
 
   const dragRef = useRef<{
     startY: number;
     startHeight: number;
+    currentHeight: number;
     split: {
       gridId: string;
       oppositeColId: string;
       currentCount: number;
-      maxCount: number; // highest zone reached during this drag
+      maxCount: number;
+    } | null;
+    freeResize: {
+      gridId: string;
+      oppColId: string;
+      oppColTiles: any[];
+      initialCount: number;
+      currentZoneCount: number;
     } | null;
   } | null>(null);
 
@@ -339,6 +373,8 @@ export function MainCanvas({
     setDragTileId(tileId);
 
     let splitInfo: { gridId: string; oppositeColId: string } | null = null;
+    let freeResizeInfo: { gridId: string; oppColId: string; oppColTiles: any[]; initialCount: number; currentZoneCount: number } | null = null;
+
     for (const block of infoContent) {
       if (block.InfoType !== 'TileGrid') continue;
       const cols: any[] = block.Columns ?? [];
@@ -346,17 +382,32 @@ export function MainCanvas({
       const dragCol = cols.find((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === tileId));
       if (!dragCol || (dragCol.Tiles ?? []).length !== 1) continue;
       const oppCol = cols.find((c: any) => c.ColId !== dragCol.ColId);
-      if (!oppCol || (oppCol.Tiles ?? []).length !== 1) continue;
-      splitInfo = { gridId: block.InfoId, oppositeColId: oppCol.ColId };
+      if (!oppCol) continue;
+      const oppCount = (oppCol.Tiles ?? []).length;
+      if (oppCount === 1) {
+        splitInfo = { gridId: block.InfoId, oppositeColId: oppCol.ColId };
+      } else if (oppCount > 1) {
+        const oppTiles = oppCol.Tiles ?? [];
+        freeResizeInfo = {
+          gridId: block.InfoId,
+          oppColId: oppCol.ColId,
+          oppColTiles: oppTiles,
+          initialCount: oppTiles.length,
+          currentZoneCount: oppTiles.length,
+        };
+      }
       break;
     }
 
     dragRef.current = {
       startY,
       startHeight,
+      currentHeight: startHeight,
       split: splitInfo ? { ...splitInfo, currentCount: 1, maxCount: 1 } : null,
+      freeResize: freeResizeInfo,
     };
     if (splitInfo) setSplitPreview({ ...splitInfo, count: 1 });
+    if (freeResizeInfo) setFreeResizePreview({ gridId: freeResizeInfo.gridId, oppColId: freeResizeInfo.oppColId, activeCount: freeResizeInfo.initialCount, extraSkeletonCount: 0 });
   }
 
   useEffect(() => {
@@ -381,6 +432,19 @@ export function MainCanvas({
           setSplitPreview(prev => prev ? { ...prev, count } : null);
         }
         onEditTileRef.current(dragTileId!, { Height: Math.round(raw) });
+      } else if (dragRef.current.freeResize) {
+        const raw = Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY));
+        dragRef.current.currentHeight = Math.round(raw);
+        const { initialCount } = dragRef.current.freeResize;
+        const clamped = Math.min(raw, SPLIT_SNAPS[SPLIT_SNAPS.length - 1]);
+        const zoneCount = SPLIT_SNAPS.indexOf(snapSplit(clamped)) + 1;
+        if (zoneCount !== dragRef.current.freeResize.currentZoneCount) {
+          dragRef.current.freeResize.currentZoneCount = zoneCount;
+          const activeCount = Math.min(zoneCount, initialCount);
+          const extraSkeletonCount = Math.max(0, zoneCount - initialCount);
+          setFreeResizePreview(prev => prev ? { ...prev, activeCount, extraSkeletonCount } : null);
+        }
+        onEditTileRef.current(dragTileId!, { Height: dragRef.current.currentHeight });
       } else {
         const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.55;
         onEditTileRef.current(dragTileId!, { Height: snapHeight(raw) });
@@ -399,9 +463,14 @@ export function MainCanvas({
         for (let i = 0; i < passed; i++) {
           onAddStandaloneTileRef.current?.();
         }
+      } else if (dragRef.current?.freeResize) {
+        const { gridId, oppColId, oppColTiles, initialCount, currentZoneCount } = dragRef.current.freeResize;
+        const snapH = SPLIT_SNAPS[currentZoneCount - 1];
+        onFreeResizeReleaseRef.current?.(gridId, dragTileId!, snapH, currentZoneCount, initialCount, oppColId, oppColTiles);
       }
       setDragTileId(null);
       setSplitPreview(null);
+      setFreeResizePreview(null);
       dragRef.current = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -452,6 +521,7 @@ export function MainCanvas({
               onResizeDragStart={handleResizeDragStart}
               activeDragTileId={dragTileId}
               splitPreview={splitPreview}
+              freeResizePreview={freeResizePreview}
             />
           </div>
         </div>
