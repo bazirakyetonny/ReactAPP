@@ -258,6 +258,18 @@
   opacity: 1;
 }
 
+/* Skeleton tile — shown in opposite column during split drag preview */
+.phone-tile--skeleton {
+  background: rgba(61, 90, 158, 0.07);
+  border: 1.5px dashed rgba(61, 90, 158, 0.35);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* Placeholder tile — no background, dashed border */
 .phone-tile--placeholder {
   border: 1.5px dashed rgba(61, 90, 158, 0.45);

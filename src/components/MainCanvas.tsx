@@ -4,6 +4,10 @@ import { dataStore } from '../data/datastore';
 import type { ThemeColors } from '../types';
 
 const SNAP_POINTS = [80, 120, 160];
+const TILE_H = 80;
+const TILE_GAP = 6;
+// Heights matching 1, 2, 3 stacked 80px tiles with 6px gaps between them
+const SPLIT_SNAPS = [TILE_H, TILE_H * 2 + TILE_GAP, TILE_H * 3 + TILE_GAP * 2]; // [80, 166, 252]
 
 function snapHeight(raw: number): number {
   const clamped = Math.max(80, raw);
@@ -11,6 +15,13 @@ function snapHeight(raw: number): number {
     Math.abs(curr - clamped) < Math.abs(prev - clamped) ? curr : prev
   );
 }
+
+function snapSplit(raw: number): number {
+  return SPLIT_SNAPS.reduce((prev, curr) =>
+    Math.abs(curr - raw) < Math.abs(prev - raw) ? curr : prev
+  );
+}
+
 
 function SignalBarsIcon() {
   return (
@@ -76,6 +87,12 @@ function PhoneAppHeader() {
   );
 }
 
+interface SplitPreview {
+  gridId: string;
+  oppositeColId: string;
+  count: number; // 1 = no extra tiles, 2 = 1 skeleton, 3 = 2 skeletons
+}
+
 interface TileGridsProps {
   tileGrids: any[];
   themeColors: ThemeColors | undefined;
@@ -87,6 +104,7 @@ interface TileGridsProps {
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onResizeDragStart?: (tileId: string, startY: number, startHeight: number) => void;
   activeDragTileId?: string | null;
+  splitPreview?: SplitPreview | null;
 }
 
 function TileGrids({
@@ -100,17 +118,28 @@ function TileGrids({
   onEditTile,
   onResizeDragStart,
   activeDragTileId,
+  splitPreview,
 }: TileGridsProps) {
   return (
     <>
       {tileGrids.map((grid: any) => {
         const cols: any[] = grid.Columns ?? [];
         const atMax = cols.length >= 3;
+        const canAddColumn =
+          !atMax &&
+          !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
         return (
           <div key={grid.InfoId}>
             <div className="phone-tilegrid">
               {cols.map((col: any) => {
-                const isAlone = cols.length === 1 && (col.Tiles ?? []).length === 1;
+                const canResize =
+                  (cols.length === 1 && (col.Tiles ?? []).length === 1) ||
+                  (cols.length === 2 && cols.every((c: any) => (c.Tiles ?? []).length === 1));
+                const isSplitOpposite = !!(
+                  splitPreview &&
+                  grid.InfoId === splitPreview.gridId &&
+                  col.ColId === splitPreview.oppositeColId
+                );
                 return (
                   <div key={col.ColId} className="phone-column">
                     {(col.Tiles ?? []).map((tile: any) => {
@@ -197,7 +226,7 @@ function TileGrids({
                                   <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
                                 </svg>
                               </button>
-                              {!atMax && (
+                              {canAddColumn && (
                                 <button
                                   className="phone-tile-add-btn"
                                   type="button"
@@ -216,8 +245,8 @@ function TileGrids({
                             </>
                           )}
 
-                          {/* Invisible bottom resize zone — full width, appears for selected solo tiles */}
-                          {interactive && isAlone && isSelected && (
+                          {/* Resize zone — visible for solo tile or 2-col/1-tile layout */}
+                          {interactive && canResize && isSelected && (
                             <div
                               className="phone-tile-resize-zone"
                               onMouseDown={(e) => {
@@ -230,6 +259,12 @@ function TileGrids({
                         </div>
                       );
                     })}
+                    {/* Skeleton tiles shown in the opposite column during a split drag */}
+                    {isSplitOpposite && Array.from({ length: (splitPreview?.count ?? 1) - 1 }).map((_, i) => (
+                      <div key={`skeleton-${i}`} className="phone-tile-wrap" style={{ height: `${TILE_H}px` }}>
+                        <div className="phone-tile phone-tile--skeleton" />
+                      </div>
+                    ))}
                   </div>
                 );
               })}
@@ -259,6 +294,8 @@ interface MainCanvasProps {
   onAddColumn: (gridId: string, afterColId: string) => void;
   onDeleteTile: (gridId: string, colId: string, tileId: string) => void;
   onEditTile: (tileId: string, patch: Record<string, any>) => void;
+  onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
+  onAddStandaloneTile?: () => void;
 }
 
 export function MainCanvas({
@@ -269,15 +306,55 @@ export function MainCanvas({
   onAddColumn,
   onDeleteTile,
   onEditTile,
+  onAddTilesToColumn,
+  onAddStandaloneTile,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
   const [dragTileId, setDragTileId] = useState<string | null>(null);
-  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const [splitPreview, setSplitPreview] = useState<SplitPreview | null>(null);
+
+  // Stable refs so the drag effect never needs to re-run due to callback identity changes
+  const onEditTileRef = useRef(onEditTile);
+  const onAddTilesToColumnRef = useRef(onAddTilesToColumn);
+  const onAddStandaloneTileRef = useRef(onAddStandaloneTile);
+  useEffect(() => { onEditTileRef.current = onEditTile; });
+  useEffect(() => { onAddTilesToColumnRef.current = onAddTilesToColumn; });
+  useEffect(() => { onAddStandaloneTileRef.current = onAddStandaloneTile; });
+
+  const dragRef = useRef<{
+    startY: number;
+    startHeight: number;
+    split: {
+      gridId: string;
+      oppositeColId: string;
+      currentCount: number;
+      maxCount: number; // highest zone reached during this drag
+    } | null;
+  } | null>(null);
 
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
     setDragTileId(tileId);
-    dragRef.current = { startY, startHeight };
+
+    let splitInfo: { gridId: string; oppositeColId: string } | null = null;
+    for (const block of infoContent) {
+      if (block.InfoType !== 'TileGrid') continue;
+      const cols: any[] = block.Columns ?? [];
+      if (cols.length !== 2) continue;
+      const dragCol = cols.find((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === tileId));
+      if (!dragCol || (dragCol.Tiles ?? []).length !== 1) continue;
+      const oppCol = cols.find((c: any) => c.ColId !== dragCol.ColId);
+      if (!oppCol || (oppCol.Tiles ?? []).length !== 1) continue;
+      splitInfo = { gridId: block.InfoId, oppositeColId: oppCol.ColId };
+      break;
+    }
+
+    dragRef.current = {
+      startY,
+      startHeight,
+      split: splitInfo ? { ...splitInfo, currentCount: 1, maxCount: 1 } : null,
+    };
+    if (splitInfo) setSplitPreview({ ...splitInfo, count: 1 });
   }
 
   useEffect(() => {
@@ -287,11 +364,41 @@ export function MainCanvas({
 
     function onMouseMove(e: MouseEvent) {
       if (!dragRef.current) return;
-      const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.55;
-      onEditTile(dragTileId!, { Height: snapHeight(raw) });
+
+      if (dragRef.current.split) {
+        const raw = Math.max(
+          SPLIT_SNAPS[0],
+          Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1],
+            dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.45)
+        );
+        const count = SPLIT_SNAPS.indexOf(snapSplit(raw)) + 1;
+        if (count !== dragRef.current.split.currentCount) {
+          dragRef.current.split.currentCount = count;
+          if (count > dragRef.current.split.maxCount) {
+            dragRef.current.split.maxCount = count;
+          }
+          setSplitPreview(prev => prev ? { ...prev, count } : null);
+        }
+        onEditTileRef.current(dragTileId!, { Height: Math.round(raw) });
+      } else {
+        const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.55;
+        onEditTileRef.current(dragTileId!, { Height: snapHeight(raw) });
+      }
     }
+
     function onMouseUp() {
+      if (dragRef.current?.split) {
+        const { gridId, oppositeColId, currentCount, maxCount } = dragRef.current.split;
+        if (currentCount > 1) {
+          onAddTilesToColumnRef.current?.(gridId, oppositeColId, currentCount - 1);
+        }
+        const passed = maxCount - currentCount;
+        for (let i = 0; i < passed; i++) {
+          onAddStandaloneTileRef.current?.();
+        }
+      }
       setDragTileId(null);
+      setSplitPreview(null);
       dragRef.current = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -305,7 +412,7 @@ export function MainCanvas({
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [dragTileId, onEditTile]);
+  }, [dragTileId]);
 
   return (
     <main className="app-canvas">
@@ -341,6 +448,7 @@ export function MainCanvas({
               onEditTile={onEditTile}
               onResizeDragStart={handleResizeDragStart}
               activeDragTileId={dragTileId}
+              splitPreview={splitPreview}
             />
           </div>
         </div>

@@ -109,6 +109,49 @@ function App() {
     );
   }
 
+  function handleAddStandaloneTile() {
+    const ts = Date.now();
+    setInfoContent(prev => [...prev, {
+      InfoId: `grid-${ts}`,
+      InfoType: 'TileGrid',
+      Columns: [{
+        ColId: `col-${ts}`,
+        Tiles: [{
+          Id: `tile-${ts}`,
+          Text: 'Title',
+          BGColor: '',
+          Color: '#333333',
+          Align: 'center',
+          Height: 80,
+          _new: true,
+        }],
+      }],
+    }]);
+  }
+
+  function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
+    const ts = Date.now();
+    setInfoContent(prev => prev.map(block => {
+      if (block.InfoId !== gridId || block.InfoType !== 'TileGrid') return block;
+      return {
+        ...block,
+        Columns: (block.Columns ?? []).map((col: any) => {
+          if (col.ColId !== colId) return col;
+          const newTiles = Array.from({ length: count }, (_, i) => ({
+            Id: `tile-${ts}-${i}`,
+            Text: 'Title',
+            BGColor: '',
+            Color: '#333333',
+            Align: 'center',
+            Height: 80,
+            _new: true,
+          }));
+          return { ...col, Tiles: [...(col.Tiles ?? []), ...newTiles] };
+        }),
+      };
+    }));
+  }
+
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => prev.map(block => {
       if (block.InfoType !== 'TileGrid') return block;
@@ -140,6 +183,8 @@ function App() {
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
           onEditTile={handleEditTile}
+          onAddTilesToColumn={handleAddTilesToColumn}
+          onAddStandaloneTile={handleAddStandaloneTile}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
