@@ -429,11 +429,8 @@ export function MainCanvas({
       if (!dragRef.current) return;
 
       if (dragRef.current.split) {
-        // Height tracks cursor 1:1, floored at minimum tile height
-        const raw = Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY));
-        // Clamp only for zone/count detection, not for displayed height
-        const clamped = Math.min(raw, SPLIT_SNAPS[SPLIT_SNAPS.length - 1]);
-        const count = SPLIT_SNAPS.indexOf(snapSplit(clamped)) + 1;
+        const raw = Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1], Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
+        const count = SPLIT_SNAPS.indexOf(snapSplit(raw)) + 1;
         if (count !== dragRef.current.split.currentCount) {
           dragRef.current.split.currentCount = count;
           if (count > dragRef.current.split.maxCount) {
