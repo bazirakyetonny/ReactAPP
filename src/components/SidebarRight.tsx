@@ -276,6 +276,11 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
         <span className="sr-zoom-label">100 %</span>
       </div>
 
+      {/* 2c. Text input */}
+      <div className="sr-section">
+        <input className="sr-input" type="text" placeholder="Enter title" />
+      </div>
+
       {/* 3. Format toolbar */}
       <div className="sr-toolbar">
         <button className="sr-tool-btn" type="button" title="Outline style"><SquareOutlineIcon /></button>
