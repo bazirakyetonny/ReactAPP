@@ -17,28 +17,16 @@
   gap: 4px;
 }
 
-/* ── Spacers: 2:1 ratio keeps icon group slightly left of center ── */
+/* ── Spacer: pushes right group to the far right ── */
 .navbar-spacer {
-  flex: 2;
-}
-
-.navbar-spacer-sm {
   flex: 1;
-}
-
-/* ── Center group ───────────────────────────────────────────── */
-.navbar-center {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-right: 8px;
 }
 
 /* ── Right group ────────────────────────────────────────────── */
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 /* ── Shared dropdown button ─────────────────────────────────── */
@@ -68,8 +56,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   background: transparent;
   border: none;
@@ -77,6 +65,11 @@
   color: #6b7280;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+}
+
+.navbar-icon-btn svg {
+  width: 21px;
+  height: 21px;
 }
 
 .navbar-icon-btn:hover {
@@ -94,6 +87,11 @@
 }
 
 /* ── Theme select ───────────────────────────────────────────── */
+.navbar-theme-select,
+.navbar-publish {
+  margin-left: 4px;
+}
+
 .navbar-theme-select {
   height: 30px;
   padding: 0 8px;
