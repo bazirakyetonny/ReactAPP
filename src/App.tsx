@@ -23,7 +23,10 @@ function App() {
       />
       <div className="app-body">
         <MainCanvas />
-        <SidebarRight themeIcons={selectedTheme?.ThemeIcons ?? []} />
+        <SidebarRight
+          themeIcons={selectedTheme?.ThemeIcons ?? []}
+          themeColors={selectedTheme?.ThemeColors}
+        />
       </div>
     </>
   );

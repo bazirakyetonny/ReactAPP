@@ -1,8 +1,12 @@
 import { useState, useMemo } from 'react';
 import './SidebarRight.css';
-import type { ThemeIcon } from '../types';
+import type { ThemeIcon, ThemeColors } from '../types';
 
-const PALETTE = ['#1e293b', '#374151', '#78716c', '#b45309', '#111827'];
+const COLOR_ORDER: (keyof ThemeColors)[] = [
+  'primaryColor', 'secondaryColor', 'accentColor',
+  'backgroundColor', 'textColor', 'buttonBGColor',
+  'buttonTextColor', 'cardBgColor', 'cardTextColor', 'borderColor',
+];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -173,7 +177,8 @@ const CONTACTS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [] }: { themeIcons?: ThemeIcon[] }) {
+export function SidebarRight({ themeIcons = [], themeColors }: { themeIcons?: ThemeIcon[]; themeColors?: ThemeColors }) {
+  const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -208,7 +213,7 @@ export function SidebarRight({ themeIcons = [] }: { themeIcons?: ThemeIcon[] }) 
       {/* 2. Color palette + zoom */}
       <div className="sr-palette-row">
         <div className="sr-palette">
-          {PALETTE.map(c => (
+          {palette.map(c => (
             <button key={c} className="sr-palette-chip" style={{ background: c }} type="button" aria-label={c} />
           ))}
         </div>
