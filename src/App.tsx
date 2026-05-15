@@ -69,6 +69,7 @@ function App() {
           BGColor: '',
           Color: '#333333',
           Align: 'center',
+          Height: 80,
           _new: true,
         }],
       };

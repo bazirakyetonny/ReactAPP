@@ -100,13 +100,13 @@ function TileGrids({
                   {(col.Tiles ?? []).map((tile: any) => {
                     const isPlaceholder = tile._new === true;
                     const bg = resolveColor(tile.BGColor, themeColors);
-                    const height = tile.Height ? `${tile.Height}px` : undefined;
+                    const height = `${tile.Height ?? 80}px`;
                     const isSelected = interactive && selectedTileId === tile.Id;
                     return (
                       <div
                         key={tile.Id}
                         className={`phone-tile-wrap${isSelected ? ' selected' : ''}`}
-                        style={{ height, flex: height ? undefined : 1 }}
+                        style={{ height }}
                         onClick={interactive && onSelectTile ? () => onSelectTile(tile.Id) : undefined}
                       >
                         <div
