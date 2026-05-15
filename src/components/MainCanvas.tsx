@@ -9,11 +9,21 @@ const TILE_GAP = 6;
 // Heights matching 1, 2, 3 stacked 80px tiles with 6px gaps between them
 const SPLIT_SNAPS = [TILE_H, TILE_H * 2 + TILE_GAP, TILE_H * 3 + TILE_GAP * 2]; // [80, 166, 252]
 
+const SNAP_ZONE = 12; // px — within this distance of a snap point, snap to it during drag
+
 function snapHeight(raw: number): number {
   const clamped = Math.max(80, raw);
   return SNAP_POINTS.reduce((prev, curr) =>
     Math.abs(curr - clamped) < Math.abs(prev - clamped) ? curr : prev
   );
+}
+
+function softSnapHeight(raw: number): number {
+  const clamped = Math.max(80, raw);
+  const nearest = SNAP_POINTS.reduce((prev, curr) =>
+    Math.abs(curr - clamped) < Math.abs(prev - clamped) ? curr : prev
+  );
+  return Math.abs(nearest - clamped) <= SNAP_ZONE ? nearest : Math.round(clamped);
 }
 
 function snapSplit(raw: number): number {
@@ -433,7 +443,7 @@ export function MainCanvas({
         }
         onEditTileRef.current(dragTileId!, { Height: Math.round(raw) });
       } else if (dragRef.current.freeResize) {
-        const raw = Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY));
+        const raw = Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1], Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
         const { initialCount } = dragRef.current.freeResize;
         const clamped = Math.min(raw, SPLIT_SNAPS[SPLIT_SNAPS.length - 1]);
@@ -446,8 +456,9 @@ export function MainCanvas({
         }
         onEditTileRef.current(dragTileId!, { Height: dragRef.current.currentHeight });
       } else {
-        const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.55;
-        onEditTileRef.current(dragTileId!, { Height: snapHeight(raw) });
+        const raw = Math.min(SNAP_POINTS[SNAP_POINTS.length - 1], Math.max(80, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
+        dragRef.current.currentHeight = Math.round(raw);
+        onEditTileRef.current(dragTileId!, { Height: softSnapHeight(raw) });
       }
     }
 
@@ -467,6 +478,8 @@ export function MainCanvas({
         const { gridId, oppColId, oppColTiles, initialCount, currentZoneCount } = dragRef.current.freeResize;
         const snapH = SPLIT_SNAPS[currentZoneCount - 1];
         onFreeResizeReleaseRef.current?.(gridId, dragTileId!, snapH, currentZoneCount, initialCount, oppColId, oppColTiles);
+      } else if (dragRef.current) {
+        onEditTileRef.current(dragTileId!, { Height: snapHeight(dragRef.current.currentHeight) });
       }
       setDragTileId(null);
       setSplitPreview(null);
