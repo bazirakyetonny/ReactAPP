@@ -44,10 +44,10 @@
 }
 
 .phone-frame {
-  width: clamp(160px, 22vw, 240px);
+  width: clamp(192px, 26.4vw, 288px);
   aspect-ratio: 9 / 19.5;
   background: #0d0d0d;
-  border-radius: clamp(22px, 3vw, 34px);
+  border-radius: clamp(12px, 1.6vw, 20px);
   border: 3px solid #080808;
   display: flex;
   flex-direction: column;
