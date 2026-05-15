@@ -1,10 +1,11 @@
-import { useState } from 'react';
 import './NavBar.css';
 import type { AppVersion, Theme } from '../types';
-import { dataStore } from '../data/datastore';
 
 interface NavBarProps {
   version?: Pick<AppVersion, 'AppVersionName'>;
+  themes?: Theme[];
+  selectedThemeId?: string;
+  onThemeChange?: (id: string) => void;
   onPublish?: () => void;
 }
 
@@ -139,12 +140,7 @@ function UploadIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function NavBar({ version, onPublish }: NavBarProps) {
-  const themes: Theme[] = dataStore.get('themes') ?? [];
-  const [selectedThemeId, setSelectedThemeId] = useState<string>(
-    dataStore.get('CurrentThemeId') ?? themes[0]?.ThemeId ?? ''
-  );
-
+export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChange, onPublish }: NavBarProps) {
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -199,7 +195,7 @@ export function NavBar({ version, onPublish }: NavBarProps) {
         <select
           className="navbar-theme-select"
           value={selectedThemeId}
-          onChange={(e) => setSelectedThemeId(e.target.value)}
+          onChange={(e) => onThemeChange?.(e.target.value)}
           aria-label="Select theme"
         >
           {themes.map((t) => (
