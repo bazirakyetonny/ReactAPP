@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import './NavBar.css';
 import type { AppVersion, Theme } from '../types';
+import { dataStore } from '../data/datastore';
 
 interface NavBarProps {
   version?: Pick<AppVersion, 'AppVersionName'>;
-  theme?: Pick<Theme, 'ThemeName'>;
   onPublish?: () => void;
 }
 
@@ -138,7 +139,12 @@ function UploadIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function NavBar({ version, theme, onPublish }: NavBarProps) {
+export function NavBar({ version, onPublish }: NavBarProps) {
+  const themes: Theme[] = dataStore.get('themes') ?? [];
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(
+    dataStore.get('CurrentThemeId') ?? themes[0]?.ThemeId ?? ''
+  );
+
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -190,10 +196,18 @@ export function NavBar({ version, theme, onPublish }: NavBarProps) {
 
       {/* Right: theme selector + publish */}
       <div className="navbar-right">
-        <button className="navbar-dropdown" type="button">
-          {theme?.ThemeName ?? 'Brand theme'}
-          <ChevronDown />
-        </button>
+        <select
+          className="navbar-theme-select"
+          value={selectedThemeId}
+          onChange={(e) => setSelectedThemeId(e.target.value)}
+          aria-label="Select theme"
+        >
+          {themes.map((t) => (
+            <option key={t.ThemeId} value={t.ThemeId}>
+              {t.ThemeName}
+            </option>
+          ))}
+        </select>
         <button className="navbar-publish" type="button" onClick={onPublish}>
           <UploadIcon />
           Publish

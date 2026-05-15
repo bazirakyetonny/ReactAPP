@@ -93,6 +93,24 @@
   flex-shrink: 0;
 }
 
+/* ── Theme select ───────────────────────────────────────────── */
+.navbar-theme-select {
+  height: 30px;
+  padding: 0 8px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navbar-theme-select:hover {
+  background: #f9fafb;
+}
+
 /* ── Publish button ─────────────────────────────────────────── */
 .navbar-publish {
   display: inline-flex;
