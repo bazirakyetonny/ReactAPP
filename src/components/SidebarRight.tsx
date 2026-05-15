@@ -235,8 +235,24 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
         >
           <SquareFilledIcon />
         </button>
-        <button className="sr-tool-btn" type="button" title="Center align"><AlignCenterIcon /></button>
-        <button className="sr-tool-btn" type="button" title="Left align"><AlignLeftIcon /></button>
+        <button
+          className={`sr-tool-btn${(!selectedTile?.Align || selectedTile?.Align === 'center') ? ' sr-tool-btn-active' : ''}`}
+          type="button"
+          title="Center align"
+          disabled={!selectedTile}
+          onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Align: 'center' })}
+        >
+          <AlignCenterIcon />
+        </button>
+        <button
+          className={`sr-tool-btn${selectedTile?.Align === 'left' ? ' sr-tool-btn-active' : ''}`}
+          type="button"
+          title="Left align"
+          disabled={!selectedTile}
+          onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Align: 'left' })}
+        >
+          <AlignLeftIcon />
+        </button>
       </div>
 
       {/* 4. Category / search unified field */}

@@ -113,6 +113,10 @@ function TileGrids({
                             background: bg,
                             color: tile.Color ?? '#ffffff',
                             textAlign: tile.Align ?? 'center',
+                            alignItems: tile.Align === 'left' ? 'flex-start'
+                              : tile.Align === 'right' ? 'flex-end'
+                              : 'center',
+                            justifyContent: tile.Align === 'left' ? 'flex-start' : 'center',
                           }}
                         >
                           {tile.IconSVG && (
