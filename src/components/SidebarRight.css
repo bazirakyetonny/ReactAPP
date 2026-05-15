@@ -215,6 +215,88 @@
   letter-spacing: 0.03em;
 }
 
+/* ── Category dropdown ──────────────────────────────────────────────────────── */
+
+.sr-category-row {
+  padding: 5px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.sr-category-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  height: 26px;
+  overflow: hidden;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.sr-category-wrap:focus-within {
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
+}
+
+.sr-category-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 11px;
+  font-family: inherit;
+  color: #374151;
+  padding: 0 4px 0 6px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.sr-category-field[type="text"] {
+  cursor: text;
+}
+
+.sr-category-field::placeholder {
+  color: #9ca3af;
+}
+
+.sr-category-actions {
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.sr-category-arrow {
+  display: flex;
+  align-items: center;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.sr-category-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sr-category-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
 /* ── Service icon grid ──────────────────────────────────────────────────────── */
 
 .sr-icon-grid {
@@ -249,7 +331,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   color: #374151;
+  overflow: hidden;
+}
+
+.sr-icon-wrap svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .sr-icon-label {
