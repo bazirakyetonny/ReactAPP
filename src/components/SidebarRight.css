@@ -333,11 +333,17 @@
 /* ── Service icon grid ──────────────────────────────────────────────────────── */
 
 .sr-icon-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
   gap: 3px;
   padding: 6px 10px;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.sr-icon-grid--single {
+  justify-content: flex-start;
 }
 
 .sr-icon-cell {
@@ -347,11 +353,12 @@
   justify-content: center;
   gap: 3px;
   padding: 6px 2px;
+  width: 55px;
+  flex-shrink: 0;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   background: #fafafa;
   cursor: pointer;
-  min-width: 0;
   transition: background 0.12s, border-color 0.12s;
 }
 

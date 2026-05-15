@@ -76,13 +76,24 @@ function SquareFilledIcon() {
   );
 }
 
-function AlignJustifyIcon() {
+function AlignCenterIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <line x1="1" y1="3" x2="13" y2="3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="1" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="1" y1="9" x2="13" y2="9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="1" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1"   y1="3"  x2="13"  y2="3"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="3"   y1="6"  x2="11"  y2="6"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1"   y1="9"  x2="13"  y2="9"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="3"   y1="12" x2="11"  y2="12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AlignLeftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <line x1="1" y1="3"  x2="13" y2="3"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="6"  x2="9"  y2="6"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="9"  x2="13" y2="9"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="12" x2="7"  y2="12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -285,8 +296,8 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
       <div className="sr-toolbar">
         <button className="sr-tool-btn" type="button" title="Outline style"><SquareOutlineIcon /></button>
         <button className="sr-tool-btn sr-tool-btn-active" type="button" title="Filled style"><SquareFilledIcon /></button>
-        <button className="sr-tool-btn" type="button" title="Justify"><AlignJustifyIcon /></button>
-        <span className="sr-badge">1</span>
+        <button className="sr-tool-btn" type="button" title="Center align"><AlignCenterIcon /></button>
+        <button className="sr-tool-btn" type="button" title="Left align"><AlignLeftIcon /></button>
       </div>
 
       {/* 4. Category / search unified field */}
@@ -329,7 +340,7 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
           </div>
         </div>
       </div>
-      <div className="sr-icon-grid">
+      <div className={`sr-icon-grid${visibleIcons.length === 1 ? ' sr-icon-grid--single' : ''}`}>
         {visibleIcons.map(icon => (
           <button key={icon.IconId} className="sr-icon-cell" type="button" title={icon.IconName}>
             <span
