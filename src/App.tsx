@@ -6,6 +6,9 @@ import { SidebarRight } from './components/SidebarRight';
 import { dataStore } from './data/datastore';
 import type { Theme, Mood } from './types';
 
+const TILE_H = 80;
+const TILE_GAP = 6;
+
 function parseInfoContent(): any[] {
   const cv = dataStore.get('Current_Version');
   const homePage = (cv?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home');
@@ -103,6 +106,22 @@ function App() {
             Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
           })
           .filter((col: any) => (col.Tiles ?? []).length > 0);
+
+        // In a 2-column layout where the opposite column has 1 tall tile, adjust
+        // that tall tile's height to match the total span of the remaining small tiles.
+        if (newCols.length === 2) {
+          const changedCol = newCols.find((c: any) => c.ColId === colId);
+          const otherCol = newCols.find((c: any) => c.ColId !== colId);
+          if (changedCol && otherCol && (otherCol.Tiles ?? []).length === 1) {
+            const n = (changedCol.Tiles ?? []).length;
+            const longHeight = n * TILE_H + Math.max(0, n - 1) * TILE_GAP;
+            return [{ ...block, Columns: newCols.map((col: any) =>
+              col.ColId !== colId
+                ? { ...col, Tiles: col.Tiles.map((t: any) => ({ ...t, Height: longHeight })) }
+                : { ...col, Tiles: col.Tiles.map((t: any) => ({ ...t, Height: TILE_H })) }
+            )}];
+          }
+        }
 
         return [{ ...block, Columns: newCols }];
       })
