@@ -287,7 +287,7 @@ export function MainCanvas({
 
     function onMouseMove(e: MouseEvent) {
       if (!dragRef.current) return;
-      const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY);
+      const raw = dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.55;
       onEditTile(dragTileId!, { Height: snapHeight(raw) });
     }
     function onMouseUp() {
