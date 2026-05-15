@@ -86,6 +86,7 @@ interface TileGridsProps {
   onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onResizeDragStart?: (tileId: string, startY: number, startHeight: number) => void;
+  activeDragTileId?: string | null;
 }
 
 function TileGrids({
@@ -98,6 +99,7 @@ function TileGrids({
   onDeleteTile,
   onEditTile,
   onResizeDragStart,
+  activeDragTileId,
 }: TileGridsProps) {
   return (
     <>
@@ -116,9 +118,10 @@ function TileGrids({
                       const bg = resolveColor(tile.BGColor, themeColors);
                       const height = `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
+                      const isDraggingThis = activeDragTileId === tile.Id;
                       const hasIcon = !!tile.IconSVG;
                       const hasText = !!tile.Text;
-                      const showDel = isSelected && hasIcon && hasText;
+                      const showDel = isSelected && !isDraggingThis && hasIcon && hasText;
 
                       const delBtn = (onClick: (e: React.MouseEvent) => void, label: string) => (
                         <button
@@ -167,7 +170,7 @@ function TileGrids({
                             )}
                           </div>
 
-                          {interactive && (
+                          {interactive && !isDraggingThis && (
                             <>
                               <button
                                 className="phone-tile-options-btn"
@@ -317,7 +320,7 @@ export function MainCanvas({
             </div>
           </div>
           <PhoneAppHeader />
-          <div className="phone-screen">
+          <div className={`phone-screen${dragTileId ? ' phone-screen--dragging' : ''}`}>
             {/* Top add-row — always visible when the structure has no content */}
             <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`}>
               <button className="phone-add-btn" type="button" aria-label="Add content block">
@@ -337,6 +340,7 @@ export function MainCanvas({
               onDeleteTile={onDeleteTile}
               onEditTile={onEditTile}
               onResizeDragStart={handleResizeDragStart}
+              activeDragTileId={dragTileId}
             />
           </div>
         </div>

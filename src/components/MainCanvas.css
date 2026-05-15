@@ -138,6 +138,17 @@
   display: none;
 }
 
+.phone-screen--dragging .phone-add-row {
+  height: 6px;
+  pointer-events: none;
+}
+
+.phone-screen--dragging .phone-add-row::before,
+.phone-screen--dragging .phone-add-btn {
+  opacity: 0;
+  transition: none;
+}
+
 .phone-tilegrid {
   display: flex;
   flex-direction: row;
@@ -158,6 +169,7 @@
 .phone-tile-wrap {
   position: relative;
   min-height: 80px;
+  transition: height 0.14s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .phone-tile {
