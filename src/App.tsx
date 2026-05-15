@@ -138,6 +138,7 @@ function App() {
           onSelectTile={setSelectedTileId}
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
+          onEditTile={handleEditTile}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

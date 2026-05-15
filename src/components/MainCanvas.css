@@ -203,6 +203,38 @@
   word-break: break-word;
 }
 
+/* Per-element (icon / text) delete button */
+.phone-tile-element {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-tile-element-delete {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 3;
+}
+
+.phone-tile-element--deletable:hover .phone-tile-element-delete {
+  opacity: 1;
+}
+
 /* Placeholder tile — no background, dashed border */
 .phone-tile--placeholder {
   border: 1.5px dashed rgba(61, 90, 158, 0.45);

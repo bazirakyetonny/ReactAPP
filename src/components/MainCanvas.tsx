@@ -74,6 +74,7 @@ interface TileGridsProps {
   interactive?: boolean;
   onAddColumn?: (gridId: string, afterColId: string) => void;
   onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
+  onEditTile?: (tileId: string, patch: Record<string, any>) => void;
 }
 
 function TileGrids({
@@ -84,6 +85,7 @@ function TileGrids({
   interactive = false,
   onAddColumn,
   onDeleteTile,
+  onEditTile,
 }: TileGridsProps) {
   return (
     <>
@@ -119,13 +121,43 @@ function TileGrids({
                             justifyContent: tile.Align === 'left' ? 'flex-start' : 'center',
                           }}
                         >
-                          {tile.IconSVG && (
-                            <span
-                              className="phone-tile-icon"
-                              dangerouslySetInnerHTML={{ __html: tile.IconSVG }}
-                            />
-                          )}
-                          <span className="phone-tile-text">{tile.Text}</span>
+                          {(() => {
+                            const hasIcon = !!tile.IconSVG;
+                            const hasText = !!tile.Text;
+                            const showDel = isSelected && hasIcon && hasText;
+                            const delBtn = (onClick: (e: React.MouseEvent) => void, label: string) => (
+                              <button
+                                className="phone-tile-element-delete"
+                                type="button"
+                                aria-label={label}
+                                onClick={(e) => { e.stopPropagation(); onClick(e); }}
+                              >
+                                <svg width="6" height="6" viewBox="0 0 6 6" fill="none" aria-hidden="true">
+                                  <line x1="1" y1="1" x2="5" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                                  <line x1="5" y1="1" x2="1" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                                </svg>
+                              </button>
+                            );
+                            return (
+                              <>
+                                {hasIcon && (
+                                  <div className={`phone-tile-element${showDel ? ' phone-tile-element--deletable' : ''}`}>
+                                    <span
+                                      className="phone-tile-icon"
+                                      dangerouslySetInnerHTML={{ __html: tile.IconSVG }}
+                                    />
+                                    {showDel && delBtn(() => onEditTile?.(tile.Id, { IconSVG: null, IconId: null }), 'Remove icon')}
+                                  </div>
+                                )}
+                                {hasText && (
+                                  <div className={`phone-tile-element${showDel ? ' phone-tile-element--deletable' : ''}`}>
+                                    <span className="phone-tile-text">{tile.Text}</span>
+                                    {showDel && delBtn(() => onEditTile?.(tile.Id, { Text: '' }), 'Remove text')}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         {interactive && (
                           <>
@@ -202,6 +234,7 @@ interface MainCanvasProps {
   onSelectTile: (id: string) => void;
   onAddColumn: (gridId: string, afterColId: string) => void;
   onDeleteTile: (gridId: string, colId: string, tileId: string) => void;
+  onEditTile: (tileId: string, patch: Record<string, any>) => void;
 }
 
 export function MainCanvas({
@@ -211,6 +244,7 @@ export function MainCanvas({
   onSelectTile,
   onAddColumn,
   onDeleteTile,
+  onEditTile,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -245,6 +279,7 @@ export function MainCanvas({
               interactive={true}
               onAddColumn={onAddColumn}
               onDeleteTile={onDeleteTile}
+              onEditTile={onEditTile}
             />
           </div>
         </div>
