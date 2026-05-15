@@ -1,5 +1,6 @@
 import './MainCanvas.css';
 import { dataStore } from '../data/datastore';
+import type { ThemeColors } from '../types';
 
 function SignalBarsIcon() {
   return (
@@ -42,6 +43,12 @@ function ProfileIcon() {
   );
 }
 
+function resolveColor(bgColor: string, themeColors: ThemeColors | undefined): string {
+  if (!bgColor) return 'transparent';
+  if (bgColor.startsWith('#')) return bgColor;
+  return (themeColors as any)?.[bgColor] ?? '#e5e7eb';
+}
+
 function PhoneAppHeader() {
   const logo: string | undefined = dataStore.get('OrganisationLogo');
   return (
@@ -59,7 +66,28 @@ function PhoneAppHeader() {
   );
 }
 
-export function MainCanvas() {
+interface MainCanvasProps {
+  themeColors?: ThemeColors;
+}
+
+export function MainCanvas({ themeColors }: MainCanvasProps) {
+  const currentVersion = dataStore.get('Current_Version');
+
+  const pages: any[] = currentVersion?.Page ?? [];
+  const homePage = pages.find((p: any) => p.PageName?.toLowerCase() === 'home');
+
+  let infoContent: any[] = [];
+  if (homePage?.PageStructure) {
+    try {
+      const parsed = JSON.parse(homePage.PageStructure);
+      infoContent = parsed.InfoContent ?? [];
+    } catch {
+      // invalid JSON — leave empty
+    }
+  }
+
+  const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
+
   return (
     <main className="app-canvas">
       <div className="canvas-stage">
@@ -74,14 +102,43 @@ export function MainCanvas() {
           </div>
           <PhoneAppHeader />
           <div className="phone-screen">
-            <div className="phone-add-row">
-              <button className="phone-add-btn" type="button" aria-label="Add content">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
+            {tileGrids.map((grid: any) => (
+              <div key={grid.InfoId}>
+                <div className="phone-tilegrid">
+                  {(grid.Columns ?? []).map((col: any) => (
+                    <div key={col.ColId} className="phone-column">
+                      {(col.Tiles ?? []).map((tile: any) => {
+                        const bg = resolveColor(tile.BGColor, themeColors);
+                        const height = tile.Height ? `${tile.Height}px` : undefined;
+                        return (
+                          <div
+                            key={tile.Id}
+                            className="phone-tile"
+                            style={{
+                              background: bg,
+                              color: tile.Color ?? '#ffffff',
+                              textAlign: tile.Align ?? 'center',
+                              height,
+                              flex: height ? undefined : 1,
+                            }}
+                          >
+                            <span className="phone-tile-text">{tile.Text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+                <div className="phone-add-row">
+                  <button className="phone-add-btn" type="button" aria-label="Add content">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

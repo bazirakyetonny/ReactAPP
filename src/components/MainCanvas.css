@@ -126,6 +126,47 @@
 .phone-screen {
   flex: 1;
   background: #f9fafb;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.phone-screen::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-tilegrid {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.phone-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.phone-tile {
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  min-height: 48px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.phone-tile-text {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .phone-add-row {
@@ -133,17 +174,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 10px 0;
+  height: 6px;
+  margin: 0 10px;
+  cursor: pointer;
+  transition: height 0.2s ease;
+}
+
+.phone-add-row:hover {
+  height: 28px;
 }
 
 .phone-add-row::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 12px;
   right: 12px;
   top: 50%;
   border-top: 1.5px dashed #b0b8c4;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.phone-add-row:hover::before {
+  opacity: 1;
 }
 
 .phone-add-btn {
@@ -160,7 +214,12 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s, color 0.15s;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.phone-add-row:hover .phone-add-btn {
+  opacity: 1;
 }
 
 .phone-add-btn:hover {

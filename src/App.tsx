@@ -25,7 +25,7 @@ function App() {
         onThemeChange={setSelectedThemeId}
       />
       <div className="app-body">
-        <MainCanvas />
+        <MainCanvas themeColors={selectedTheme?.ThemeColors} />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           themeColors={selectedTheme?.ThemeColors}
