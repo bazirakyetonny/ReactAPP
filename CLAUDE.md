@@ -31,3 +31,7 @@ This is a **React 19 + Vite 8** app structured as an **embeddable widget**, not 
 ### Linting
 
 ESLint is configured for `.js`/`.jsx` files with `react-hooks` and `react-refresh` plugins. TypeScript files (`.ts`/`.tsx`) are not yet covered by the ESLint config — extend `eslint.config.js` if TypeScript linting is needed.
+
+## App Builder
+
+- [Page Structure](app_builder/page_structure.md) — data model for app versions, pages, and page content building blocks (TileGrid, Cta, Description, Image)
