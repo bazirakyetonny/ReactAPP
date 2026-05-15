@@ -252,7 +252,9 @@ function TileGrids({
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onResizeDragStart?.(tile.Id, e.clientY, tile.Height ?? 80);
+                                const wrapEl = (e.currentTarget as HTMLElement).parentElement!;
+                                const actualHeight = wrapEl.getBoundingClientRect().height;
+                                onResizeDragStart?.(tile.Id, e.clientY, actualHeight);
                               }}
                             />
                           )}
@@ -366,12 +368,11 @@ export function MainCanvas({
       if (!dragRef.current) return;
 
       if (dragRef.current.split) {
-        const raw = Math.max(
-          SPLIT_SNAPS[0],
-          Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1],
-            dragRef.current.startHeight + (e.clientY - dragRef.current.startY) * 0.45)
-        );
-        const count = SPLIT_SNAPS.indexOf(snapSplit(raw)) + 1;
+        // Height tracks cursor 1:1, floored at minimum tile height
+        const raw = Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY));
+        // Clamp only for zone/count detection, not for displayed height
+        const clamped = Math.min(raw, SPLIT_SNAPS[SPLIT_SNAPS.length - 1]);
+        const count = SPLIT_SNAPS.indexOf(snapSplit(clamped)) + 1;
         if (count !== dragRef.current.split.currentCount) {
           dragRef.current.split.currentCount = count;
           if (count > dragRef.current.split.maxCount) {
@@ -389,6 +390,8 @@ export function MainCanvas({
     function onMouseUp() {
       if (dragRef.current?.split) {
         const { gridId, oppositeColId, currentCount, maxCount } = dragRef.current.split;
+        // Snap dragged tile height to match the committed zone on release
+        onEditTileRef.current(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1] });
         if (currentCount > 1) {
           onAddTilesToColumnRef.current?.(gridId, oppositeColId, currentCount - 1);
         }

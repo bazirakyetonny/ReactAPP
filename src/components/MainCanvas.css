@@ -138,6 +138,10 @@
   display: none;
 }
 
+.phone-screen--dragging .phone-tile-wrap {
+  transition: none;
+}
+
 .phone-screen--dragging .phone-add-row {
   height: 6px;
   pointer-events: none;
