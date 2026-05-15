@@ -213,21 +213,16 @@ function TileGrids({
                             </>
                           )}
 
-                          {/* Height resize handle — only for solo tiles in a single-column grid */}
-                          {interactive && isAlone && (
+                          {/* Invisible bottom resize zone — full width, appears for selected solo tiles */}
+                          {interactive && isAlone && isSelected && (
                             <div
-                              className="phone-tile-resize-handle"
+                              className="phone-tile-resize-zone"
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 onResizeDragStart?.(tile.Id, e.clientY, tile.Height ?? 80);
                               }}
-                            >
-                              <svg width="24" height="8" viewBox="0 0 24 8" fill="currentColor" aria-hidden="true">
-                                <rect x="2" y="1" width="20" height="1.5" rx="0.75" />
-                                <rect x="2" y="5.5" width="20" height="1.5" rx="0.75" />
-                              </svg>
-                            </div>
+                            />
                           )}
                         </div>
                       );
