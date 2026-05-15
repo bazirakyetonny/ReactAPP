@@ -215,8 +215,26 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
 
       {/* 3. Format toolbar */}
       <div className="sr-toolbar">
-        <button className="sr-tool-btn" type="button" title="Outline style"><SquareOutlineIcon /></button>
-        <button className="sr-tool-btn sr-tool-btn-active" type="button" title="Filled style"><SquareFilledIcon /></button>
+        {/* Light (#ffffff) */}
+        <button
+          className={`sr-tool-btn${selectedTile?.Color === '#ffffff' ? ' sr-tool-btn-active' : ''}`}
+          type="button"
+          title="Light text & icon (#ffffff)"
+          disabled={!selectedTile}
+          onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Color: '#ffffff' })}
+        >
+          <SquareOutlineIcon />
+        </button>
+        {/* Dark (#333333) */}
+        <button
+          className={`sr-tool-btn${selectedTile?.Color === '#333333' ? ' sr-tool-btn-active' : ''}`}
+          type="button"
+          title="Dark text & icon (#333333)"
+          disabled={!selectedTile}
+          onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Color: '#333333' })}
+        >
+          <SquareFilledIcon />
+        </button>
         <button className="sr-tool-btn" type="button" title="Center align"><AlignCenterIcon /></button>
         <button className="sr-tool-btn" type="button" title="Left align"><AlignLeftIcon /></button>
       </div>
@@ -263,7 +281,13 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
       </div>
       <div className={`sr-icon-grid${visibleIcons.length === 1 ? ' sr-icon-grid--single' : ''}`}>
         {visibleIcons.map(icon => (
-          <button key={icon.IconId} className="sr-icon-cell" type="button" title={icon.IconName}>
+          <button
+            key={icon.IconId}
+            className={`sr-icon-cell${selectedTile?.IconId === icon.IconId ? ' sr-icon-cell--active' : ''}`}
+            type="button"
+            title={icon.IconName}
+            onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { IconSVG: icon.IconSVG, IconId: icon.IconId })}
+          >
             <span
               className="sr-icon-wrap"
               dangerouslySetInnerHTML={{ __html: icon.IconSVG }}

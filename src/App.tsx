@@ -67,7 +67,7 @@ function App() {
           Id: `tile-${ts}`,
           Text: 'Title',
           BGColor: '',
-          Color: '#9ca3af',
+          Color: '#333333',
           Align: 'center',
           _new: true,
         }],

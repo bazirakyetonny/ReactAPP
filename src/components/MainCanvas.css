@@ -163,8 +163,10 @@
 .phone-tile {
   border-radius: 6px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   padding: 8px 6px;
   width: 100%;
   height: 100%;
@@ -174,9 +176,30 @@
   box-sizing: border-box;
 }
 
+.phone-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.phone-tile-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: currentColor;
+}
+
+.phone-tile-icon svg * {
+  fill: currentColor;
+}
+
 .phone-tile-text {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1.3;
   word-break: break-word;
 }
@@ -317,6 +340,19 @@
 }
 
 .phone-add-row:hover .phone-add-btn {
+  opacity: 1;
+}
+
+/* Always-visible state — used when the layout has no content */
+.phone-add-row--visible {
+  height: 28px;
+}
+
+.phone-add-row--visible::before {
+  opacity: 1;
+}
+
+.phone-add-row--visible .phone-add-btn {
   opacity: 1;
 }
 

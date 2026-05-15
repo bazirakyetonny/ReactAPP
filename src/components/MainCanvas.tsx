@@ -115,6 +115,12 @@ function TileGrids({
                             textAlign: tile.Align ?? 'center',
                           }}
                         >
+                          {tile.IconSVG && (
+                            <span
+                              className="phone-tile-icon"
+                              dangerouslySetInnerHTML={{ __html: tile.IconSVG }}
+                            />
+                          )}
                           <span className="phone-tile-text">{tile.Text}</span>
                         </div>
                         {interactive && (
@@ -218,6 +224,15 @@ export function MainCanvas({
           </div>
           <PhoneAppHeader />
           <div className="phone-screen">
+            {/* Top add-row — always visible when the structure has no content */}
+            <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`}>
+              <button className="phone-add-btn" type="button" aria-label="Add content block">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
             <TileGrids
               tileGrids={tileGrids}
               themeColors={themeColors}

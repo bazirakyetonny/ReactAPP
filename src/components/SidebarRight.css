@@ -387,6 +387,11 @@
   border-color: #d1d5db;
 }
 
+.sr-icon-cell--active {
+  background: #e8edf7;
+  border-color: #1a3a6e;
+}
+
 .sr-icon-wrap {
   display: flex;
   align-items: center;
