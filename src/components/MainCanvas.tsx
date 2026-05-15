@@ -1,4 +1,5 @@
 import './MainCanvas.css';
+import { dataStore } from '../data/datastore';
 
 function SignalBarsIcon() {
   return (
@@ -32,6 +33,32 @@ function BatteryStatusIcon() {
   );
 }
 
+function ProfileIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <circle cx="11" cy="8" r="4" fill="currentColor" />
+      <path d="M3 19c0-4.418 3.582-7 8-7s8 2.582 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+function PhoneAppHeader() {
+  const logo: string | undefined = dataStore.get('OrganisationLogo');
+  return (
+    <div className="phone-app-header">
+      <div className="phone-app-logo">
+        {logo
+          ? <img src={logo} alt="Organisation logo" className="phone-app-logo-img" />
+          : <div className="phone-app-logo-placeholder" />
+        }
+      </div>
+      <div className="phone-app-profile">
+        <ProfileIcon />
+      </div>
+    </div>
+  );
+}
+
 export function MainCanvas() {
   return (
     <main className="app-canvas">
@@ -45,6 +72,7 @@ export function MainCanvas() {
               <BatteryStatusIcon />
             </div>
           </div>
+          <PhoneAppHeader />
           <div className="phone-screen" />
         </div>
       </div>
