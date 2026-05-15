@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import './SidebarRight.css';
-import type { ThemeIcon, ThemeColors } from '../types';
+import type { ThemeIcon, ThemeColors, Mood } from '../types';
 
 const COLOR_ORDER: (keyof ThemeColors)[] = [
   'primaryColor', 'secondaryColor', 'accentColor',
@@ -9,6 +9,19 @@ const COLOR_ORDER: (keyof ThemeColors)[] = [
 ];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
+
+function MoodToggleIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+      <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="6.5" y1="1" x2="6.5" y2="4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="6.5" y1="9" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="6.5" x2="4" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="9" y1="6.5" x2="12" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function PlusSmIcon() {
   return (
@@ -177,8 +190,13 @@ const CONTACTS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors }: { themeIcons?: ThemeIcon[]; themeColors?: ThemeColors }) {
+export function SidebarRight({ themeIcons = [], themeColors, moods = [] }: {
+  themeIcons?: ThemeIcon[];
+  themeColors?: ThemeColors;
+  moods?: Mood[];
+}) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
+  const [showMoods, setShowMoods] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -210,13 +228,48 @@ export function SidebarRight({ themeIcons = [], themeColors }: { themeIcons?: Th
         <button className="sr-tab" type="button">TEMPLATE</button>
       </div>
 
-      {/* 2. Color palette + zoom */}
+      {/* 2a. Color chips / mood chips + toggle */}
       <div className="sr-palette-row">
         <div className="sr-palette">
-          {palette.map(c => (
-            <button key={c} className="sr-palette-chip" style={{ background: c }} type="button" aria-label={c} />
-          ))}
+          {showMoods ? (
+            moods.length === 0 ? (
+              <span className="sr-zoom-label">No moods</span>
+            ) : (
+              moods.map(mood => (
+                <button
+                  key={mood.MoodId}
+                  className="sr-mood-chip"
+                  type="button"
+                  title={mood.MoodName}
+                >
+                  {mood.MoodColors.slice(0, 4).map(mc => (
+                    <span
+                      key={mc.MoodColorId}
+                      className="sr-mood-dot"
+                      style={{ background: mc.ColorCode }}
+                    />
+                  ))}
+                </button>
+              ))
+            )
+          ) : (
+            palette.map(c => (
+              <button key={c} className="sr-palette-chip" style={{ background: c }} type="button" aria-label={c} />
+            ))
+          )}
         </div>
+        <button
+          className={`sr-icon-btn${showMoods ? ' sr-icon-btn-active' : ''}`}
+          type="button"
+          title={showMoods ? 'Show theme colors' : 'Show moods'}
+          onClick={() => setShowMoods(v => !v)}
+        >
+          <MoodToggleIcon />
+        </button>
+      </div>
+
+      {/* 2b. Palette tools */}
+      <div className="sr-palette-row">
         <button className="sr-icon-btn" type="button" title="Add color">
           <PlusSmIcon />
         </button>

@@ -1,5 +1,5 @@
 .app-sidebar-right {
-  width: 220px;
+  width: 260px;
   flex-shrink: 0;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
@@ -92,6 +92,39 @@
 .sr-icon-btn:hover {
   background: #f3f4f6;
   color: #374151;
+}
+
+.sr-icon-btn-active {
+  background: #e5e7eb;
+  color: #1a3a6e;
+}
+
+/* ── Mood chips ─────────────────────────────────────────────────────────────── */
+
+.sr-mood-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+  padding: 0 3px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.1s, transform 0.1s;
+}
+
+.sr-mood-chip:hover {
+  border-color: #1a3a6e;
+  transform: scale(1.08);
+}
+
+.sr-mood-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .sr-zoom-label {
@@ -457,7 +490,7 @@
 
 @media (max-width: 900px) {
   .app-sidebar-right {
-    width: 190px;
+    width: 230px;
   }
 }
 
