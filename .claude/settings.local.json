@@ -3,7 +3,8 @@
     "allow": [
       "PowerShell(netstat -ano)",
       "Skill(commit)",
-      "Skill(commit:*)"
+      "Skill(commit:*)",
+      "Bash(npm run *)"
     ]
   }
 }
