@@ -100,14 +100,58 @@ function PhoneAppHeader() {
 interface SplitPreview {
   gridId: string;
   oppositeColId: string;
-  count: number; // 1 = no extra tiles, 2 = 1 skeleton, 3 = 2 skeletons
+  count: number;
 }
 
 interface FreeResizePreview {
   gridId: string;
   oppColId: string;
-  activeCount: number;       // real tiles at index >= activeCount are ghosts (will be released)
-  extraSkeletonCount: number; // skeleton tiles to show beyond existing tiles (will be added)
+  activeCount: number;
+  extraSkeletonCount: number;
+}
+
+export interface TileDropPreview {
+  targetGridId: string;
+  targetColId: string;
+  insertIndex: number;               // insert before this index; = tiles.length means append
+  newColumn: boolean;                // add tile as a new column
+  insertColAfterColId: string | null; // for newColumn: null=prepend, colId=insert after
+  isColumnSwap: boolean;             // swap two columns in the same grid
+  valid: boolean;
+}
+
+// Inject a skeleton column placeholder into the cols array for the new-column drop preview.
+function getColsForRender(
+  cols: any[],
+  gridId: string,
+  preview: TileDropPreview | null | undefined,
+): Array<any | { _newColSkeleton: true }> {
+  if (!preview || !preview.newColumn || preview.targetGridId !== gridId || !preview.valid) return cols;
+  const result: Array<any | { _newColSkeleton: true }> = [...cols];
+  const afterIdx = preview.insertColAfterColId
+    ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId)
+    : -1;
+  result.splice(afterIdx + 1, 0, { _newColSkeleton: true as const });
+  return result;
+}
+
+// Inject a drop-slot placeholder into the tiles array for the within-column drop preview.
+function getTilesForRender(
+  col: any,
+  gridId: string,
+  preview: TileDropPreview | null | undefined,
+): Array<{ tile: any; origIndex: number } | { _slot: true }> {
+  const tiles: any[] = col.Tiles ?? [];
+  const withIdx = tiles.map((tile, i) => ({ tile, origIndex: i }));
+  if (
+    !preview || preview.newColumn || preview.isColumnSwap || !preview.valid ||
+    preview.targetColId !== col.ColId || preview.targetGridId !== gridId
+  ) {
+    return withIdx;
+  }
+  const result: Array<{ tile: any; origIndex: number } | { _slot: true }> = [...withIdx];
+  result.splice(preview.insertIndex, 0, { _slot: true as const });
+  return result;
 }
 
 interface TileGridsProps {
@@ -123,6 +167,17 @@ interface TileGridsProps {
   activeDragTileId?: string | null;
   splitPreview?: SplitPreview | null;
   freeResizePreview?: FreeResizePreview | null;
+  // Tile position drag
+  onColRef?: (colId: string, el: HTMLElement | null) => void;
+  onGridRef?: (gridId: string, el: HTMLElement | null) => void;
+  onTileDragStart?: (
+    e: React.MouseEvent, el: HTMLElement,
+    tileId: string, gridId: string, colId: string,
+    tileIndex: number, colTileCount: number, gridColCount: number,
+    tile: any,
+  ) => void;
+  tileDragId?: string | null;
+  tileDropPreview?: TileDropPreview | null;
 }
 
 function TileGrids({
@@ -138,6 +193,11 @@ function TileGrids({
   activeDragTileId,
   splitPreview,
   freeResizePreview,
+  onColRef,
+  onGridRef,
+  onTileDragStart,
+  tileDragId,
+  tileDropPreview,
 }: TileGridsProps) {
   return (
     <>
@@ -147,10 +207,21 @@ function TileGrids({
         const canAddColumn =
           !atMax &&
           !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
+
+        const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview);
+
         return (
           <div key={grid.InfoId}>
-            <div className="phone-tilegrid">
-              {cols.map((col: any) => {
+            <div
+              className="phone-tilegrid"
+              ref={(el) => onGridRef?.(grid.InfoId, el as HTMLElement | null)}
+            >
+              {renderedCols.map((colOrSkel: any) => {
+                if (colOrSkel._newColSkeleton) {
+                  return <div key="new-col-skel" className="phone-column phone-column--new-col-preview" />;
+                }
+
+                const col = colOrSkel;
                 const canResize =
                   (cols.length === 1 && (col.Tiles ?? []).length === 1) ||
                   (cols.length === 2 && (col.Tiles ?? []).length === 1);
@@ -164,14 +235,39 @@ function TileGrids({
                   grid.InfoId === freeResizePreview.gridId &&
                   col.ColId === freeResizePreview.oppColId
                 );
+
+                const isDropTargetCol = !!(
+                  tileDropPreview &&
+                  tileDropPreview.targetGridId === grid.InfoId &&
+                  tileDropPreview.targetColId === col.ColId &&
+                  !tileDropPreview.newColumn
+                );
+                const dropColClass = isDropTargetCol
+                  ? (tileDropPreview!.valid ? ' phone-column--drop-valid' : ' phone-column--drop-invalid')
+                  : '';
+
+                const tilesForRender = getTilesForRender(col, grid.InfoId, tileDropPreview);
+
                 return (
-                  <div key={col.ColId} className="phone-column">
-                    {(col.Tiles ?? []).map((tile: any, tileIndex: number) => {
+                  <div
+                    key={col.ColId}
+                    className={`phone-column${dropColClass}`}
+                    ref={(el) => onColRef?.(col.ColId, el as HTMLElement | null)}
+                  >
+                    {tilesForRender.map((item: any) => {
+                      if (item._slot) {
+                        return (
+                          <div key="drop-slot" className="phone-tile-drop-slot" style={{ height: `${TILE_H}px` }} />
+                        );
+                      }
+
+                      const { tile, origIndex: tileIndex } = item;
                       const isPlaceholder = tile._new === true;
                       const bg = resolveColor(tile.BGColor, themeColors);
                       const height = `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
+                      const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const hasIcon = !!tile.IconSVG;
                       const hasText = !!tile.Text;
@@ -194,9 +290,31 @@ function TileGrids({
                       return (
                         <div
                           key={tile.Id}
-                          className={`phone-tile-wrap${isSelected ? ' selected' : ''}${isGhost ? ' phone-tile-wrap--ghost' : ''}`}
+                          className={[
+                            'phone-tile-wrap',
+                            isSelected ? 'selected' : '',
+                            isGhost ? 'phone-tile-wrap--ghost' : '',
+                            isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
+                          ].filter(Boolean).join(' ')}
                           style={{ height }}
-                          onClick={interactive && onSelectTile ? () => onSelectTile(tile.Id) : undefined}
+                          onClick={interactive && onSelectTile
+                            ? () => onSelectTile(tile.Id)
+                            : undefined}
+                          onDragStart={(e) => e.preventDefault()}
+                          onMouseDown={interactive && onTileDragStart ? (e: React.MouseEvent) => {
+                            const target = e.target as HTMLElement;
+                            if (
+                              target.closest('button') ||
+                              target.closest('.phone-tile-resize-zone') ||
+                              activeDragTileId
+                            ) return;
+                            onTileDragStart(
+                              e, e.currentTarget as HTMLElement,
+                              tile.Id, grid.InfoId, col.ColId,
+                              tileIndex, (col.Tiles ?? []).length, cols.length,
+                              tile,
+                            );
+                          } : undefined}
                         >
                           <div
                             className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : ''}`}
@@ -270,7 +388,6 @@ function TileGrids({
                             </>
                           )}
 
-                          {/* Resize zone — visible for solo tile or 2-col/1-tile layout */}
                           {interactive && canResize && isSelected && (
                             <div
                               className="phone-tile-resize-zone"
@@ -286,6 +403,7 @@ function TileGrids({
                         </div>
                       );
                     })}
+
                     {/* Skeleton tiles shown in the opposite column during a split drag */}
                     {isSplitOpposite && Array.from({ length: (splitPreview?.count ?? 1) - 1 }).map((_, i) => (
                       <div key={`skeleton-${i}`} className="phone-tile-wrap" style={{ height: `${TILE_H}px` }}>
@@ -330,6 +448,7 @@ interface MainCanvasProps {
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onAddStandaloneTile?: () => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
+  onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
 }
 
 export function MainCanvas({
@@ -343,23 +462,37 @@ export function MainCanvas({
   onAddTilesToColumn,
   onAddStandaloneTile,
   onFreeResizeRelease,
+  onTileDrop,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
+  // ── Resize drag state ─────────────────────────────────────────────────────
   const [dragTileId, setDragTileId] = useState<string | null>(null);
   const [splitPreview, setSplitPreview] = useState<SplitPreview | null>(null);
   const [freeResizePreview, setFreeResizePreview] = useState<FreeResizePreview | null>(null);
 
-  // Stable refs so the drag effect never needs to re-run due to callback identity changes
+  // ── Tile position drag state ──────────────────────────────────────────────
+  const [tileDragId, setTileDragId] = useState<string | null>(null);
+  const [tileDropPreview, setTileDropPreview] = useState<TileDropPreview | null>(null);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Stable refs so effects never need to re-run due to callback identity changes
   const onEditTileRef = useRef(onEditTile);
   const onAddTilesToColumnRef = useRef(onAddTilesToColumn);
   const onAddStandaloneTileRef = useRef(onAddStandaloneTile);
   const onFreeResizeReleaseRef = useRef(onFreeResizeRelease);
+  const onTileDropRef = useRef(onTileDrop);
+  const infoContentRef = useRef(infoContent);
+  const themeColorsRef = useRef(themeColors);
   useEffect(() => { onEditTileRef.current = onEditTile; });
   useEffect(() => { onAddTilesToColumnRef.current = onAddTilesToColumn; });
   useEffect(() => { onAddStandaloneTileRef.current = onAddStandaloneTile; });
   useEffect(() => { onFreeResizeReleaseRef.current = onFreeResizeRelease; });
+  useEffect(() => { onTileDropRef.current = onTileDrop; });
+  useEffect(() => { infoContentRef.current = infoContent; });
+  useEffect(() => { themeColorsRef.current = themeColors; });
 
+  // Resize drag ref
   const dragRef = useRef<{
     startY: number;
     startHeight: number;
@@ -379,6 +512,31 @@ export function MainCanvas({
     } | null;
   } | null>(null);
 
+  // Tile position drag ref
+  const tileDragInfoRef = useRef<{
+    tileId: string;
+    fromGridId: string;
+    fromColId: string;
+    fromTileIndex: number;
+    fromColTileCount: number;
+    fromGridColCount: number;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    hasMoved: boolean;
+    ghostWidth: number;
+    ghostHeight: number;
+    bgColor: string;
+    tileColor: string;
+    tileData: any;
+  } | null>(null);
+
+  // DOM refs for drop-zone hit testing
+  const colElRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const gridElRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // ── Resize drag ───────────────────────────────────────────────────────────
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
     setDragTileId(tileId);
 
@@ -461,7 +619,6 @@ export function MainCanvas({
     function onMouseUp() {
       if (dragRef.current?.split) {
         const { gridId, oppositeColId, currentCount, maxCount } = dragRef.current.split;
-        // Snap dragged tile height to match the committed zone on release
         onEditTileRef.current(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1] });
         if (currentCount > 1) {
           onAddTilesToColumnRef.current?.(gridId, oppositeColId, currentCount - 1);
@@ -495,6 +652,181 @@ export function MainCanvas({
     };
   }, [dragTileId]);
 
+  // ── Tile position drag helpers ────────────────────────────────────────────
+
+  function calcInsertIndexInCol(col: any, y: number): number {
+    const colEl = colElRefs.current.get(col.ColId);
+    if (!colEl) return (col.Tiles ?? []).length;
+    const colRect = colEl.getBoundingClientRect();
+    let cumY = colRect.top;
+    const tiles: any[] = col.Tiles ?? [];
+    for (let i = 0; i < tiles.length; i++) {
+      const h = tiles[i].Height ?? TILE_H;
+      if (y < cumY + h / 2) return i;
+      cumY += h + TILE_GAP;
+    }
+    return tiles.length;
+  }
+
+  function findColByX(cols: any[], x: number): any | null {
+    for (const col of cols) {
+      const el = colElRefs.current.get(col.ColId);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (x >= rect.left - 4 && x <= rect.right + 4) return col;
+    }
+    return null;
+  }
+
+  function findInsertColAfterColId(cols: any[], x: number): string | null {
+    for (let i = cols.length - 1; i >= 0; i--) {
+      const el = colElRefs.current.get(cols[i].ColId);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (x > rect.left + rect.width / 2) return cols[i].ColId;
+    }
+    return null;
+  }
+
+  function calcDropTarget(x: number, y: number): TileDropPreview | null {
+    const drag = tileDragInfoRef.current;
+    if (!drag || !drag.hasMoved) return null;
+
+    const grids = infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid');
+
+    for (const grid of grids) {
+      const gridEl = gridElRefs.current.get(grid.InfoId);
+      if (!gridEl) continue;
+      const rect = gridEl.getBoundingClientRect();
+      if (y < rect.top - 12 || y > rect.bottom + 12 || x < rect.left - 16 || x > rect.right + 16) continue;
+
+      const cols: any[] = grid.Columns ?? [];
+      const hoverCol = findColByX(cols, x);
+      if (!hoverCol) continue;
+
+      const sameGrid = grid.InfoId === drag.fromGridId;
+      const hoverTileCount = (hoverCol.Tiles ?? []).length;
+
+      if (sameGrid) {
+        if (hoverCol.ColId === drag.fromColId) {
+          // Same column — reorder (only multi-tile columns)
+          if (drag.fromColTileCount <= 1) {
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
+          }
+          const insertIndex = calcInsertIndexInCol(hoverCol, y);
+          const isSamePos = insertIndex === drag.fromTileIndex || insertIndex === drag.fromTileIndex + 1;
+          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: !isSamePos };
+        } else {
+          // Different column in same grid
+          if (drag.fromColTileCount === 1) {
+            // Single-tile column → swap columns
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true };
+          }
+          // Multi-tile → can't drop into the single-tile sibling column
+          if (hoverTileCount === 1) {
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
+          }
+          return null;
+        }
+      } else {
+        // Cross-grid drop
+        const allSingle = cols.every((c: any) => (c.Tiles ?? []).length === 1);
+        const hasMultiCol = cols.some((c: any) => (c.Tiles ?? []).length > 1);
+
+        if (allSingle) {
+          if (cols.length >= 3) {
+            // Grid already at 3-column max
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
+          }
+          const insertColAfterColId = findInsertColAfterColId(cols, x);
+          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: true, insertColAfterColId, isColumnSwap: false, valid: true };
+        }
+
+        if (hasMultiCol) {
+          if (hoverTileCount === 1) {
+            // Single-tile column in a mixed grid — invalid
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
+          }
+          if (hoverTileCount >= 3) {
+            // Multi-tile column already full
+            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
+          }
+          const insertIndex = calcInsertIndexInCol(hoverCol, y);
+          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: true };
+        }
+      }
+    }
+    return null;
+  }
+
+  // ── Tile position drag start ──────────────────────────────────────────────
+  // Listeners are attached here directly so tileDragId (and therefore
+  // pointer-events:none on the source tile) is only set AFTER the 4px movement
+  // threshold. This keeps a plain click fully functional.
+  function handleTileDragStart(
+    e: React.MouseEvent,
+    tileWrapEl: HTMLElement,
+    tileId: string,
+    gridId: string,
+    colId: string,
+    tileIndex: number,
+    colTileCount: number,
+    gridColCount: number,
+    tile: any,
+  ) {
+    const rect = tileWrapEl.getBoundingClientRect();
+    tileDragInfoRef.current = {
+      tileId, fromGridId: gridId, fromColId: colId,
+      fromTileIndex: tileIndex, fromColTileCount: colTileCount, fromGridColCount: gridColCount,
+      startX: e.clientX, startY: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      hasMoved: false,
+      ghostWidth: rect.width,
+      ghostHeight: rect.height,
+      bgColor: resolveColor(tile.BGColor, themeColorsRef.current),
+      tileColor: tile.Color ?? '#ffffff',
+      tileData: tile,
+    };
+
+    function onMove(ev: MouseEvent) {
+      const drag = tileDragInfoRef.current;
+      if (!drag) return;
+      if (!drag.hasMoved) {
+        if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
+        drag.hasMoved = true;
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+        setTileDragId(drag.tileId); // only now — avoids pointer-events:none during click
+      }
+      setGhostPos({ x: ev.clientX, y: ev.clientY });
+      setTileDropPreview(calcDropTarget(ev.clientX, ev.clientY));
+    }
+
+    function onUp(ev: MouseEvent) {
+      const drag = tileDragInfoRef.current;
+      if (drag?.hasMoved) {
+        const preview = calcDropTarget(ev.clientX, ev.clientY);
+        if (preview?.valid) {
+          onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, preview);
+        }
+        setTileDragId(null);
+        setTileDropPreview(null);
+        setGhostPos(null);
+      }
+      tileDragInfoRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  const isDraggingAnything = !!dragTileId || !!tileDragId;
+
   return (
     <main className="app-canvas">
       <div className="canvas-stage">
@@ -508,7 +840,7 @@ export function MainCanvas({
             </div>
           </div>
           <PhoneAppHeader />
-          <div className={`phone-screen${dragTileId ? ' phone-screen--dragging' : ''}`}>
+          <div className={`phone-screen${isDraggingAnything ? ' phone-screen--dragging' : ''}`}>
             {/* Top add-row — always visible when the structure has no content */}
             <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`}>
               <button className="phone-add-btn" type="button" aria-label="Add content block">
@@ -531,10 +863,42 @@ export function MainCanvas({
               activeDragTileId={dragTileId}
               splitPreview={splitPreview}
               freeResizePreview={freeResizePreview}
+              onColRef={(id, el) => {
+                if (el) colElRefs.current.set(id, el);
+                else colElRefs.current.delete(id);
+              }}
+              onGridRef={(id, el) => {
+                if (el) gridElRefs.current.set(id, el);
+                else gridElRefs.current.delete(id);
+              }}
+              onTileDragStart={handleTileDragStart}
+              tileDragId={tileDragId}
+              tileDropPreview={tileDropPreview}
             />
           </div>
         </div>
       </div>
+
+      {/* Floating ghost tile that follows the cursor during tile drag */}
+      {ghostPos && tileDragInfoRef.current && (
+        <div
+          className="phone-tile-floating-ghost"
+          style={{
+            left: ghostPos.x - tileDragInfoRef.current.offsetX,
+            top: ghostPos.y - tileDragInfoRef.current.offsetY,
+            width: tileDragInfoRef.current.ghostWidth,
+            height: tileDragInfoRef.current.ghostHeight,
+            background: tileDragInfoRef.current.bgColor,
+            color: tileDragInfoRef.current.tileColor,
+          }}
+        >
+          {tileDragInfoRef.current.tileData?.Text && (
+            <span className="phone-tile-text" style={{ padding: '0 6px' }}>
+              {tileDragInfoRef.current.tileData.Text}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Page thumbnail */}
       <div className="page-thumbnails">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import "./App.css";
 import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
+import type { TileDropPreview } from './components/MainCanvas';
 import { SidebarRight } from './components/SidebarRight';
 import { dataStore } from './data/datastore';
 import type { Theme, Mood } from './types';
@@ -244,6 +245,115 @@ function App() {
     });
   }
 
+  function handleTileDrop(fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) {
+    if (preview.isColumnSwap) {
+      setInfoContent(prev => prev.map(block => {
+        if (block.InfoId !== fromGridId) return block;
+        const cols = [...(block.Columns ?? [])];
+        const i1 = cols.findIndex((c: any) => c.ColId === fromColId);
+        const i2 = cols.findIndex((c: any) => c.ColId === preview.targetColId);
+        if (i1 === -1 || i2 === -1) return block;
+        [cols[i1], cols[i2]] = [cols[i2], cols[i1]];
+        return { ...block, Columns: cols };
+      }));
+      return;
+    }
+
+    if (fromGridId === preview.targetGridId && fromColId === preview.targetColId && !preview.newColumn) {
+      // Reorder within the same column
+      setInfoContent(prev => prev.map(block => {
+        if (block.InfoId !== fromGridId) return block;
+        return {
+          ...block,
+          Columns: (block.Columns ?? []).map((col: any) => {
+            if (col.ColId !== fromColId) return col;
+            const tiles = [...(col.Tiles ?? [])];
+            const fromIdx = tiles.findIndex((t: any) => t.Id === tileId);
+            if (fromIdx === -1) return col;
+            const [moved] = tiles.splice(fromIdx, 1);
+            const targetIdx = preview.insertIndex > fromIdx ? preview.insertIndex - 1 : preview.insertIndex;
+            tiles.splice(targetIdx, 0, moved);
+            return { ...col, Tiles: tiles };
+          }),
+        };
+      }));
+      return;
+    }
+
+    // Cross-grid move
+    setInfoContent(prev => {
+      let movedTile: any = null;
+
+      // Step 1: remove tile from source, handle source grid cleanup
+      const afterRemove = prev.flatMap((block: any) => {
+        if (block.InfoId !== fromGridId) return [block];
+        const cols: any[] = block.Columns ?? [];
+        const origColCount = cols.length;
+        const srcCol = cols.find((c: any) => c.ColId === fromColId);
+        if (!srcCol) return [block];
+        movedTile = (srcCol.Tiles ?? []).find((t: any) => t.Id === tileId);
+
+        const newCols = cols
+          .map((col: any) => col.ColId !== fromColId ? col : {
+            ...col,
+            Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
+          })
+          .filter((col: any) => (col.Tiles ?? []).length > 0);
+
+        if (newCols.length === 0) return [];
+
+        // Removing the sole tile from a 1-tile column in a 2-col (1+multi) grid:
+        // explode the remaining multi-tile column into independent grids.
+        if (origColCount === 2 && newCols.length === 1 && (newCols[0].Tiles ?? []).length > 1) {
+          const ts = Date.now();
+          return (newCols[0].Tiles as any[]).map((tile: any, i: number) => ({
+            InfoId: `grid-${ts}-${i}`,
+            InfoType: 'TileGrid',
+            Columns: [{ ColId: `col-${ts}-${i}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+          }));
+        }
+
+        return [{ ...block, Columns: newCols }];
+      });
+
+      if (!movedTile) return prev;
+
+      // Height always resets to default when a tile moves to a new grid
+      const droppedTile = { ...movedTile, Height: TILE_H };
+      const ts2 = Date.now() + 1;
+
+      // Step 2: insert tile into target grid
+      const targetIdx = afterRemove.findIndex((b: any) => b.InfoId === preview.targetGridId);
+      if (targetIdx === -1) return afterRemove;
+
+      const targetBlock = afterRemove[targetIdx];
+
+      if (preview.newColumn) {
+        // Add as a new column at the position indicated by insertColAfterColId
+        const newCol = { ColId: `col-${ts2}`, Tiles: [droppedTile] };
+        const cols = [...(targetBlock.Columns ?? [])];
+        const afterIdx = preview.insertColAfterColId
+          ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId)
+          : -1;
+        cols.splice(afterIdx + 1, 0, newCol);
+        const newBlock = { ...targetBlock, Columns: cols };
+        return [...afterRemove.slice(0, targetIdx), newBlock, ...afterRemove.slice(targetIdx + 1)];
+      }
+
+      // Insert into existing column
+      const newBlock = {
+        ...targetBlock,
+        Columns: (targetBlock.Columns ?? []).map((col: any) => {
+          if (col.ColId !== preview.targetColId) return col;
+          const tiles = [...(col.Tiles ?? [])];
+          tiles.splice(preview.insertIndex, 0, droppedTile);
+          return { ...col, Tiles: tiles };
+        }),
+      };
+      return [...afterRemove.slice(0, targetIdx), newBlock, ...afterRemove.slice(targetIdx + 1)];
+    });
+  }
+
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => prev.map(block => {
       if (block.InfoType !== 'TileGrid') return block;
@@ -278,6 +388,7 @@ function App() {
           onAddTilesToColumn={handleAddTilesToColumn}
           onAddStandaloneTile={handleAddStandaloneTile}
           onFreeResizeRelease={handleFreeResizeRelease}
+          onTileDrop={handleTileDrop}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
