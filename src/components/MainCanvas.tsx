@@ -131,6 +131,10 @@ interface FreeResizePreview {
   extraSkeletonCount: number;
 }
 
+export interface BlockInsertPreview {
+  insertBeforeInfoId: string | null; // null = append after all blocks
+}
+
 export interface TileDropPreview {
   targetGridId: string;
   targetColId: string;
@@ -201,6 +205,8 @@ interface TileGridsProps {
   tileDragId?: string | null;
   tileDropPreview?: TileDropPreview | null;
   tileDragFromGridId?: string | null;
+  blockInsertPreview?: BlockInsertPreview | null;
+  isDraggingTile?: boolean;
 }
 
 function TileGrids({
@@ -223,10 +229,12 @@ function TileGrids({
   tileDragId,
   tileDropPreview,
   tileDragFromGridId,
+  blockInsertPreview,
+  isDraggingTile = false,
 }: TileGridsProps) {
   return (
     <>
-      {tileGrids.map((grid: any) => {
+      {tileGrids.map((grid: any, gridIdx: number) => {
         const cols: any[] = grid.Columns ?? [];
         const atMax = cols.length >= 3;
         const canAddColumn =
@@ -259,6 +267,16 @@ function TileGrids({
             previewLongHeight = newCount * TILE_H + Math.max(0, newCount - 1) * TILE_GAP;
           }
         }
+
+        // The add-row after this grid doubles as the inter-block drop zone.
+        // For all grids except the last it maps to "insert before next grid";
+        // for the last grid it maps to "append after all grids" (null).
+        const dropZoneId = gridIdx < tileGrids.length - 1
+          ? tileGrids[gridIdx + 1].InfoId
+          : null;
+        const isAddRowDropActive = isDraggingTile &&
+          blockInsertPreview != null &&
+          blockInsertPreview.insertBeforeInfoId === dropZoneId;
 
         return (
           <div key={grid.InfoId}>
@@ -485,7 +503,11 @@ function TileGrids({
               })}
             </div>
             {interactive && (
-              <div className="phone-add-row">
+              <div className={[
+                'phone-add-row',
+                isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
+                isAddRowDropActive ? 'phone-add-row--tile-drop-zone-active' : '',
+              ].filter(Boolean).join(' ')}>
                 <button className="phone-add-btn" type="button" aria-label="Add content">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -514,6 +536,7 @@ interface MainCanvasProps {
   onAddStandaloneTile?: () => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
+  onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
 }
 
 export function MainCanvas({
@@ -529,6 +552,7 @@ export function MainCanvas({
   onAddStandaloneTile,
   onFreeResizeRelease,
   onTileDrop,
+  onTileDropAsNewBlock,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -540,6 +564,7 @@ export function MainCanvas({
   // ── Tile position drag state ──────────────────────────────────────────────
   const [tileDragId, setTileDragId] = useState<string | null>(null);
   const [tileDropPreview, setTileDropPreview] = useState<TileDropPreview | null>(null);
+  const [blockInsertPreview, setBlockInsertPreview] = useState<BlockInsertPreview | null>(null);
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
 
   // Stable refs so effects never need to re-run due to callback identity changes
@@ -548,6 +573,7 @@ export function MainCanvas({
   const onAddStandaloneTileRef = useRef(onAddStandaloneTile);
   const onFreeResizeReleaseRef = useRef(onFreeResizeRelease);
   const onTileDropRef = useRef(onTileDrop);
+  const onTileDropAsNewBlockRef = useRef(onTileDropAsNewBlock);
   const infoContentRef = useRef(infoContent);
   const themeColorsRef = useRef(themeColors);
   useEffect(() => { onEditTileRef.current = onEditTile; });
@@ -555,6 +581,7 @@ export function MainCanvas({
   useEffect(() => { onAddStandaloneTileRef.current = onAddStandaloneTile; });
   useEffect(() => { onFreeResizeReleaseRef.current = onFreeResizeRelease; });
   useEffect(() => { onTileDropRef.current = onTileDrop; });
+  useEffect(() => { onTileDropAsNewBlockRef.current = onTileDropAsNewBlock; });
   useEffect(() => { infoContentRef.current = infoContent; });
   useEffect(() => { themeColorsRef.current = themeColors; });
 
@@ -824,6 +851,47 @@ export function MainCanvas({
     return null;
   }
 
+  function calcBlockInsertTarget(x: number, y: number): BlockInsertPreview | null {
+    const drag = tileDragInfoRef.current;
+    if (!drag || !drag.hasMoved) return null;
+
+    const grids = infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid');
+    if (grids.length === 0) return null;
+
+    const entries: Array<{ id: string; rect: DOMRect }> = [];
+    for (const g of grids) {
+      const rect = gridRectsSnapshot.current.get(g.InfoId);
+      if (rect) entries.push({ id: g.InfoId, rect });
+    }
+    if (entries.length === 0) return null;
+
+    // X bounds — cursor must be within the phone grid column area
+    const { left, right } = entries[0].rect;
+    if (x < left - 16 || x > right + 16) return null;
+
+    // Before first grid — cursor in top add-row area (up to 60px above the first grid)
+    if (y >= entries[0].rect.top - 60 && y < entries[0].rect.top + 4) {
+      return { insertBeforeInfoId: entries[0].id };
+    }
+
+    // Between adjacent grids — zone starts the moment the cursor leaves grid[i]
+    // and stays active until 4 px into grid[i+1], giving clear visual priority
+    // over calcDropTarget even though both tolerances overlap.
+    for (let i = 0; i < entries.length - 1; i++) {
+      if (y >= entries[i].rect.bottom && y <= entries[i + 1].rect.top + 4) {
+        return { insertBeforeInfoId: entries[i + 1].id };
+      }
+    }
+
+    // After last grid — cursor in bottom add-row area (up to 60px below)
+    const last = entries[entries.length - 1];
+    if (y > last.rect.bottom - 4 && y <= last.rect.bottom + 60) {
+      return { insertBeforeInfoId: null };
+    }
+
+    return null;
+  }
+
   // ── Tile position drag start ──────────────────────────────────────────────
   // Listeners are attached here directly so tileDragId (and therefore
   // pointer-events:none on the source tile) is only set AFTER the 4px movement
@@ -872,18 +940,32 @@ export function MainCanvas({
         setTileDragId(drag.tileId); // only now — avoids pointer-events:none during click
       }
       setGhostPos({ x: ev.clientX, y: ev.clientY });
-      setTileDropPreview(calcDropTarget(ev.clientX, ev.clientY));
+      const blockInsert = calcBlockInsertTarget(ev.clientX, ev.clientY);
+      if (blockInsert) {
+        setTileDropPreview(null);
+        setBlockInsertPreview(blockInsert);
+      } else {
+        const inGrid = calcDropTarget(ev.clientX, ev.clientY);
+        setTileDropPreview(inGrid);
+        setBlockInsertPreview(null);
+      }
     }
 
     function onUp(ev: MouseEvent) {
       const drag = tileDragInfoRef.current;
       if (drag?.hasMoved) {
-        const preview = calcDropTarget(ev.clientX, ev.clientY);
-        if (preview?.valid) {
-          onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, preview);
+        const blockInsert = calcBlockInsertTarget(ev.clientX, ev.clientY);
+        if (blockInsert) {
+          onTileDropAsNewBlockRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, blockInsert.insertBeforeInfoId);
+        } else {
+          const inGrid = calcDropTarget(ev.clientX, ev.clientY);
+          if (inGrid?.valid) {
+            onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, inGrid);
+          }
         }
         setTileDragId(null);
         setTileDropPreview(null);
+        setBlockInsertPreview(null);
         setGhostPos(null);
       }
       tileDragInfoRef.current = null;
@@ -913,8 +995,14 @@ export function MainCanvas({
           </div>
           <PhoneAppHeader />
           <div className={`phone-screen${isDraggingAnything ? ' phone-screen--dragging' : ''}`}>
-            {/* Top add-row — always visible when the structure has no content */}
-            <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`}>
+            {/* Top add-row — always visible when empty; doubles as drop zone before the first grid */}
+            <div className={[
+              'phone-add-row',
+              infoContent.length === 0 ? 'phone-add-row--visible' : '',
+              !!tileDragId && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
+              !!tileDragId && !!blockInsertPreview && blockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
+                ? 'phone-add-row--tile-drop-zone-active' : '',
+            ].filter(Boolean).join(' ')}>
               <button className="phone-add-btn" type="button" aria-label="Add content block">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -948,6 +1036,8 @@ export function MainCanvas({
               tileDragId={tileDragId}
               tileDropPreview={tileDropPreview}
               tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
+              blockInsertPreview={blockInsertPreview}
+              isDraggingTile={!!tileDragId}
             />
           </div>
         </div>

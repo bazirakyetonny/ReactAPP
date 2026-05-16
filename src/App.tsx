@@ -396,6 +396,90 @@ function App() {
     });
   }
 
+  function handleTileDropAsNewBlock(fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) {
+    setInfoContent(prev => {
+      const sourceBlock = prev.find((b: any) => b.InfoId === fromGridId);
+      if (!sourceBlock) return prev;
+
+      const totalTiles = (sourceBlock.Columns ?? []).reduce(
+        (sum: number, col: any) => sum + (col.Tiles ?? []).length, 0
+      );
+
+      if (totalTiles === 1) {
+        // Lone tile — move the whole TileGrid block as-is; no extraction, no new block.
+        // This also enables swapping two standalone blocks cleanly.
+        const withoutSource = prev.filter((b: any) => b.InfoId !== fromGridId);
+        if (insertBeforeInfoId === null) return [...withoutSource, sourceBlock];
+        const insertIdx = withoutSource.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+        if (insertIdx === -1) return [...withoutSource, sourceBlock];
+        return [...withoutSource.slice(0, insertIdx), sourceBlock, ...withoutSource.slice(insertIdx)];
+      }
+
+      // Multi-tile source: extract the tile and place it in a new standalone block.
+      let movedTile: any = null;
+
+      const afterRemove = prev.flatMap((block: any) => {
+        if (block.InfoId !== fromGridId) return [block];
+        const cols: any[] = block.Columns ?? [];
+        const origColCount = cols.length;
+        const srcCol = cols.find((c: any) => c.ColId === fromColId);
+        if (!srcCol) return [block];
+        movedTile = (srcCol.Tiles ?? []).find((t: any) => t.Id === tileId);
+
+        const newCols = cols
+          .map((col: any) => col.ColId !== fromColId ? col : {
+            ...col,
+            Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
+          })
+          .filter((col: any) => (col.Tiles ?? []).length > 0);
+
+        if (newCols.length === 0) return [];
+
+        if (origColCount === 2 && newCols.length === 1 && (newCols[0].Tiles ?? []).length > 1) {
+          const ts = Date.now();
+          return (newCols[0].Tiles as any[]).map((tile: any, i: number) => ({
+            InfoId: `grid-${ts}-${i}`,
+            InfoType: 'TileGrid',
+            Columns: [{ ColId: `col-${ts}-${i}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+          }));
+        }
+
+        if (origColCount === 2 && newCols.length === 2) {
+          const srcColAfter = newCols.find((c: any) => c.ColId === fromColId);
+          const oppColAfter = newCols.find((c: any) => c.ColId !== fromColId);
+          if (srcColAfter && oppColAfter && (oppColAfter.Tiles ?? []).length === 1) {
+            const n = (srcColAfter.Tiles ?? []).length;
+            const longHeight = n * TILE_H + Math.max(0, n - 1) * TILE_GAP;
+            return [{
+              ...block,
+              Columns: newCols.map((col: any) =>
+                col.ColId !== fromColId
+                  ? { ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: longHeight })) }
+                  : col
+              ),
+            }];
+          }
+        }
+
+        return [{ ...block, Columns: newCols }];
+      });
+
+      if (!movedTile) return prev;
+
+      const ts2 = Date.now() + 1;
+      const newGrid = {
+        InfoId: `grid-new-${ts2}`,
+        InfoType: 'TileGrid',
+        Columns: [{ ColId: `col-new-${ts2}`, Tiles: [{ ...movedTile, Height: TILE_H }] }],
+      };
+
+      if (insertBeforeInfoId === null) return [...afterRemove, newGrid];
+      const insertIdx = afterRemove.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+      if (insertIdx === -1) return [...afterRemove, newGrid];
+      return [...afterRemove.slice(0, insertIdx), newGrid, ...afterRemove.slice(insertIdx)];
+    });
+  }
+
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => prev.map(block => {
       if (block.InfoType !== 'TileGrid') return block;
@@ -432,6 +516,7 @@ function App() {
           onAddStandaloneTile={handleAddStandaloneTile}
           onFreeResizeRelease={handleFreeResizeRelease}
           onTileDrop={handleTileDrop}
+          onTileDropAsNewBlock={handleTileDropAsNewBlock}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
