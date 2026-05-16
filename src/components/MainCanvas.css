@@ -361,6 +361,11 @@
   color: #9ca3af;
 }
 
+/* Existing tile with no BGColor and no BGImageUrl — dotted border so boundaries are visible */
+.phone-tile--no-bg {
+  border: 1.5px dashed rgba(61, 90, 158, 0.45);
+}
+
 /* Selected tile border — always visible once clicked */
 .phone-tile-wrap.selected .phone-tile {
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;

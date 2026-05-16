@@ -292,6 +292,7 @@ function TileGrids({
 
                       const { tile, origIndex: tileIndex } = item;
                       const isPlaceholder = tile._new === true;
+                      const hasNoBg = !tile.BGColor && !tile.BGImageUrl;
                       const bg = resolveColor(tile.BGColor, themeColors);
                       const height = previewResetHeight ? `${TILE_H}px` : `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
@@ -347,7 +348,7 @@ function TileGrids({
                           } : undefined}
                         >
                           <div
-                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : ''}`}
+                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : hasNoBg ? ' phone-tile--no-bg' : ''}`}
                             style={{
                               background: bg,
                               color: tile.Color ?? '#ffffff',

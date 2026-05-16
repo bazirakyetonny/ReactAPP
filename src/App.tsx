@@ -78,10 +78,16 @@ function App() {
         }],
       };
 
+      // Reset existing tile heights — joining a multi-column layout snaps all to TILE_H.
+      const resetCols = cols.map((col: any) => ({
+        ...col,
+        Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })),
+      }));
+
       const newCols = [
-        ...cols.slice(0, afterIndex + 1),
+        ...resetCols.slice(0, afterIndex + 1),
         newCol,
-        ...cols.slice(afterIndex + 1),
+        ...resetCols.slice(afterIndex + 1),
       ];
 
       return prev.map(b => b.InfoId === gridId ? { ...b, Columns: newCols } : b);
