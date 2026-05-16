@@ -568,6 +568,9 @@ export function MainCanvas({
   // DOM refs for drop-zone hit testing
   const colElRefs = useRef<Map<string, HTMLElement>>(new Map());
   const gridElRefs = useRef<Map<string, HTMLElement>>(new Map());
+  // Rects snapshotted at drag-start so preview-induced layout shifts don't corrupt hit-testing
+  const colRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
+  const gridRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
 
   // ── Resize drag ───────────────────────────────────────────────────────────
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
@@ -688,10 +691,9 @@ export function MainCanvas({
   // ── Tile position drag helpers ────────────────────────────────────────────
 
   function calcInsertIndexInCol(col: any, y: number): number {
-    const colEl = colElRefs.current.get(col.ColId);
-    if (!colEl) return (col.Tiles ?? []).length;
-    const colRect = colEl.getBoundingClientRect();
-    let cumY = colRect.top;
+    const rect = colRectsSnapshot.current.get(col.ColId);
+    if (!rect) return (col.Tiles ?? []).length;
+    let cumY = rect.top;
     const tiles: any[] = col.Tiles ?? [];
     for (let i = 0; i < tiles.length; i++) {
       const h = tiles[i].Height ?? TILE_H;
@@ -703,9 +705,8 @@ export function MainCanvas({
 
   function findColByX(cols: any[], x: number): any | null {
     for (const col of cols) {
-      const el = colElRefs.current.get(col.ColId);
-      if (!el) continue;
-      const rect = el.getBoundingClientRect();
+      const rect = colRectsSnapshot.current.get(col.ColId);
+      if (!rect) continue;
       if (x >= rect.left - 4 && x <= rect.right + 4) return col;
     }
     return null;
@@ -713,9 +714,8 @@ export function MainCanvas({
 
   function findInsertColAfterColId(cols: any[], x: number): string | null {
     for (let i = cols.length - 1; i >= 0; i--) {
-      const el = colElRefs.current.get(cols[i].ColId);
-      if (!el) continue;
-      const rect = el.getBoundingClientRect();
+      const rect = colRectsSnapshot.current.get(cols[i].ColId);
+      if (!rect) continue;
       if (x > rect.left + rect.width / 2) return cols[i].ColId;
     }
     return null;
@@ -728,9 +728,8 @@ export function MainCanvas({
     const grids = infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid');
 
     for (const grid of grids) {
-      const gridEl = gridElRefs.current.get(grid.InfoId);
-      if (!gridEl) continue;
-      const rect = gridEl.getBoundingClientRect();
+      const rect = gridRectsSnapshot.current.get(grid.InfoId);
+      if (!rect) continue;
       if (y < rect.top - 12 || y > rect.bottom + 12 || x < rect.left - 16 || x > rect.right + 16) continue;
 
       const cols: any[] = grid.Columns ?? [];
@@ -828,6 +827,13 @@ export function MainCanvas({
       if (!drag.hasMoved) {
         if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
         drag.hasMoved = true;
+        // Snapshot clean rects before any preview renders so layout shifts can't corrupt hit-testing
+        colRectsSnapshot.current = new Map(
+          [...colElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
+        );
+        gridRectsSnapshot.current = new Map(
+          [...gridElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
+        );
         document.body.style.cursor = 'grabbing';
         document.body.style.userSelect = 'none';
         setTileDragId(drag.tileId); // only now — avoids pointer-events:none during click
