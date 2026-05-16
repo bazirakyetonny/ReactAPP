@@ -347,9 +347,13 @@ function App() {
       const targetBlock = afterRemove[targetIdx];
 
       if (preview.newColumn) {
-        // Add as a new column at the position indicated by insertColAfterColId
+        // Add as a new column at the position indicated by insertColAfterColId.
+        // Reset existing tile heights — tiles joining a multi-column layout snap to TILE_H.
         const newCol = { ColId: `col-${ts2}`, Tiles: [droppedTile] };
-        const cols = [...(targetBlock.Columns ?? [])];
+        const cols = (targetBlock.Columns ?? []).map((col: any) => ({
+          ...col,
+          Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })),
+        }));
         const afterIdx = preview.insertColAfterColId
           ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId)
           : -1;

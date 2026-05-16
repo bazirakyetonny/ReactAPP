@@ -232,6 +232,12 @@ function TileGrids({
           !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
 
         const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview);
+        // When a new column will be created here on drop, existing tiles reset to TILE_H.
+        const previewResetHeight = !!(
+          tileDropPreview?.newColumn &&
+          tileDropPreview.valid &&
+          tileDropPreview.targetGridId === grid.InfoId
+        );
 
         return (
           <div key={grid.InfoId}>
@@ -287,7 +293,7 @@ function TileGrids({
                       const { tile, origIndex: tileIndex } = item;
                       const isPlaceholder = tile._new === true;
                       const bg = resolveColor(tile.BGColor, themeColors);
-                      const height = `${tile.Height ?? 80}px`;
+                      const height = previewResetHeight ? `${TILE_H}px` : `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
                       const isTileDragging = tileDragId === tile.Id;
