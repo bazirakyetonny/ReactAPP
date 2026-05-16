@@ -156,7 +156,7 @@
 .phone-tilegrid {
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: 8px;
   padding: 0 10px;
   overflow: visible;
 }
@@ -276,8 +276,13 @@
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Placeholder tile — no background, dashed border */
@@ -371,7 +376,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 6px;
+  height: 8px;
   margin: 0 10px;
   cursor: pointer;
   transition: height 0.2s ease;
