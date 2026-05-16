@@ -100,12 +100,28 @@ function App() {
         // Last tile — remove the whole grid
         if (totalTiles <= 1) return [];
 
+        const origColCount = (block.Columns ?? []).length;
+
         const newCols = (block.Columns ?? [])
           .map((col: any) => col.ColId !== colId ? col : {
             ...col,
             Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
           })
           .filter((col: any) => (col.Tiles ?? []).length > 0);
+
+        // Deleted the only tile from a column in a 2-col grid where the other
+        // column has multiple tiles — each tile becomes its own independent TileGrid.
+        if (origColCount === 2 && newCols.length === 1 && (newCols[0].Tiles ?? []).length > 1) {
+          const ts = Date.now();
+          return (newCols[0].Tiles as any[]).map((tile: any, i: number) => ({
+            InfoId: `grid-${ts}-${i}`,
+            InfoType: 'TileGrid',
+            Columns: [{
+              ColId: `col-${ts}-${i}`,
+              Tiles: [{ ...tile, Height: TILE_H }],
+            }],
+          }));
+        }
 
         // In a 2-column layout where the opposite column has 1 tall tile, adjust
         // that tall tile's height to match the total span of the remaining small tiles.
