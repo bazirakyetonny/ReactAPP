@@ -313,6 +313,24 @@ function App() {
           }));
         }
 
+        // Tile dragged out of the multi-tile column: recalculate the long tile height.
+        if (origColCount === 2 && newCols.length === 2) {
+          const srcColAfter = newCols.find((c: any) => c.ColId === fromColId);
+          const oppColAfter = newCols.find((c: any) => c.ColId !== fromColId);
+          if (srcColAfter && oppColAfter && (oppColAfter.Tiles ?? []).length === 1) {
+            const n = (srcColAfter.Tiles ?? []).length;
+            const longHeight = n * TILE_H + Math.max(0, n - 1) * TILE_GAP;
+            return [{
+              ...block,
+              Columns: newCols.map((col: any) =>
+                col.ColId !== fromColId
+                  ? { ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: longHeight })) }
+                  : col
+              ),
+            }];
+          }
+        }
+
         return [{ ...block, Columns: newCols }];
       });
 
@@ -340,14 +358,28 @@ function App() {
         return [...afterRemove.slice(0, targetIdx), newBlock, ...afterRemove.slice(targetIdx + 1)];
       }
 
-      // Insert into existing column
+      // Insert into existing column.
+      // If the target column is the multi-tile side of a 2-col (multi + 1 long-tile) grid,
+      // recalculate the long tile's height to span the new tile count.
+      const targetCols = targetBlock.Columns ?? [];
+      const targetColNow = targetCols.find((c: any) => c.ColId === preview.targetColId);
+      const newTileCount = (targetColNow?.Tiles ?? []).length + 1;
+      const oppCol = targetCols.length === 2 ? targetCols.find((c: any) => c.ColId !== preview.targetColId) : null;
+      const oppIsLong = (oppCol?.Tiles ?? []).length === 1;
+      const longHeight = oppIsLong ? newTileCount * TILE_H + Math.max(0, newTileCount - 1) * TILE_GAP : null;
+
       const newBlock = {
         ...targetBlock,
-        Columns: (targetBlock.Columns ?? []).map((col: any) => {
-          if (col.ColId !== preview.targetColId) return col;
-          const tiles = [...(col.Tiles ?? [])];
-          tiles.splice(preview.insertIndex, 0, droppedTile);
-          return { ...col, Tiles: tiles };
+        Columns: targetCols.map((col: any) => {
+          if (col.ColId === preview.targetColId) {
+            const tiles = [...(col.Tiles ?? [])];
+            tiles.splice(preview.insertIndex, 0, droppedTile);
+            return { ...col, Tiles: tiles };
+          }
+          if (longHeight !== null) {
+            return { ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: longHeight })) };
+          }
+          return col;
         }),
       };
       return [...afterRemove.slice(0, targetIdx), newBlock, ...afterRemove.slice(targetIdx + 1)];

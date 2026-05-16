@@ -748,7 +748,7 @@ export function MainCanvas({
             // Single-tile column → swap columns
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true };
           }
-          // Multi-tile → can't drop into the single-tile sibling column
+          // Multi-tile source can't go into the single-tile (long) column
           if (hoverTileCount === 1) {
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
@@ -770,7 +770,7 @@ export function MainCanvas({
 
         if (hasMultiCol) {
           if (hoverTileCount === 1) {
-            // Single-tile column in a mixed grid — invalid
+            // Single-tile (long) column — not a valid drop target
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
           if (hoverTileCount >= 3) {
