@@ -442,23 +442,10 @@ export function MainCanvas({
       } else if (dragRef.current.freeResize) {
         const raw = Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1], Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
-        const { initialCount, oppColTiles, gridId: frGridId, oppColId } = dragRef.current.freeResize;
+        const { initialCount } = dragRef.current.freeResize;
         const zoneCount = SPLIT_SNAPS.indexOf(snapSplit(raw)) + 1;
         if (zoneCount !== dragRef.current.freeResize.currentZoneCount) {
           dragRef.current.freeResize.currentZoneCount = zoneCount;
-          if (zoneCount < initialCount) {
-            // Release threshold crossed mid-drag — immediately split excess tiles off
-            const snapH = SPLIT_SNAPS[zoneCount - 1];
-            onFreeResizeReleaseRef.current?.(frGridId, dragTileId!, snapH, zoneCount, initialCount, oppColId, oppColTiles);
-            // Reset drag origin to zone boundary so cursor tracks from here
-            dragRef.current.startHeight = snapH;
-            dragRef.current.startY = e.clientY;
-            dragRef.current.currentHeight = snapH;
-            dragRef.current.freeResize.initialCount = zoneCount;
-            dragRef.current.freeResize.oppColTiles = oppColTiles.slice(0, zoneCount);
-            setFreeResizePreview(prev => prev ? { ...prev, activeCount: zoneCount, extraSkeletonCount: 0 } : null);
-            return;
-          }
           const activeCount = Math.min(zoneCount, initialCount);
           const extraSkeletonCount = Math.max(0, zoneCount - initialCount);
           setFreeResizePreview(prev => prev ? { ...prev, activeCount, extraSkeletonCount } : null);
