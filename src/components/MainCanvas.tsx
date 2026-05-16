@@ -502,20 +502,20 @@ function TileGrids({
                 );
               })}
             </div>
-            {interactive && (
-              <div className={[
-                'phone-add-row',
-                isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
-                isAddRowDropActive ? 'phone-add-row--tile-drop-zone-active' : '',
-              ].filter(Boolean).join(' ')}>
+            <div className={interactive ? [
+              'phone-add-row',
+              isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
+              isAddRowDropActive ? 'phone-add-row--tile-drop-zone-active' : '',
+            ].filter(Boolean).join(' ') : 'phone-add-row'}>
+              {interactive && (
                 <button className="phone-add-btn" type="button" aria-label="Add content">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         );
       })}
@@ -555,6 +555,20 @@ export function MainCanvas({
   onTileDropAsNewBlock,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
+
+  // ── Thumbnail scale sync ──────────────────────────────────────────────────
+  const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
+  const [thumbFrameW, setThumbFrameW] = useState(240);
+  useEffect(() => {
+    const el = mainPhoneFrameRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      const w = el.offsetWidth;
+      if (w > 0) setThumbFrameW(w);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   // ── Resize drag state ─────────────────────────────────────────────────────
   const [dragTileId, setDragTileId] = useState<string | null>(null);
@@ -984,7 +998,7 @@ export function MainCanvas({
   return (
     <main className="app-canvas">
       <div className="canvas-stage">
-        <div className="phone-frame">
+        <div className="phone-frame" ref={mainPhoneFrameRef}>
           <div className="phone-status-bar">
             <span className="phone-time">9:27</span>
             <div className="phone-status-icons">
@@ -1067,7 +1081,10 @@ export function MainCanvas({
       {/* Page thumbnail */}
       <div className="page-thumbnails">
         <div className="page-thumb-clip">
-          <div className="phone-frame page-thumb-frame" style={{ width: '240px' }}>
+          <div
+            className="phone-frame page-thumb-frame"
+            style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
+          >
             <div className="phone-status-bar">
               <span className="phone-time">9:27</span>
               <div className="phone-status-icons">
@@ -1078,6 +1095,8 @@ export function MainCanvas({
             </div>
             <PhoneAppHeader />
             <div className="phone-screen">
+              {/* Matches the top phone-add-row that appears above TileGrids in the main screen */}
+              <div className={`phone-add-row${tileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
               <TileGrids
                 tileGrids={tileGrids}
                 themeColors={themeColors}

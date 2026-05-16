@@ -593,7 +593,7 @@
   height: 98px;
   overflow: hidden;
   border-radius: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid #080808;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   flex-shrink: 0;
@@ -601,16 +601,21 @@
 }
 
 .page-thumb-clip:hover {
-  border-color: rgba(255, 255, 255, 0.9);
+  border-color: #1a1a1a;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.55);
 }
 
-/* Inner phone fixed at 240px then scaled to 45px (0.1875 = 45/240) */
+/* Inner phone scaled to fit 45px clip; scale value set via inline style by ResizeObserver */
 .page-thumb-frame {
-  transform: scale(0.1875);
   transform-origin: top left;
   pointer-events: none;
   user-select: none;
+}
+
+/* At thumbnail scale the dark frame background bleeds between adjacent white
+   sections as a subpixel artifact — cover it with a matching white border. */
+.page-thumb-frame .phone-status-bar {
+  border-bottom: 2px solid #ffffff;
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
