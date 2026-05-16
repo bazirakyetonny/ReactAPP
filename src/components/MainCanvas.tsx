@@ -200,6 +200,7 @@ interface TileGridsProps {
   ) => void;
   tileDragId?: string | null;
   tileDropPreview?: TileDropPreview | null;
+  tileDragFromGridId?: string | null;
 }
 
 function TileGrids({
@@ -221,6 +222,7 @@ function TileGrids({
   onTileDragStart,
   tileDragId,
   tileDropPreview,
+  tileDragFromGridId,
 }: TileGridsProps) {
   return (
     <>
@@ -238,6 +240,25 @@ function TileGrids({
           tileDropPreview.valid &&
           tileDropPreview.targetGridId === grid.InfoId
         );
+        // When dropping into the multi-tile col of a 2-col grid, stretch the long tile
+        // in the opposite column to show the exact height it will have after drop.
+        // Only applies for cross-grid drops (tile count actually increases); same-grid
+        // reorders leave the long tile count unchanged so no stretch should show.
+        let previewLongColId: string | null = null;
+        let previewLongHeight: number | null = null;
+        if (
+          tileDropPreview && !tileDropPreview.newColumn && tileDropPreview.valid &&
+          tileDropPreview.targetGridId === grid.InfoId && cols.length === 2 &&
+          tileDragFromGridId !== grid.InfoId
+        ) {
+          const _targetCol = cols.find((c: any) => c.ColId === tileDropPreview.targetColId);
+          const _oppCol    = cols.find((c: any) => c.ColId !== tileDropPreview.targetColId);
+          if (_targetCol && _oppCol && (_oppCol.Tiles ?? []).length === 1) {
+            const newCount = (_targetCol.Tiles ?? []).length + 1;
+            previewLongColId = _oppCol.ColId;
+            previewLongHeight = newCount * TILE_H + Math.max(0, newCount - 1) * TILE_GAP;
+          }
+        }
 
         return (
           <div key={grid.InfoId}>
@@ -294,11 +315,23 @@ function TileGrids({
                       const isPlaceholder = tile._new === true;
                       const hasNoBg = !tile.BGColor && !tile.BGImageUrl;
                       const bg = resolveColor(tile.BGColor, themeColors);
-                      const height = previewResetHeight ? `${TILE_H}px` : `${tile.Height ?? 80}px`;
+                      const height = previewResetHeight
+                        ? `${TILE_H}px`
+                        : (col.ColId === previewLongColId && previewLongHeight !== null)
+                          ? `${previewLongHeight}px`
+                          : `${tile.Height ?? 80}px`;
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
+                      // When reordering within the same column the drop-slot already fills the
+                      // visual gap, so collapse the source tile to zero height to avoid showing
+                      // an extra (phantom) item that makes the column look like it has N+1 tiles.
+                      const isSameColReorderSource = isTileDragging &&
+                        tileDropPreview != null && tileDropPreview.valid &&
+                        !tileDropPreview.newColumn &&
+                        tileDropPreview.targetGridId === grid.InfoId &&
+                        tileDropPreview.targetColId === col.ColId;
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;
@@ -327,7 +360,7 @@ function TileGrids({
                             isGhost ? 'phone-tile-wrap--ghost' : '',
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
                           ].filter(Boolean).join(' ')}
-                          style={{ height }}
+                          style={isSameColReorderSource ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
                           onClick={interactive && onSelectTile
                             ? () => onSelectTile(tile.Id)
                             : undefined}
@@ -914,6 +947,7 @@ export function MainCanvas({
               onTileDragStart={handleTileDragStart}
               tileDragId={tileDragId}
               tileDropPreview={tileDropPreview}
+              tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
             />
           </div>
         </div>
