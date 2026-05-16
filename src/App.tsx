@@ -379,6 +379,7 @@ function App() {
       <div className="app-body">
         <MainCanvas
           themeColors={selectedTheme?.ThemeColors}
+          themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
           onSelectTile={setSelectedTileId}

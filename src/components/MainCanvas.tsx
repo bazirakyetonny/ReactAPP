@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './MainCanvas.css';
 import { dataStore } from '../data/datastore';
-import type { ThemeColors } from '../types';
+import type { ThemeColors, ThemeIcon } from '../types';
 
 const SNAP_POINTS = [80, 120, 160];
 const TILE_H = 80;
@@ -78,6 +78,27 @@ function resolveColor(bgColor: string, themeColors: ThemeColors | undefined): st
   if (!bgColor) return 'transparent';
   if (bgColor.startsWith('#')) return bgColor;
   return (themeColors as any)?.[bgColor] ?? '#e5e7eb';
+}
+
+function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): string | null {
+  if (themeIcons) {
+    // From sidebar picker — matched by code name (exact)
+    if (tile.IconCodeName) {
+      const match = themeIcons.find((i) => i.IconCodeName === tile.IconCodeName);
+      if (match) return match.IconSVG;
+    }
+    // From page data — tile.Icon is a lowercase code; match case-insensitively
+    if (tile.Icon) {
+      const lower = (tile.Icon as string).toLowerCase();
+      const match = themeIcons.find(
+        (i) =>
+          (i.IconCodeName && i.IconCodeName.toLowerCase() === lower) ||
+          i.IconName.toLowerCase() === lower,
+      );
+      if (match) return match.IconSVG;
+    }
+  }
+  return tile.IconSVG ?? null;
 }
 
 function PhoneAppHeader() {
@@ -157,6 +178,7 @@ function getTilesForRender(
 interface TileGridsProps {
   tileGrids: any[];
   themeColors: ThemeColors | undefined;
+  themeIcons?: ThemeIcon[];
   selectedTileId?: string | null;
   onSelectTile?: (id: string) => void;
   interactive?: boolean;
@@ -183,6 +205,7 @@ interface TileGridsProps {
 function TileGrids({
   tileGrids,
   themeColors,
+  themeIcons,
   selectedTileId,
   onSelectTile,
   interactive = false,
@@ -269,7 +292,8 @@ function TileGrids({
                       const isDraggingThis = activeDragTileId === tile.Id;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
-                      const hasIcon = !!tile.IconSVG;
+                      const iconSVG = resolveIconSVG(tile, themeIcons);
+                      const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;
                       const showDel = isSelected && !isDraggingThis && hasIcon && hasText;
 
@@ -330,8 +354,8 @@ function TileGrids({
                           >
                             {hasIcon && (
                               <div className={`phone-tile-element${showDel ? ' phone-tile-element--deletable' : ''}`}>
-                                <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: tile.IconSVG }} />
-                                {showDel && delBtn(() => onEditTile?.(tile.Id, { IconSVG: null, IconId: null }), 'Remove icon')}
+                                <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: iconSVG! }} />
+                                {showDel && delBtn(() => onEditTile?.(tile.Id, { IconSVG: null, IconId: null, IconCodeName: null }), 'Remove icon')}
                               </div>
                             )}
                             {hasText && (
@@ -439,6 +463,7 @@ function TileGrids({
 
 interface MainCanvasProps {
   themeColors?: ThemeColors;
+  themeIcons?: ThemeIcon[];
   infoContent: any[];
   selectedTileId: string | null;
   onSelectTile: (id: string) => void;
@@ -453,6 +478,7 @@ interface MainCanvasProps {
 
 export function MainCanvas({
   themeColors,
+  themeIcons,
   infoContent,
   selectedTileId,
   onSelectTile,
@@ -853,6 +879,7 @@ export function MainCanvas({
             <TileGrids
               tileGrids={tileGrids}
               themeColors={themeColors}
+              themeIcons={themeIcons}
               selectedTileId={selectedTileId}
               onSelectTile={onSelectTile}
               interactive={true}
@@ -917,6 +944,7 @@ export function MainCanvas({
               <TileGrids
                 tileGrids={tileGrids}
                 themeColors={themeColors}
+                themeIcons={themeIcons}
                 interactive={false}
               />
             </div>

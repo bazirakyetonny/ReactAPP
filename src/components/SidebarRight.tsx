@@ -302,7 +302,7 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
             className={`sr-icon-cell${selectedTile?.IconId === icon.IconId ? ' sr-icon-cell--active' : ''}`}
             type="button"
             title={icon.IconName}
-            onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { IconSVG: icon.IconSVG, IconId: icon.IconId })}
+            onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { IconSVG: icon.IconSVG, IconId: icon.IconId, IconCodeName: icon.IconCodeName })}
           >
             <span
               className="sr-icon-wrap"
