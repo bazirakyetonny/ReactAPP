@@ -1145,6 +1145,18 @@ export function MainCanvas({
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
+  // ── Active frame: the frame that contains the selected tile (-1 = home) ──────
+  const activeFrameIndex = (() => {
+    if (!selectedTileId) return -1;
+    const hasTile = (blocks: any[]) => blocks.some((b: any) =>
+      b.InfoType === 'TileGrid' &&
+      (b.Columns ?? []).some((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === selectedTileId))
+    );
+    if (hasTile(infoContent)) return -1;
+    const idx = linkedFrames?.findIndex(f => hasTile(f.infoContent)) ?? -1;
+    return idx >= 0 ? idx : -1;
+  })();
+
   // ── Thumbnail scale sync ────────────────────────────────────────────────────
   const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
   const [thumbFrameW, setThumbFrameW] = useState(240);
@@ -1174,7 +1186,7 @@ export function MainCanvas({
     <main className="app-canvas">
       <div className="canvas-stage">
         {/* Home frame */}
-        <div className="phone-frame" ref={mainPhoneFrameRef}>
+        <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef}>
           {statusBar}
           <PhoneAppHeader />
           <DraggableScreen
@@ -1202,7 +1214,7 @@ export function MainCanvas({
         {linkedFrames?.map((frame, i) => {
           const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
-            <div key={frame.page?.PageId ?? i} className="phone-frame phone-frame--linked">
+            <div key={frame.page?.PageId ?? i} className={`phone-frame phone-frame--linked${activeFrameIndex === i ? ' phone-frame--active' : ' phone-frame--inactive'}`}>
               {statusBar}
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
               <DraggableScreen
