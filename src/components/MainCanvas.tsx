@@ -1171,6 +1171,15 @@ export function MainCanvas({
     return () => obs.disconnect();
   }, []);
 
+  // ── Scroll active frame into view ───────────────────────────────────────────
+  const linkedFrameRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  useEffect(() => {
+    const el = activeFrameIndex === -1
+      ? mainPhoneFrameRef.current
+      : linkedFrameRefs.current.get(activeFrameIndex) ?? null;
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [activeFrameIndex]);
+
   const statusBar = (
     <div className="phone-status-bar">
       <span className="phone-time">9:27</span>
@@ -1214,7 +1223,11 @@ export function MainCanvas({
         {linkedFrames?.map((frame, i) => {
           const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
-            <div key={frame.page?.PageId ?? i} className={`phone-frame phone-frame--linked${activeFrameIndex === i ? ' phone-frame--active' : ' phone-frame--inactive'}`}>
+            <div
+              key={frame.page?.PageId ?? i}
+              className={`phone-frame phone-frame--linked${activeFrameIndex === i ? ' phone-frame--active' : ' phone-frame--inactive'}`}
+              ref={(el) => { if (el) linkedFrameRefs.current.set(i, el); else linkedFrameRefs.current.delete(i); }}
+            >
               {statusBar}
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
               <DraggableScreen
