@@ -532,16 +532,26 @@ function App() {
   }
 
   // ── Navigation stack handlers ─────────────────────────────────────────────
-  function handleTileNavigate(pageId: string) {
-    setNavStack(prev => [...prev, pageId]);
+  function handleTileNavigate(pageId: string, parentIndex: number) {
+    const insertAt = parentIndex + 1;
+    setNavStack(prev => {
+      if (prev[insertAt] === pageId) return prev.slice(0, insertAt + 1); // already showing — collapse descendants
+      return [...prev.slice(0, insertAt), pageId]; // sibling-replace
+    });
     setNavContents(prev => {
-      if (prev[pageId] !== undefined) return prev; // already cached
+      if (prev[pageId] !== undefined) return prev;
       const cv = dataStore.get('Current_Version');
       const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
       if (!page?.PageStructure) return { ...prev, [pageId]: [] };
       try { return { ...prev, [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [] }; }
       catch { return { ...prev, [pageId]: [] }; }
     });
+  }
+
+  // Collapse all child frames of a parent when a non-nav tile is clicked
+  function handleCollapseDescendants(parentIndex: number) {
+    const cutAt = parentIndex + 1;
+    setNavStack(prev => prev.length <= cutAt ? prev : prev.slice(0, cutAt));
   }
 
   // Close the frame at stackIndex and all frames after it (breadcrumb collapse)
@@ -606,6 +616,7 @@ function App() {
           onTileDropAsNewBlock={handleTileDropAsNewBlock}
           linkedFrames={linkedFrames}
           onTileNavigate={handleTileNavigate}
+          onCollapseDescendants={handleCollapseDescendants}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
