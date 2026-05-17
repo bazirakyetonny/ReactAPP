@@ -118,6 +118,25 @@ function PhoneAppHeader() {
   );
 }
 
+function BackArrowIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M11 14L6 9L11 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhoneLinkedHeader({ pageName, onBack }: { pageName: string; onBack: () => void }) {
+  return (
+    <div className="phone-app-header phone-linked-header">
+      <button className="phone-back-btn" type="button" aria-label="Go back" onClick={onBack}>
+        <BackArrowIcon />
+      </button>
+      <span className="phone-linked-page-name">{pageName}</span>
+    </div>
+  );
+}
+
 interface SplitPreview {
   gridId: string;
   oppositeColId: string;
@@ -207,6 +226,7 @@ interface TileGridsProps {
   tileDragFromGridId?: string | null;
   blockInsertPreview?: BlockInsertPreview | null;
   isDraggingTile?: boolean;
+  onTileNavigate?: (pageId: string) => void;
 }
 
 function TileGrids({
@@ -231,6 +251,7 @@ function TileGrids({
   tileDragFromGridId,
   blockInsertPreview,
   isDraggingTile = false,
+  onTileNavigate,
 }: TileGridsProps) {
   return (
     <>
@@ -379,9 +400,12 @@ function TileGrids({
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
                           ].filter(Boolean).join(' ')}
                           style={isSameColReorderSource ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
-                          onClick={interactive && onSelectTile
-                            ? () => onSelectTile(tile.Id)
-                            : undefined}
+                          onClick={interactive && onSelectTile ? () => {
+                            onSelectTile(tile.Id);
+                            if (tile.Action?.ObjectType === 'Information' && tile.Action?.ObjectId) {
+                              onTileNavigate?.(tile.Action.ObjectId);
+                            }
+                          } : undefined}
                           onDragStart={(e) => e.preventDefault()}
                           onMouseDown={interactive && onTileDragStart ? (e: React.MouseEvent) => {
                             const target = e.target as HTMLElement;
@@ -523,6 +547,16 @@ function TileGrids({
   );
 }
 
+export interface LinkedFrame {
+  page: any;
+  infoContent: any[];
+  onClose: () => void;
+  onAddColumn?: (gridId: string, afterColId: string) => void;
+  onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
+  onEditTile?: (tileId: string, patch: Record<string, any>) => void;
+  onAddStandaloneTile?: () => void;
+}
+
 interface MainCanvasProps {
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
@@ -537,6 +571,8 @@ interface MainCanvasProps {
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
+  linkedFrames?: LinkedFrame[];
+  onTileNavigate?: (pageId: string) => void;
 }
 
 export function MainCanvas({
@@ -553,6 +589,8 @@ export function MainCanvas({
   onFreeResizeRelease,
   onTileDrop,
   onTileDropAsNewBlock,
+  linkedFrames,
+  onTileNavigate,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -1052,9 +1090,55 @@ export function MainCanvas({
               tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
               blockInsertPreview={blockInsertPreview}
               isDraggingTile={!!tileDragId}
+              onTileNavigate={onTileNavigate}
             />
           </div>
         </div>
+
+        {/* Chained page frames — one per entry in the nav stack */}
+        {linkedFrames?.map((frame, i) => {
+          const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          return (
+            <div key={frame.page?.PageId ?? i} className="phone-frame phone-frame--linked">
+              <div className="phone-status-bar">
+                <span className="phone-time">9:27</span>
+                <div className="phone-status-icons">
+                  <SignalBarsIcon />
+                  <WifiStatusIcon />
+                  <BatteryStatusIcon />
+                </div>
+              </div>
+              <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
+              <div className="phone-screen">
+                <div className={`phone-add-row${frameTileGrids.length === 0 ? ' phone-add-row--visible' : ''}`}>
+                  <button
+                    className="phone-add-btn"
+                    type="button"
+                    aria-label="Add content block"
+                    onClick={frame.onAddStandaloneTile}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+                <TileGrids
+                  tileGrids={frameTileGrids}
+                  themeColors={themeColors}
+                  themeIcons={themeIcons}
+                  selectedTileId={selectedTileId}
+                  onSelectTile={onSelectTile}
+                  interactive={true}
+                  onAddColumn={frame.onAddColumn}
+                  onDeleteTile={frame.onDeleteTile}
+                  onEditTile={frame.onEditTile}
+                  onTileNavigate={onTileNavigate}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Floating ghost tile that follows the cursor during tile drag */}
@@ -1078,8 +1162,9 @@ export function MainCanvas({
         </div>
       )}
 
-      {/* Page thumbnail */}
+      {/* Page thumbnails — home + one per open linked frame */}
       <div className="page-thumbnails">
+        {/* Home thumbnail */}
         <div className="page-thumb-clip">
           <div
             className="phone-frame page-thumb-frame"
@@ -1095,7 +1180,6 @@ export function MainCanvas({
             </div>
             <PhoneAppHeader />
             <div className="phone-screen">
-              {/* Matches the top phone-add-row that appears above TileGrids in the main screen */}
               <div className={`phone-add-row${tileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
               <TileGrids
                 tileGrids={tileGrids}
@@ -1106,6 +1190,38 @@ export function MainCanvas({
             </div>
           </div>
         </div>
+
+        {/* One thumbnail per open linked frame — added on navigate, removed on close */}
+        {linkedFrames?.map((frame, i) => {
+          const thumbTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          return (
+            <div key={frame.page?.PageId ?? i} className="page-thumb-clip">
+              <div
+                className="phone-frame page-thumb-frame"
+                style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
+              >
+                <div className="phone-status-bar">
+                  <span className="phone-time">9:27</span>
+                  <div className="phone-status-icons">
+                    <SignalBarsIcon />
+                    <WifiStatusIcon />
+                    <BatteryStatusIcon />
+                  </div>
+                </div>
+                <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
+                <div className="phone-screen">
+                  <div className={`phone-add-row${thumbTileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
+                  <TileGrids
+                    tileGrids={thumbTileGrids}
+                    themeColors={themeColors}
+                    themeIcons={themeIcons}
+                    interactive={false}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </main>
   );

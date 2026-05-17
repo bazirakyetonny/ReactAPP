@@ -10,6 +10,76 @@ import type { Theme, Mood } from './types';
 const TILE_H = 80;
 const TILE_GAP = 6;
 
+// ── Pure content-transform helpers (used by both home and nav-frame handlers) ─
+
+function applyAddColumn(prev: any[], gridId: string, afterColId: string): any[] {
+  const block = prev.find((b: any) => b.InfoId === gridId && b.InfoType === 'TileGrid');
+  if (!block) return prev;
+  const cols: any[] = block.Columns ?? [];
+  if (cols.length >= 3) return prev;
+  const afterIndex = cols.findIndex((c: any) => c.ColId === afterColId);
+  const ts = Date.now();
+  const newCol = {
+    ColId: `col-${ts}`,
+    Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }],
+  };
+  const resetCols = cols.map((col: any) => ({
+    ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })),
+  }));
+  const newCols = [...resetCols.slice(0, afterIndex + 1), newCol, ...resetCols.slice(afterIndex + 1)];
+  return prev.map((b: any) => b.InfoId === gridId ? { ...b, Columns: newCols } : b);
+}
+
+function applyDeleteTile(prev: any[], gridId: string, colId: string, tileId: string): any[] {
+  return prev.flatMap((block: any) => {
+    if (block.InfoId !== gridId || block.InfoType !== 'TileGrid') return [block];
+    const totalTiles = (block.Columns ?? []).reduce((s: number, c: any) => s + (c.Tiles ?? []).length, 0);
+    if (totalTiles <= 1) return [];
+    const origColCount = (block.Columns ?? []).length;
+    const newCols = (block.Columns ?? [])
+      .map((col: any) => col.ColId !== colId ? col : { ...col, Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId) })
+      .filter((col: any) => (col.Tiles ?? []).length > 0);
+    if (origColCount === 2 && newCols.length === 1 && (newCols[0].Tiles ?? []).length > 1) {
+      const ts = Date.now();
+      return (newCols[0].Tiles as any[]).map((tile: any, i: number) => ({
+        InfoId: `grid-${ts}-${i}`, InfoType: 'TileGrid',
+        Columns: [{ ColId: `col-${ts}-${i}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+      }));
+    }
+    if (newCols.length === 2) {
+      const changedCol = newCols.find((c: any) => c.ColId === colId);
+      const otherCol  = newCols.find((c: any) => c.ColId !== colId);
+      if (changedCol && otherCol && (otherCol.Tiles ?? []).length === 1) {
+        const n = (changedCol.Tiles ?? []).length;
+        const longH = n * TILE_H + Math.max(0, n - 1) * TILE_GAP;
+        return [{ ...block, Columns: newCols.map((col: any) =>
+          col.ColId !== colId
+            ? { ...col, Tiles: col.Tiles.map((t: any) => ({ ...t, Height: longH })) }
+            : { ...col, Tiles: col.Tiles.map((t: any) => ({ ...t, Height: TILE_H })) }
+        ) }];
+      }
+    }
+    return [{ ...block, Columns: newCols }];
+  });
+}
+
+function applyAddStandaloneTile(prev: any[]): any[] {
+  const ts = Date.now();
+  return [...prev, {
+    InfoId: `grid-${ts}`, InfoType: 'TileGrid',
+    Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
+  }];
+}
+
+function applyEditTile(prev: any[], tileId: string, patch: Record<string, any>): any[] {
+  return prev.map((block: any) => {
+    if (block.InfoType !== 'TileGrid') return block;
+    return { ...block, Columns: (block.Columns ?? []).map((col: any) => ({
+      ...col, Tiles: (col.Tiles ?? []).map((t: any) => t.Id === tileId ? { ...t, ...patch, _new: false } : t),
+    })) };
+  });
+}
+
 function parseInfoContent(): any[] {
   const cv = dataStore.get('Current_Version');
   const homePage = (cv?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home');
@@ -31,17 +101,25 @@ function App() {
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
 
+  // Navigation stack — ordered page IDs after home; navContents caches each page's InfoContent
+  const [navStack, setNavStack] = useState<string[]>([]);
+  const [navContents, setNavContents] = useState<Record<string, any[]>>({});
+
   const selectedTheme = themes.find(t => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter(m => m.ThemeId === selectedThemeId);
+  const allPages: any[] = dataStore.get('Current_Version')?.Page ?? [];
 
-  // Derive the full selected tile object for the sidebar
+  // Derive the selected tile object — search home content then all nav-frame contents
   const selectedTile = selectedTileId
-    ? infoContent
-        .flatMap((block: any) => (block.Columns ?? []).flatMap((col: any) => col.Tiles ?? []))
-        .find((t: any) => t.Id === selectedTileId) ?? null
+    ? [
+        ...infoContent.flatMap((b: any) => (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? [])),
+        ...Object.values(navContents).flatMap(blocks =>
+          blocks.flatMap((b: any) => (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []))
+        ),
+      ].find((t: any) => t.Id === selectedTileId) ?? null
     : null;
 
-  // Sync infoContent changes back to dataStore
+  // Sync home infoContent back to dataStore
   useEffect(() => {
     const cv = dataStore.get('Current_Version');
     if (!cv) return;
@@ -55,6 +133,23 @@ function App() {
       }),
     });
   }, [infoContent]);
+
+  // Sync all nav-page contents back to dataStore
+  useEffect(() => {
+    if (Object.keys(navContents).length === 0) return;
+    const cv = dataStore.get('Current_Version');
+    if (!cv) return;
+    dataStore.set('Current_Version', {
+      ...cv,
+      Page: (cv.Page ?? []).map((p: any) => {
+        const content = navContents[p.PageId];
+        if (content === undefined) return p;
+        let existing: any = {};
+        try { existing = JSON.parse(p.PageStructure); } catch {}
+        return { ...p, PageStructure: JSON.stringify({ ...existing, InfoContent: content }) };
+      }),
+    });
+  }, [navContents]);
 
   function handleAddColumn(gridId: string, afterColId: string) {
     setInfoContent(prev => {
@@ -480,20 +575,58 @@ function App() {
     });
   }
 
+  // ── Unified edit — searches home + all nav frames; only the matching tile updates ──
   function handleEditTile(tileId: string, patch: Record<string, any>) {
-    setInfoContent(prev => prev.map(block => {
-      if (block.InfoType !== 'TileGrid') return block;
-      return {
-        ...block,
-        Columns: (block.Columns ?? []).map((col: any) => ({
-          ...col,
-          Tiles: (col.Tiles ?? []).map((tile: any) =>
-            tile.Id === tileId ? { ...tile, ...patch, _new: false } : tile
-          ),
-        })),
-      };
-    }));
+    setInfoContent(prev => applyEditTile(prev, tileId, patch));
+    setNavContents(prev => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditTile(blocks, tileId, patch);
+      return next;
+    });
   }
+
+  // ── Navigation stack handlers ─────────────────────────────────────────────
+  function handleTileNavigate(pageId: string) {
+    setNavStack(prev => [...prev, pageId]);
+    setNavContents(prev => {
+      if (prev[pageId] !== undefined) return prev; // already cached
+      const cv = dataStore.get('Current_Version');
+      const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
+      if (!page?.PageStructure) return { ...prev, [pageId]: [] };
+      try { return { ...prev, [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [] }; }
+      catch { return { ...prev, [pageId]: [] }; }
+    });
+  }
+
+  // Close the frame at stackIndex and all frames after it (breadcrumb collapse)
+  function handleCloseFromIndex(stackIndex: number) {
+    setNavStack(prev => prev.slice(0, stackIndex));
+  }
+
+  // ── Per-nav-frame handler factory (curried by pageId) ────────────────────
+  function navUpdater(pageId: string) {
+    return (transform: (blocks: any[]) => any[]) =>
+      setNavContents(prev => ({ ...prev, [pageId]: transform(prev[pageId] ?? []) }));
+  }
+
+  // Build the linkedFrames array consumed by MainCanvas
+  const linkedFrames = navStack.map((pageId, index) => {
+    const page = allPages.find((p: any) => p.PageId === pageId);
+    const update = navUpdater(pageId);
+    return {
+      page,
+      infoContent: navContents[pageId] ?? [],
+      onClose: () => handleCloseFromIndex(index),
+      onAddColumn: (gridId: string, afterColId: string) =>
+        update(prev => applyAddColumn(prev, gridId, afterColId)),
+      onDeleteTile: (gridId: string, colId: string, tileId: string) => {
+        if (selectedTileId === tileId) setSelectedTileId(null);
+        update(prev => applyDeleteTile(prev, gridId, colId, tileId));
+      },
+      onEditTile: handleEditTile,
+      onAddStandaloneTile: () => update(prev => applyAddStandaloneTile(prev)),
+    };
+  });
 
   return (
     <>
@@ -517,6 +650,8 @@ function App() {
           onFreeResizeRelease={handleFreeResizeRelease}
           onTileDrop={handleTileDrop}
           onTileDropAsNewBlock={handleTileDropAsNewBlock}
+          linkedFrames={linkedFrames}
+          onTileNavigate={handleTileNavigate}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
