@@ -82,12 +82,10 @@ function resolveColor(bgColor: string, themeColors: ThemeColors | undefined): st
 
 function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): string | null {
   if (themeIcons) {
-    // From sidebar picker — matched by code name (exact)
     if (tile.IconCodeName) {
       const match = themeIcons.find((i) => i.IconCodeName === tile.IconCodeName);
       if (match) return match.IconSVG;
     }
-    // From page data — tile.Icon is a lowercase code; match case-insensitively
     if (tile.Icon) {
       const lower = (tile.Icon as string).toLowerCase();
       const match = themeIcons.find(
@@ -263,16 +261,11 @@ function TileGrids({
           !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
 
         const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview);
-        // When a new column will be created here on drop, existing tiles reset to TILE_H.
         const previewResetHeight = !!(
           tileDropPreview?.newColumn &&
           tileDropPreview.valid &&
           tileDropPreview.targetGridId === grid.InfoId
         );
-        // When dropping into the multi-tile col of a 2-col grid, stretch the long tile
-        // in the opposite column to show the exact height it will have after drop.
-        // Only applies for cross-grid drops (tile count actually increases); same-grid
-        // reorders leave the long tile count unchanged so no stretch should show.
         let previewLongColId: string | null = null;
         let previewLongHeight: number | null = null;
         if (
@@ -289,9 +282,6 @@ function TileGrids({
           }
         }
 
-        // The add-row after this grid doubles as the inter-block drop zone.
-        // For all grids except the last it maps to "insert before next grid";
-        // for the last grid it maps to "append after all grids" (null).
         const dropZoneId = gridIdx < tileGrids.length - 1
           ? tileGrids[gridIdx + 1].InfoId
           : null;
@@ -363,9 +353,6 @@ function TileGrids({
                       const isDraggingThis = activeDragTileId === tile.Id;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
-                      // When reordering within the same column the drop-slot already fills the
-                      // visual gap, so collapse the source tile to zero height to avoid showing
-                      // an extra (phantom) item that makes the column look like it has N+1 tiles.
                       const isSameColReorderSource = isTileDragging &&
                         tileDropPreview != null && tileDropPreview.valid &&
                         !tileDropPreview.newColumn &&
@@ -547,6 +534,8 @@ function TileGrids({
   );
 }
 
+// ── LinkedFrame ───────────────────────────────────────────────────────────────
+
 export interface LinkedFrame {
   page: any;
   infoContent: any[];
@@ -555,30 +544,38 @@ export interface LinkedFrame {
   onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddStandaloneTile?: () => void;
+  onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
+  onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
+  onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
+  onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
 }
 
-interface MainCanvasProps {
+// ── DraggableScreen ───────────────────────────────────────────────────────────
+// Self-contained interactive screen: owns all drag state for one phone frame.
+
+interface DraggableScreenProps {
+  infoContent: any[];
+  tileGrids: any[];
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
-  infoContent: any[];
-  selectedTileId: string | null;
-  onSelectTile: (id: string) => void;
-  onAddColumn: (gridId: string, afterColId: string) => void;
-  onDeleteTile: (gridId: string, colId: string, tileId: string) => void;
-  onEditTile: (tileId: string, patch: Record<string, any>) => void;
+  selectedTileId?: string | null;
+  onSelectTile?: (id: string) => void;
+  onAddColumn?: (gridId: string, afterColId: string) => void;
+  onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
+  onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onAddStandaloneTile?: () => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
-  linkedFrames?: LinkedFrame[];
   onTileNavigate?: (pageId: string) => void;
 }
 
-export function MainCanvas({
+function DraggableScreen({
+  infoContent,
+  tileGrids,
   themeColors,
   themeIcons,
-  infoContent,
   selectedTileId,
   onSelectTile,
   onAddColumn,
@@ -589,31 +586,15 @@ export function MainCanvas({
   onFreeResizeRelease,
   onTileDrop,
   onTileDropAsNewBlock,
-  linkedFrames,
   onTileNavigate,
-}: MainCanvasProps) {
-  const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
+}: DraggableScreenProps) {
 
-  // ── Thumbnail scale sync ──────────────────────────────────────────────────
-  const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
-  const [thumbFrameW, setThumbFrameW] = useState(240);
-  useEffect(() => {
-    const el = mainPhoneFrameRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(() => {
-      const w = el.offsetWidth;
-      if (w > 0) setThumbFrameW(w);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  // ── Resize drag state ─────────────────────────────────────────────────────
+  // ── Resize drag state ───────────────────────────────────────────────────────
   const [dragTileId, setDragTileId] = useState<string | null>(null);
   const [splitPreview, setSplitPreview] = useState<SplitPreview | null>(null);
   const [freeResizePreview, setFreeResizePreview] = useState<FreeResizePreview | null>(null);
 
-  // ── Tile position drag state ──────────────────────────────────────────────
+  // ── Tile position drag state ────────────────────────────────────────────────
   const [tileDragId, setTileDragId] = useState<string | null>(null);
   const [tileDropPreview, setTileDropPreview] = useState<TileDropPreview | null>(null);
   const [blockInsertPreview, setBlockInsertPreview] = useState<BlockInsertPreview | null>(null);
@@ -680,11 +661,10 @@ export function MainCanvas({
   // DOM refs for drop-zone hit testing
   const colElRefs = useRef<Map<string, HTMLElement>>(new Map());
   const gridElRefs = useRef<Map<string, HTMLElement>>(new Map());
-  // Rects snapshotted at drag-start so preview-induced layout shifts don't corrupt hit-testing
   const colRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
   const gridRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
 
-  // ── Resize drag ───────────────────────────────────────────────────────────
+  // ── Resize drag ─────────────────────────────────────────────────────────────
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
     setDragTileId(tileId);
 
@@ -744,7 +724,7 @@ export function MainCanvas({
           }
           setSplitPreview(prev => prev ? { ...prev, count } : null);
         }
-        onEditTileRef.current(dragTileId!, { Height: Math.round(raw) });
+        onEditTileRef.current?.(dragTileId!, { Height: Math.round(raw) });
       } else if (dragRef.current.freeResize) {
         const raw = Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1], Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
@@ -756,18 +736,18 @@ export function MainCanvas({
           const extraSkeletonCount = Math.max(0, zoneCount - initialCount);
           setFreeResizePreview(prev => prev ? { ...prev, activeCount, extraSkeletonCount } : null);
         }
-        onEditTileRef.current(dragTileId!, { Height: dragRef.current.currentHeight });
+        onEditTileRef.current?.(dragTileId!, { Height: dragRef.current.currentHeight });
       } else {
         const raw = Math.min(SNAP_POINTS[SNAP_POINTS.length - 1], Math.max(80, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
-        onEditTileRef.current(dragTileId!, { Height: softSnapHeight(raw) });
+        onEditTileRef.current?.(dragTileId!, { Height: softSnapHeight(raw) });
       }
     }
 
     function onMouseUp() {
       if (dragRef.current?.split) {
         const { gridId, oppositeColId, currentCount, maxCount } = dragRef.current.split;
-        onEditTileRef.current(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1] });
+        onEditTileRef.current?.(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1] });
         if (currentCount > 1) {
           onAddTilesToColumnRef.current?.(gridId, oppositeColId, currentCount - 1);
         }
@@ -780,7 +760,7 @@ export function MainCanvas({
         const snapH = SPLIT_SNAPS[currentZoneCount - 1];
         onFreeResizeReleaseRef.current?.(gridId, dragTileId!, snapH, currentZoneCount, initialCount, oppColId, oppColTiles);
       } else if (dragRef.current) {
-        onEditTileRef.current(dragTileId!, { Height: snapHeight(dragRef.current.currentHeight) });
+        onEditTileRef.current?.(dragTileId!, { Height: snapHeight(dragRef.current.currentHeight) });
       }
       setDragTileId(null);
       setSplitPreview(null);
@@ -800,7 +780,7 @@ export function MainCanvas({
     };
   }, [dragTileId]);
 
-  // ── Tile position drag helpers ────────────────────────────────────────────
+  // ── Tile position drag helpers ──────────────────────────────────────────────
 
   function calcInsertIndexInCol(col: any, y: number): number {
     const rect = colRectsSnapshot.current.get(col.ColId);
@@ -853,7 +833,6 @@ export function MainCanvas({
 
       if (sameGrid) {
         if (hoverCol.ColId === drag.fromColId) {
-          // Same column — reorder (only multi-tile columns)
           if (drag.fromColTileCount <= 1) {
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
@@ -861,25 +840,20 @@ export function MainCanvas({
           const isSamePos = insertIndex === drag.fromTileIndex || insertIndex === drag.fromTileIndex + 1;
           return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: !isSamePos };
         } else {
-          // Different column in same grid
           if (drag.fromColTileCount === 1) {
-            // Single-tile column → swap columns
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true };
           }
-          // Multi-tile source can't go into the single-tile (long) column
           if (hoverTileCount === 1) {
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
           return null;
         }
       } else {
-        // Cross-grid drop
         const allSingle = cols.every((c: any) => (c.Tiles ?? []).length === 1);
         const hasMultiCol = cols.some((c: any) => (c.Tiles ?? []).length > 1);
 
         if (allSingle) {
           if (cols.length >= 3) {
-            // Grid already at 3-column max
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
           const insertColAfterColId = findInsertColAfterColId(cols, x);
@@ -888,11 +862,9 @@ export function MainCanvas({
 
         if (hasMultiCol) {
           if (hoverTileCount === 1) {
-            // Single-tile (long) column — not a valid drop target
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
           if (hoverTileCount >= 3) {
-            // Multi-tile column already full
             return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
           }
           const insertIndex = calcInsertIndexInCol(hoverCol, y);
@@ -917,25 +889,19 @@ export function MainCanvas({
     }
     if (entries.length === 0) return null;
 
-    // X bounds — cursor must be within the phone grid column area
     const { left, right } = entries[0].rect;
     if (x < left - 16 || x > right + 16) return null;
 
-    // Before first grid — cursor in top add-row area (up to 60px above the first grid)
     if (y >= entries[0].rect.top - 60 && y < entries[0].rect.top + 4) {
       return { insertBeforeInfoId: entries[0].id };
     }
 
-    // Between adjacent grids — zone starts the moment the cursor leaves grid[i]
-    // and stays active until 4 px into grid[i+1], giving clear visual priority
-    // over calcDropTarget even though both tolerances overlap.
     for (let i = 0; i < entries.length - 1; i++) {
       if (y >= entries[i].rect.bottom && y <= entries[i + 1].rect.top + 4) {
         return { insertBeforeInfoId: entries[i + 1].id };
       }
     }
 
-    // After last grid — cursor in bottom add-row area (up to 60px below)
     const last = entries[entries.length - 1];
     if (y > last.rect.bottom - 4 && y <= last.rect.bottom + 60) {
       return { insertBeforeInfoId: null };
@@ -944,10 +910,7 @@ export function MainCanvas({
     return null;
   }
 
-  // ── Tile position drag start ──────────────────────────────────────────────
-  // Listeners are attached here directly so tileDragId (and therefore
-  // pointer-events:none on the source tile) is only set AFTER the 4px movement
-  // threshold. This keeps a plain click fully functional.
+  // ── Tile position drag start ────────────────────────────────────────────────
   function handleTileDragStart(
     e: React.MouseEvent,
     tileWrapEl: HTMLElement,
@@ -980,7 +943,6 @@ export function MainCanvas({
       if (!drag.hasMoved) {
         if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
         drag.hasMoved = true;
-        // Snapshot clean rects before any preview renders so layout shifts can't corrupt hit-testing
         colRectsSnapshot.current = new Map(
           [...colElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
         );
@@ -989,7 +951,7 @@ export function MainCanvas({
         );
         document.body.style.cursor = 'grabbing';
         document.body.style.userSelect = 'none';
-        setTileDragId(drag.tileId); // only now — avoids pointer-events:none during click
+        setTileDragId(drag.tileId);
       }
       setGhostPos({ x: ev.clientX, y: ev.clientY });
       const blockInsert = calcBlockInsertTarget(ev.clientX, ev.clientY);
@@ -1034,114 +996,60 @@ export function MainCanvas({
   const isDraggingAnything = !!dragTileId || !!tileDragId;
 
   return (
-    <main className="app-canvas">
-      <div className="canvas-stage">
-        <div className="phone-frame" ref={mainPhoneFrameRef}>
-          <div className="phone-status-bar">
-            <span className="phone-time">9:27</span>
-            <div className="phone-status-icons">
-              <SignalBarsIcon />
-              <WifiStatusIcon />
-              <BatteryStatusIcon />
-            </div>
-          </div>
-          <PhoneAppHeader />
-          <div className={`phone-screen${isDraggingAnything ? ' phone-screen--dragging' : ''}`}>
-            {/* Top add-row — always visible when empty; doubles as drop zone before the first grid */}
-            <div className={[
-              'phone-add-row',
-              infoContent.length === 0 ? 'phone-add-row--visible' : '',
-              !!tileDragId && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
-              !!tileDragId && !!blockInsertPreview && blockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
-                ? 'phone-add-row--tile-drop-zone-active' : '',
-            ].filter(Boolean).join(' ')}>
-              <button className="phone-add-btn" type="button" aria-label="Add content block">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-            <TileGrids
-              tileGrids={tileGrids}
-              themeColors={themeColors}
-              themeIcons={themeIcons}
-              selectedTileId={selectedTileId}
-              onSelectTile={onSelectTile}
-              interactive={true}
-              onAddColumn={onAddColumn}
-              onDeleteTile={onDeleteTile}
-              onEditTile={onEditTile}
-              onResizeDragStart={handleResizeDragStart}
-              activeDragTileId={dragTileId}
-              splitPreview={splitPreview}
-              freeResizePreview={freeResizePreview}
-              onColRef={(id, el) => {
-                if (el) colElRefs.current.set(id, el);
-                else colElRefs.current.delete(id);
-              }}
-              onGridRef={(id, el) => {
-                if (el) gridElRefs.current.set(id, el);
-                else gridElRefs.current.delete(id);
-              }}
-              onTileDragStart={handleTileDragStart}
-              tileDragId={tileDragId}
-              tileDropPreview={tileDropPreview}
-              tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
-              blockInsertPreview={blockInsertPreview}
-              isDraggingTile={!!tileDragId}
-              onTileNavigate={onTileNavigate}
-            />
-          </div>
+    <>
+      <div className={`phone-screen${isDraggingAnything ? ' phone-screen--dragging' : ''}`}>
+        <div className={[
+          'phone-add-row',
+          infoContent.length === 0 ? 'phone-add-row--visible' : '',
+          !!tileDragId && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
+          !!tileDragId && !!blockInsertPreview && blockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
+            ? 'phone-add-row--tile-drop-zone-active' : '',
+        ].filter(Boolean).join(' ')}>
+          <button
+            className="phone-add-btn"
+            type="button"
+            aria-label="Add content block"
+            onClick={onAddStandaloneTile}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
-
-        {/* Chained page frames — one per entry in the nav stack */}
-        {linkedFrames?.map((frame, i) => {
-          const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
-          return (
-            <div key={frame.page?.PageId ?? i} className="phone-frame phone-frame--linked">
-              <div className="phone-status-bar">
-                <span className="phone-time">9:27</span>
-                <div className="phone-status-icons">
-                  <SignalBarsIcon />
-                  <WifiStatusIcon />
-                  <BatteryStatusIcon />
-                </div>
-              </div>
-              <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
-              <div className="phone-screen">
-                <div className={`phone-add-row${frameTileGrids.length === 0 ? ' phone-add-row--visible' : ''}`}>
-                  <button
-                    className="phone-add-btn"
-                    type="button"
-                    aria-label="Add content block"
-                    onClick={frame.onAddStandaloneTile}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                </div>
-                <TileGrids
-                  tileGrids={frameTileGrids}
-                  themeColors={themeColors}
-                  themeIcons={themeIcons}
-                  selectedTileId={selectedTileId}
-                  onSelectTile={onSelectTile}
-                  interactive={true}
-                  onAddColumn={frame.onAddColumn}
-                  onDeleteTile={frame.onDeleteTile}
-                  onEditTile={frame.onEditTile}
-                  onTileNavigate={onTileNavigate}
-                />
-              </div>
-            </div>
-          );
-        })}
+        <TileGrids
+          tileGrids={tileGrids}
+          themeColors={themeColors}
+          themeIcons={themeIcons}
+          selectedTileId={selectedTileId}
+          onSelectTile={onSelectTile}
+          interactive={true}
+          onAddColumn={onAddColumn}
+          onDeleteTile={onDeleteTile}
+          onEditTile={onEditTile}
+          onResizeDragStart={handleResizeDragStart}
+          activeDragTileId={dragTileId}
+          splitPreview={splitPreview}
+          freeResizePreview={freeResizePreview}
+          onColRef={(id, el) => {
+            if (el) colElRefs.current.set(id, el);
+            else colElRefs.current.delete(id);
+          }}
+          onGridRef={(id, el) => {
+            if (el) gridElRefs.current.set(id, el);
+            else gridElRefs.current.delete(id);
+          }}
+          onTileDragStart={handleTileDragStart}
+          tileDragId={tileDragId}
+          tileDropPreview={tileDropPreview}
+          tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
+          blockInsertPreview={blockInsertPreview}
+          isDraggingTile={!!tileDragId}
+          onTileNavigate={onTileNavigate}
+        />
       </div>
 
-      {/* Floating ghost tile that follows the cursor during tile drag */}
+      {/* Floating ghost tile — position:fixed so it renders above everything */}
       {ghostPos && tileDragInfoRef.current && (
         <div
           className="phone-tile-floating-ghost"
@@ -1161,6 +1069,128 @@ export function MainCanvas({
           )}
         </div>
       )}
+    </>
+  );
+}
+
+// ── MainCanvas ────────────────────────────────────────────────────────────────
+
+interface MainCanvasProps {
+  themeColors?: ThemeColors;
+  themeIcons?: ThemeIcon[];
+  infoContent: any[];
+  selectedTileId: string | null;
+  onSelectTile: (id: string) => void;
+  onAddColumn: (gridId: string, afterColId: string) => void;
+  onDeleteTile: (gridId: string, colId: string, tileId: string) => void;
+  onEditTile: (tileId: string, patch: Record<string, any>) => void;
+  onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
+  onAddStandaloneTile?: () => void;
+  onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
+  onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
+  onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
+  linkedFrames?: LinkedFrame[];
+  onTileNavigate?: (pageId: string) => void;
+}
+
+export function MainCanvas({
+  themeColors,
+  themeIcons,
+  infoContent,
+  selectedTileId,
+  onSelectTile,
+  onAddColumn,
+  onDeleteTile,
+  onEditTile,
+  onAddTilesToColumn,
+  onAddStandaloneTile,
+  onFreeResizeRelease,
+  onTileDrop,
+  onTileDropAsNewBlock,
+  linkedFrames,
+  onTileNavigate,
+}: MainCanvasProps) {
+  const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
+
+  // ── Thumbnail scale sync ────────────────────────────────────────────────────
+  const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
+  const [thumbFrameW, setThumbFrameW] = useState(240);
+  useEffect(() => {
+    const el = mainPhoneFrameRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      const w = el.offsetWidth;
+      if (w > 0) setThumbFrameW(w);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const statusBar = (
+    <div className="phone-status-bar">
+      <span className="phone-time">9:27</span>
+      <div className="phone-status-icons">
+        <SignalBarsIcon />
+        <WifiStatusIcon />
+        <BatteryStatusIcon />
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="app-canvas">
+      <div className="canvas-stage">
+        {/* Home frame */}
+        <div className="phone-frame" ref={mainPhoneFrameRef}>
+          {statusBar}
+          <PhoneAppHeader />
+          <DraggableScreen
+            infoContent={infoContent}
+            tileGrids={tileGrids}
+            themeColors={themeColors}
+            themeIcons={themeIcons}
+            selectedTileId={selectedTileId}
+            onSelectTile={onSelectTile}
+            onAddColumn={onAddColumn}
+            onDeleteTile={onDeleteTile}
+            onEditTile={onEditTile}
+            onAddTilesToColumn={onAddTilesToColumn}
+            onAddStandaloneTile={onAddStandaloneTile}
+            onFreeResizeRelease={onFreeResizeRelease}
+            onTileDrop={onTileDrop}
+            onTileDropAsNewBlock={onTileDropAsNewBlock}
+            onTileNavigate={onTileNavigate}
+          />
+        </div>
+
+        {/* Chained page frames — one per entry in the nav stack */}
+        {linkedFrames?.map((frame, i) => {
+          const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          return (
+            <div key={frame.page?.PageId ?? i} className="phone-frame phone-frame--linked">
+              {statusBar}
+              <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
+              <DraggableScreen
+                infoContent={frame.infoContent}
+                tileGrids={frameTileGrids}
+                themeColors={themeColors}
+                themeIcons={themeIcons}
+                selectedTileId={selectedTileId}
+                onSelectTile={onSelectTile}
+                onAddColumn={frame.onAddColumn}
+                onDeleteTile={frame.onDeleteTile}
+                onEditTile={frame.onEditTile}
+                onAddTilesToColumn={frame.onAddTilesToColumn}
+                onAddStandaloneTile={frame.onAddStandaloneTile}
+                onFreeResizeRelease={frame.onFreeResizeRelease}
+                onTileDrop={frame.onTileDrop}
+                onTileDropAsNewBlock={frame.onTileDropAsNewBlock}
+                onTileNavigate={onTileNavigate}
+              />
+            </div>
+          );
+        })}
+      </div>
 
       {/* Page thumbnails — home + one per open linked frame */}
       <div className="page-thumbnails">
@@ -1170,14 +1200,7 @@ export function MainCanvas({
             className="phone-frame page-thumb-frame"
             style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
           >
-            <div className="phone-status-bar">
-              <span className="phone-time">9:27</span>
-              <div className="phone-status-icons">
-                <SignalBarsIcon />
-                <WifiStatusIcon />
-                <BatteryStatusIcon />
-              </div>
-            </div>
+            {statusBar}
             <PhoneAppHeader />
             <div className="phone-screen">
               <div className={`phone-add-row${tileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
@@ -1191,7 +1214,7 @@ export function MainCanvas({
           </div>
         </div>
 
-        {/* One thumbnail per open linked frame — added on navigate, removed on close */}
+        {/* One thumbnail per open linked frame */}
         {linkedFrames?.map((frame, i) => {
           const thumbTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
@@ -1200,14 +1223,7 @@ export function MainCanvas({
                 className="phone-frame page-thumb-frame"
                 style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
               >
-                <div className="phone-status-bar">
-                  <span className="phone-time">9:27</span>
-                  <div className="phone-status-icons">
-                    <SignalBarsIcon />
-                    <WifiStatusIcon />
-                    <BatteryStatusIcon />
-                  </div>
-                </div>
+                {statusBar}
                 <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
                 <div className="phone-screen">
                   <div className={`phone-add-row${thumbTileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
