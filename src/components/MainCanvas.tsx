@@ -1145,8 +1145,12 @@ export function MainCanvas({
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
-  // ── Active frame: the frame that contains the selected tile (-1 = home) ──────
-  const activeFrameIndex = (() => {
+  // ── Active frame ────────────────────────────────────────────────────────────
+  // Derived from selected tile; thumbnail clicks override via manualActiveIndex.
+  const [manualActiveIndex, setManualActiveIndex] = useState<number | null>(null);
+  useEffect(() => { setManualActiveIndex(null); }, [selectedTileId]);
+
+  const derivedActiveIndex = (() => {
     if (!selectedTileId) return -1;
     const hasTile = (blocks: any[]) => blocks.some((b: any) =>
       b.InfoType === 'TileGrid' &&
@@ -1156,6 +1160,8 @@ export function MainCanvas({
     const idx = linkedFrames?.findIndex(f => hasTile(f.infoContent)) ?? -1;
     return idx >= 0 ? idx : -1;
   })();
+
+  const activeFrameIndex = manualActiveIndex !== null ? manualActiveIndex : derivedActiveIndex;
 
   // ── Thumbnail scale sync ────────────────────────────────────────────────────
   const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
@@ -1172,13 +1178,21 @@ export function MainCanvas({
   }, []);
 
   // ── Scroll active frame into view ───────────────────────────────────────────
+  const canvasStageRef = useRef<HTMLDivElement>(null);
   const linkedFrameRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  useEffect(() => {
-    const el = activeFrameIndex === -1
+
+  function scrollToFrame(index: number) {
+    const stage = canvasStageRef.current;
+    const el = index === -1
       ? mainPhoneFrameRef.current
-      : linkedFrameRefs.current.get(activeFrameIndex) ?? null;
-    el?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
-  }, [activeFrameIndex]);
+      : linkedFrameRefs.current.get(index) ?? null;
+    if (!el || !stage) return;
+    // Center the target frame in the scroll container; clamp to 0 so home is fully reachable
+    const targetLeft = el.offsetLeft - (stage.clientWidth - el.offsetWidth) / 2;
+    stage.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+  }
+
+  useEffect(() => { scrollToFrame(activeFrameIndex); }, [activeFrameIndex]);
 
   const statusBar = (
     <div className="phone-status-bar">
@@ -1193,7 +1207,7 @@ export function MainCanvas({
 
   return (
     <main className="app-canvas">
-      <div className="canvas-stage">
+      <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
         <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef}>
           {statusBar}
@@ -1257,7 +1271,10 @@ export function MainCanvas({
       {/* Page thumbnails — home + one per open linked frame */}
       <div className="page-thumbnails">
         {/* Home thumbnail */}
-        <div className="page-thumb-clip">
+        <div
+          className={`page-thumb-clip${activeFrameIndex === -1 ? ' page-thumb-clip--active' : ''}`}
+          onClick={() => { setManualActiveIndex(-1); scrollToFrame(-1); }}
+        >
           <div
             className="phone-frame page-thumb-frame"
             style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
@@ -1280,7 +1297,11 @@ export function MainCanvas({
         {linkedFrames?.map((frame, i) => {
           const thumbTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
-            <div key={frame.page?.PageId ?? i} className="page-thumb-clip">
+            <div
+              key={frame.page?.PageId ?? i}
+              className={`page-thumb-clip${activeFrameIndex === i ? ' page-thumb-clip--active' : ''}`}
+              onClick={() => { setManualActiveIndex(i); scrollToFrame(i); }}
+            >
               <div
                 className="phone-frame page-thumb-frame"
                 style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
