@@ -344,13 +344,27 @@ function TileGrids({
                       const isPlaceholder = tile._new === true;
                       const hasNoBg = !tile.BGColor && !tile.BGImageUrl;
                       const bg = resolveColor(tile.BGColor, themeColors);
+                      const isSelected = interactive && selectedTileId === tile.Id;
+                      const isDraggingThis = activeDragTileId === tile.Id;
+
+                      // In a 2-col (1-tile + multi-tile) grid the single tile's height is
+                      // always derived from the opposite column's tile count — the stored
+                      // Height value is ignored. Skip the derivation only while this exact
+                      // tile is being resize-dragged so the drag visual still tracks.
+                      let derivedLongTileHeight: string | null = null;
+                      if (cols.length === 2 && (col.Tiles ?? []).length === 1 && !isDraggingThis) {
+                        const oppCol = cols.find((c: any) => c.ColId !== col.ColId);
+                        const oppCount = (oppCol?.Tiles ?? []).length;
+                        if (oppCount > 1) {
+                          derivedLongTileHeight = `${oppCount * TILE_H + (oppCount - 1) * TILE_GAP}px`;
+                        }
+                      }
+
                       const height = previewResetHeight
                         ? `${TILE_H}px`
                         : (col.ColId === previewLongColId && previewLongHeight !== null)
                           ? `${previewLongHeight}px`
-                          : `${tile.Height ?? 80}px`;
-                      const isSelected = interactive && selectedTileId === tile.Id;
-                      const isDraggingThis = activeDragTileId === tile.Id;
+                          : derivedLongTileHeight ?? `${tile.Height ?? 80}px`;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const isSameColReorderSource = isTileDragging &&
