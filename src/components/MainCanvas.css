@@ -443,7 +443,12 @@
   border: 1.5px dashed rgba(61, 90, 158, 0.45);
 }
 
-/* Selected tile border — always visible once clicked */
+/* Nav-active tile — blue outline marks tiles whose linked page is open */
+.phone-tile-wrap--nav-active .phone-tile {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #1a3a6e;
+}
+
+/* Selected tile border — always visible once clicked (wins over nav-active) */
 .phone-tile-wrap.selected .phone-tile {
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }

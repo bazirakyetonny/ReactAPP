@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import "./App.css";
 import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
@@ -358,6 +358,24 @@ function App() {
       ].find((t: any) => t.Id === selectedTileId) ?? null
     : null;
 
+  // Tiles whose linked page is currently open — used to show the nav breadcrumb outline
+  const activeNavTileIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (let i = 0; i < navStack.length; i++) {
+      const pageId = navStack[i];
+      const parentContent = i === 0 ? infoContent : (navContents[navStack[i - 1]] ?? []);
+      for (const block of parentContent) {
+        if (block.InfoType !== 'TileGrid') continue;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Action?.ObjectId === pageId) ids.add(tile.Id);
+          }
+        }
+      }
+    }
+    return ids;
+  }, [navStack, infoContent, navContents]);
+
   // Sync home infoContent back to dataStore
   useEffect(() => {
     const cv = dataStore.get('Current_Version');
@@ -617,6 +635,7 @@ function App() {
           linkedFrames={linkedFrames}
           onTileNavigate={handleTileNavigate}
           onCollapseDescendants={handleCollapseDescendants}
+          activeNavTileIds={activeNavTileIds}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

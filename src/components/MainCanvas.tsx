@@ -226,6 +226,7 @@ interface TileGridsProps {
   isDraggingTile?: boolean;
   onTileNavigate?: (pageId: string) => void;
   onCollapseFromParent?: () => void;
+  activeNavTileIds?: Set<string>;
 }
 
 function TileGrids({
@@ -252,6 +253,7 @@ function TileGrids({
   isDraggingTile = false,
   onTileNavigate,
   onCollapseFromParent,
+  activeNavTileIds,
 }: TileGridsProps) {
   return (
     <>
@@ -401,6 +403,7 @@ function TileGrids({
                           className={[
                             'phone-tile-wrap',
                             isSelected ? 'selected' : '',
+                            activeNavTileIds?.has(tile.Id) ? 'phone-tile-wrap--nav-active' : '',
                             isGhost ? 'phone-tile-wrap--ghost' : '',
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
                           ].filter(Boolean).join(' ')}
@@ -590,6 +593,7 @@ interface DraggableScreenProps {
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
   onTileNavigate?: (pageId: string) => void;
   onCollapseFromParent?: () => void;
+  activeNavTileIds?: Set<string>;
 }
 
 function DraggableScreen({
@@ -609,6 +613,7 @@ function DraggableScreen({
   onTileDropAsNewBlock,
   onTileNavigate,
   onCollapseFromParent,
+  activeNavTileIds,
 }: DraggableScreenProps) {
 
   // ── Resize drag state ───────────────────────────────────────────────────────
@@ -1069,6 +1074,7 @@ function DraggableScreen({
           isDraggingTile={!!tileDragId}
           onTileNavigate={onTileNavigate}
           onCollapseFromParent={onCollapseFromParent}
+          activeNavTileIds={activeNavTileIds}
         />
       </div>
 
@@ -1115,6 +1121,7 @@ interface MainCanvasProps {
   linkedFrames?: LinkedFrame[];
   onTileNavigate?: (pageId: string, parentIndex: number) => void;
   onCollapseDescendants?: (parentIndex: number) => void;
+  activeNavTileIds?: Set<string>;
 }
 
 export function MainCanvas({
@@ -1134,6 +1141,7 @@ export function MainCanvas({
   linkedFrames,
   onTileNavigate,
   onCollapseDescendants,
+  activeNavTileIds,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -1186,6 +1194,7 @@ export function MainCanvas({
             onTileDropAsNewBlock={onTileDropAsNewBlock}
             onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, -1) : undefined}
             onCollapseFromParent={onCollapseDescendants ? () => onCollapseDescendants(-1) : undefined}
+            activeNavTileIds={activeNavTileIds}
           />
         </div>
 
@@ -1213,6 +1222,7 @@ export function MainCanvas({
                 onTileDropAsNewBlock={frame.onTileDropAsNewBlock}
                 onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, i) : undefined}
                 onCollapseFromParent={onCollapseDescendants ? () => onCollapseDescendants(i) : undefined}
+                activeNavTileIds={activeNavTileIds}
               />
             </div>
           );
