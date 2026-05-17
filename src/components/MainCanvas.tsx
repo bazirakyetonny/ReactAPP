@@ -557,6 +557,22 @@ function TileGrids({
   );
 }
 
+// ── Cross-frame drag types ────────────────────────────────────────────────────
+
+export interface AllFrameData {
+  frames: Array<{ frameIndex: number; infoContent: any[] }>;
+  colEls: Map<string, { el: HTMLElement; frameIndex: number }>;
+  gridEls: Map<string, { el: HTMLElement; frameIndex: number }>;
+  frameEls: Map<number, HTMLElement>; // phone-frame element per frame index
+}
+
+interface CrossFramePreview {
+  frameIndex: number;
+  tdPreview: TileDropPreview | null;
+  biPreview: BlockInsertPreview | null;
+  emptyDrop?: boolean; // drop onto a frame that has no grids
+}
+
 // ── LinkedFrame ───────────────────────────────────────────────────────────────
 
 export interface LinkedFrame {
@@ -594,6 +610,18 @@ interface DraggableScreenProps {
   onTileNavigate?: (pageId: string) => void;
   onCollapseFromParent?: () => void;
   activeNavTileIds?: Set<string>;
+  // Cross-frame drag
+  sourceFrameIndex?: number;
+  getAllFrameData?: () => AllFrameData;
+  onCrossFrameDragPreview?: (preview: CrossFramePreview | null) => void;
+  onCrossFrameTileDrop?: (fromGridId: string, fromColId: string, tileId: string, targetFrameIdx: number, preview: TileDropPreview) => void;
+  onCrossFrameTileDropToEmpty?: (fromGridId: string, fromColId: string, tileId: string, targetFrameIdx: number) => void;
+  externalTileDropPreview?: TileDropPreview | null;
+  externalBlockInsertPreview?: BlockInsertPreview | null;
+  isExternalDragActive?: boolean;
+  // Ref forwarding for cross-frame rect registry
+  onColRef?: (id: string, el: HTMLElement | null) => void;
+  onGridRef?: (id: string, el: HTMLElement | null) => void;
 }
 
 function DraggableScreen({
@@ -614,6 +642,16 @@ function DraggableScreen({
   onTileNavigate,
   onCollapseFromParent,
   activeNavTileIds,
+  sourceFrameIndex = -1,
+  getAllFrameData,
+  onCrossFrameDragPreview,
+  onCrossFrameTileDrop,
+  onCrossFrameTileDropToEmpty,
+  externalTileDropPreview,
+  externalBlockInsertPreview,
+  isExternalDragActive = false,
+  onColRef: onColRefExternal,
+  onGridRef: onGridRefExternal,
 }: DraggableScreenProps) {
 
   // ── Resize drag state ───────────────────────────────────────────────────────
@@ -636,6 +674,11 @@ function DraggableScreen({
   const onTileDropAsNewBlockRef = useRef(onTileDropAsNewBlock);
   const infoContentRef = useRef(infoContent);
   const themeColorsRef = useRef(themeColors);
+  const getAllFrameDataRef = useRef(getAllFrameData);
+  const onCrossFrameDragPreviewRef = useRef(onCrossFrameDragPreview);
+  const onCrossFrameTileDropRef = useRef(onCrossFrameTileDrop);
+  const onCrossFrameTileDropToEmptyRef = useRef(onCrossFrameTileDropToEmpty);
+  const sourceFrameIndexRef = useRef(sourceFrameIndex);
   useEffect(() => { onEditTileRef.current = onEditTile; });
   useEffect(() => { onAddTilesToColumnRef.current = onAddTilesToColumn; });
   useEffect(() => { onAddStandaloneTileRef.current = onAddStandaloneTile; });
@@ -644,6 +687,16 @@ function DraggableScreen({
   useEffect(() => { onTileDropAsNewBlockRef.current = onTileDropAsNewBlock; });
   useEffect(() => { infoContentRef.current = infoContent; });
   useEffect(() => { themeColorsRef.current = themeColors; });
+  useEffect(() => { getAllFrameDataRef.current = getAllFrameData; });
+  useEffect(() => { onCrossFrameDragPreviewRef.current = onCrossFrameDragPreview; });
+  useEffect(() => { onCrossFrameTileDropRef.current = onCrossFrameTileDrop; });
+  useEffect(() => { onCrossFrameTileDropToEmptyRef.current = onCrossFrameTileDropToEmpty; });
+  useEffect(() => { sourceFrameIndexRef.current = sourceFrameIndex; });
+
+  // Per-drag cross-frame lookup data (populated at drag-start from all frames)
+  const gridFrameIndexRef = useRef<Map<string, number>>(new Map());
+  const extraFramesContentRef = useRef<Array<{ frameIndex: number; infoContent: any[] }>>([]);
+  const extraFrameElsRef = useRef<Map<number, HTMLElement>>(new Map());
 
   // Resize drag ref
   const dragRef = useRef<{
@@ -840,66 +893,73 @@ function DraggableScreen({
     return null;
   }
 
-  function calcDropTarget(x: number, y: number): TileDropPreview | null {
+  function calcDropTarget(x: number, y: number): { preview: TileDropPreview | null; targetFrameIdx: number; emptyFrameDrop?: boolean } {
     const drag = tileDragInfoRef.current;
-    if (!drag || !drag.hasMoved) return null;
+    const srcIdx = sourceFrameIndexRef.current;
+    if (!drag || !drag.hasMoved) return { preview: null, targetFrameIdx: srcIdx };
 
-    const grids = infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid');
-
-    for (const grid of grids) {
+    type DropResult = { preview: TileDropPreview | null; targetFrameIdx: number; emptyFrameDrop?: boolean };
+    // Helper: evaluate one grid (non-null drag guaranteed by caller)
+    function evalGrid(d: NonNullable<typeof drag>, grid: any, frameIdx: number): DropResult | null {
       const rect = gridRectsSnapshot.current.get(grid.InfoId);
-      if (!rect) continue;
-      if (y < rect.top - 12 || y > rect.bottom + 12 || x < rect.left - 16 || x > rect.right + 16) continue;
-
+      if (!rect) return null;
+      if (y < rect.top - 12 || y > rect.bottom + 12 || x < rect.left - 16 || x > rect.right + 16) return null;
       const cols: any[] = grid.Columns ?? [];
       const hoverCol = findColByX(cols, x);
-      if (!hoverCol) continue;
-
-      const sameGrid = grid.InfoId === drag.fromGridId;
+      if (!hoverCol) return null;
+      const sameGrid = grid.InfoId === d.fromGridId;
       const hoverTileCount = (hoverCol.Tiles ?? []).length;
-
-      if (sameGrid) {
-        if (hoverCol.ColId === drag.fromColId) {
-          if (drag.fromColTileCount <= 1) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
-          }
+      if (sameGrid && frameIdx === srcIdx) {
+        if (hoverCol.ColId === d.fromColId) {
+          if (d.fromColTileCount <= 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
           const insertIndex = calcInsertIndexInCol(hoverCol, y);
-          const isSamePos = insertIndex === drag.fromTileIndex || insertIndex === drag.fromTileIndex + 1;
-          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: !isSamePos };
+          const isSamePos = insertIndex === d.fromTileIndex || insertIndex === d.fromTileIndex + 1;
+          return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: !isSamePos }, targetFrameIdx: frameIdx };
         } else {
-          if (drag.fromColTileCount === 1) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true };
-          }
-          if (hoverTileCount === 1) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
-          }
+          if (d.fromColTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true }, targetFrameIdx: frameIdx };
+          if (hoverTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
           return null;
         }
       } else {
         const allSingle = cols.every((c: any) => (c.Tiles ?? []).length === 1);
         const hasMultiCol = cols.some((c: any) => (c.Tiles ?? []).length > 1);
-
         if (allSingle) {
-          if (cols.length >= 3) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
-          }
+          if (cols.length >= 3) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
           const insertColAfterColId = findInsertColAfterColId(cols, x);
-          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: true, insertColAfterColId, isColumnSwap: false, valid: true };
+          return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: true, insertColAfterColId, isColumnSwap: false, valid: true }, targetFrameIdx: frameIdx };
         }
-
         if (hasMultiCol) {
-          if (hoverTileCount === 1) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
-          }
-          if (hoverTileCount >= 3) {
-            return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false };
-          }
+          if (hoverTileCount === 1 || hoverTileCount >= 3) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
           const insertIndex = calcInsertIndexInCol(hoverCol, y);
-          return { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: true };
+          return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: true }, targetFrameIdx: frameIdx };
         }
       }
+      return null;
     }
-    return null;
+
+    // Check source frame grids first
+    for (const grid of infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid')) {
+      const r = evalGrid(drag, grid, srcIdx);
+      if (r) return r;
+    }
+    // Check extra frames with grids
+    for (const { frameIndex, infoContent: fc } of extraFramesContentRef.current) {
+      for (const grid of fc.filter((b: any) => b.InfoType === 'TileGrid')) {
+        const r = evalGrid(drag, grid, frameIndex);
+        if (r) return r;
+      }
+    }
+    // Check empty frames (no grids) — hit-test against the phone-frame element
+    for (const { frameIndex, infoContent: fc } of extraFramesContentRef.current) {
+      if (fc.some((b: any) => b.InfoType === 'TileGrid')) continue; // not empty
+      const frameEl = extraFrameElsRef.current.get(frameIndex);
+      if (!frameEl) continue;
+      const rect = frameEl.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return { preview: null, targetFrameIdx: frameIndex, emptyFrameDrop: true };
+      }
+    }
+    return { preview: null, targetFrameIdx: srcIdx };
   }
 
   function calcBlockInsertTarget(x: number, y: number): BlockInsertPreview | null {
@@ -976,6 +1036,22 @@ function DraggableScreen({
         gridRectsSnapshot.current = new Map(
           [...gridElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
         );
+        // Merge rects and content from all other frames for cross-frame drag
+        const extraData = getAllFrameDataRef.current?.();
+        if (extraData) {
+          for (const [colId, { el }] of extraData.colEls) colRectsSnapshot.current.set(colId, el.getBoundingClientRect());
+          for (const [gridId, { el }] of extraData.gridEls) gridRectsSnapshot.current.set(gridId, el.getBoundingClientRect());
+          const gfMap = new Map<string, number>();
+          for (const b of infoContentRef.current) { if (b.InfoType === 'TileGrid') gfMap.set(b.InfoId, sourceFrameIndexRef.current); }
+          for (const { frameIndex, infoContent: fc } of extraData.frames) { for (const b of fc) { if (b.InfoType === 'TileGrid') gfMap.set(b.InfoId, frameIndex); } }
+          gridFrameIndexRef.current = gfMap;
+          extraFramesContentRef.current = extraData.frames;
+          extraFrameElsRef.current = extraData.frameEls ?? new Map();
+        } else {
+          gridFrameIndexRef.current = new Map();
+          extraFramesContentRef.current = [];
+          extraFrameElsRef.current = new Map();
+        }
         document.body.style.cursor = 'grabbing';
         document.body.style.userSelect = 'none';
         setTileDragId(drag.tileId);
@@ -985,10 +1061,19 @@ function DraggableScreen({
       if (blockInsert) {
         setTileDropPreview(null);
         setBlockInsertPreview(blockInsert);
+        onCrossFrameDragPreviewRef.current?.(null);
       } else {
-        const inGrid = calcDropTarget(ev.clientX, ev.clientY);
-        setTileDropPreview(inGrid);
-        setBlockInsertPreview(null);
+        const { preview, targetFrameIdx, emptyFrameDrop } = calcDropTarget(ev.clientX, ev.clientY);
+        const isCross = targetFrameIdx !== sourceFrameIndexRef.current;
+        if (isCross) {
+          setTileDropPreview(null);
+          setBlockInsertPreview(null);
+          onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: preview, biPreview: null, emptyDrop: emptyFrameDrop });
+        } else {
+          setTileDropPreview(preview);
+          setBlockInsertPreview(null);
+          onCrossFrameDragPreviewRef.current?.(null);
+        }
       }
     }
 
@@ -999,15 +1084,21 @@ function DraggableScreen({
         if (blockInsert) {
           onTileDropAsNewBlockRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, blockInsert.insertBeforeInfoId);
         } else {
-          const inGrid = calcDropTarget(ev.clientX, ev.clientY);
-          if (inGrid?.valid) {
-            onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, inGrid);
+          const { preview, targetFrameIdx, emptyFrameDrop } = calcDropTarget(ev.clientX, ev.clientY);
+          const isCross = targetFrameIdx !== sourceFrameIndexRef.current;
+          if (isCross && emptyFrameDrop) {
+            onCrossFrameTileDropToEmptyRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx);
+          } else if (isCross && preview?.valid) {
+            onCrossFrameTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx, preview);
+          } else if (!isCross && preview?.valid) {
+            onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, preview);
           }
         }
         setTileDragId(null);
         setTileDropPreview(null);
         setBlockInsertPreview(null);
         setGhostPos(null);
+        onCrossFrameDragPreviewRef.current?.(null);
       }
       tileDragInfoRef.current = null;
       document.body.style.cursor = '';
@@ -1021,15 +1112,18 @@ function DraggableScreen({
   }
 
   const isDraggingAnything = !!dragTileId || !!tileDragId;
+  const effectiveTileDropPreview = tileDropPreview ?? externalTileDropPreview ?? null;
+  const effectiveBlockInsertPreview = blockInsertPreview ?? externalBlockInsertPreview ?? null;
+  const effectiveDraggingTile = !!(tileDragId || isExternalDragActive);
 
   return (
     <>
-      <div className={`phone-screen${isDraggingAnything ? ' phone-screen--dragging' : ''}`}>
+      <div className={`phone-screen${(isDraggingAnything || isExternalDragActive) ? ' phone-screen--dragging' : ''}`}>
         <div className={[
           'phone-add-row',
           infoContent.length === 0 ? 'phone-add-row--visible' : '',
-          !!tileDragId && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
-          !!tileDragId && !!blockInsertPreview && blockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
+          effectiveDraggingTile && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
+          effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
             ? 'phone-add-row--tile-drop-zone-active' : '',
         ].filter(Boolean).join(' ')}>
           <button
@@ -1061,17 +1155,19 @@ function DraggableScreen({
           onColRef={(id, el) => {
             if (el) colElRefs.current.set(id, el);
             else colElRefs.current.delete(id);
+            onColRefExternal?.(id, el);
           }}
           onGridRef={(id, el) => {
             if (el) gridElRefs.current.set(id, el);
             else gridElRefs.current.delete(id);
+            onGridRefExternal?.(id, el);
           }}
           onTileDragStart={handleTileDragStart}
           tileDragId={tileDragId}
-          tileDropPreview={tileDropPreview}
+          tileDropPreview={effectiveTileDropPreview}
           tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
-          blockInsertPreview={blockInsertPreview}
-          isDraggingTile={!!tileDragId}
+          blockInsertPreview={effectiveBlockInsertPreview}
+          isDraggingTile={effectiveDraggingTile}
           onTileNavigate={onTileNavigate}
           onCollapseFromParent={onCollapseFromParent}
           activeNavTileIds={activeNavTileIds}
@@ -1118,6 +1214,8 @@ interface MainCanvasProps {
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
+  onCrossFrameTileDrop?: (fromFrameIdx: number, toFrameIdx: number, fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
+  onCrossFrameTileDropToEmpty?: (fromFrameIdx: number, toFrameIdx: number, fromGridId: string, fromColId: string, tileId: string) => void;
   linkedFrames?: LinkedFrame[];
   onTileNavigate?: (pageId: string, parentIndex: number) => void;
   onCollapseDescendants?: (parentIndex: number) => void;
@@ -1138,12 +1236,44 @@ export function MainCanvas({
   onFreeResizeRelease,
   onTileDrop,
   onTileDropAsNewBlock,
+  onCrossFrameTileDrop,
+  onCrossFrameTileDropToEmpty,
   linkedFrames,
   onTileNavigate,
   onCollapseDescendants,
   activeNavTileIds,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
+
+  // ── Cross-frame drag registry ────────────────────────────────────────────────
+  const [crossFramePreview, setCrossFramePreview] = useState<CrossFramePreview | null>(null);
+  const allFrameColElsRef = useRef<Map<number, Map<string, HTMLElement>>>(new Map());
+  const allFrameGridElsRef = useRef<Map<number, Map<string, HTMLElement>>>(new Map());
+  const linkedFramesRef = useRef(linkedFrames);
+  const infoContentRef_mc = useRef(infoContent);
+  useEffect(() => { linkedFramesRef.current = linkedFrames; });
+  useEffect(() => { infoContentRef_mc.current = infoContent; });
+
+  function registerFrameEl(frameIdx: number, type: 'col' | 'grid', id: string, el: HTMLElement | null) {
+    const map = type === 'col' ? allFrameColElsRef.current : allFrameGridElsRef.current;
+    if (!map.has(frameIdx)) map.set(frameIdx, new Map());
+    if (el) map.get(frameIdx)!.set(id, el);
+    else map.get(frameIdx)!.delete(id);
+  }
+
+  function getAllFrameData(excludeFrameIdx: number): AllFrameData {
+    const result: AllFrameData = { frames: [], colEls: new Map(), gridEls: new Map(), frameEls: new Map() };
+    const addFrame = (fi: number, fc: any[], frameEl: HTMLElement | null) => {
+      if (fi === excludeFrameIdx) return;
+      result.frames.push({ frameIndex: fi, infoContent: fc });
+      for (const [id, el] of (allFrameColElsRef.current.get(fi) ?? new Map())) result.colEls.set(id, { el, frameIndex: fi });
+      for (const [id, el] of (allFrameGridElsRef.current.get(fi) ?? new Map())) result.gridEls.set(id, { el, frameIndex: fi });
+      if (frameEl) result.frameEls.set(fi, frameEl);
+    };
+    addFrame(-1, infoContentRef_mc.current, mainPhoneFrameRef.current);
+    linkedFramesRef.current?.forEach((f, i) => addFrame(i, f.infoContent, linkedFrameRefs.current.get(i) ?? null));
+    return result;
+  }
 
   // ── Active frame ────────────────────────────────────────────────────────────
   // Derived from selected tile; thumbnail clicks override via manualActiveIndex.
@@ -1244,6 +1374,16 @@ export function MainCanvas({
             onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, -1) : undefined}
             onCollapseFromParent={onCollapseDescendants ? () => onCollapseDescendants(-1) : undefined}
             activeNavTileIds={activeNavTileIds}
+            sourceFrameIndex={-1}
+            getAllFrameData={() => getAllFrameData(-1)}
+            onCrossFrameDragPreview={setCrossFramePreview}
+            onCrossFrameTileDrop={onCrossFrameTileDrop ? (fg, fc, tid, tfi, pv) => onCrossFrameTileDrop(-1, tfi, fg, fc, tid, pv) : undefined}
+            onCrossFrameTileDropToEmpty={onCrossFrameTileDropToEmpty ? (fg, fc, tid, tfi) => onCrossFrameTileDropToEmpty(-1, tfi, fg, fc, tid) : undefined}
+            externalTileDropPreview={crossFramePreview?.frameIndex === -1 ? crossFramePreview.tdPreview : null}
+            externalBlockInsertPreview={crossFramePreview?.frameIndex === -1 ? crossFramePreview.biPreview : null}
+            isExternalDragActive={!!(crossFramePreview?.frameIndex === -1 && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
+            onColRef={(id, el) => registerFrameEl(-1, 'col', id, el)}
+            onGridRef={(id, el) => registerFrameEl(-1, 'grid', id, el)}
           />
         </div>
 
@@ -1276,6 +1416,15 @@ export function MainCanvas({
                 onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, i) : undefined}
                 onCollapseFromParent={onCollapseDescendants ? () => onCollapseDescendants(i) : undefined}
                 activeNavTileIds={activeNavTileIds}
+                sourceFrameIndex={i}
+                getAllFrameData={() => getAllFrameData(i)}
+                onCrossFrameDragPreview={setCrossFramePreview}
+                onCrossFrameTileDrop={onCrossFrameTileDrop ? (fg, fc, tid, tfi, pv) => onCrossFrameTileDrop(i, tfi, fg, fc, tid, pv) : undefined}
+                externalTileDropPreview={crossFramePreview?.frameIndex === i ? crossFramePreview.tdPreview : null}
+                externalBlockInsertPreview={crossFramePreview?.frameIndex === i ? crossFramePreview.biPreview : null}
+                isExternalDragActive={!!(crossFramePreview?.frameIndex === i && (crossFramePreview.tdPreview || crossFramePreview.biPreview))}
+                onColRef={(id, el) => registerFrameEl(i, 'col', id, el)}
+                onGridRef={(id, el) => registerFrameEl(i, 'grid', id, el)}
               />
             </div>
           );

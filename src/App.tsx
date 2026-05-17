@@ -319,6 +319,91 @@ function applyTileDropAsNewBlock(
   return [...afterRemove.slice(0, insertIdx), newGrid, ...afterRemove.slice(insertIdx)];
 }
 
+// ── Cross-frame drag helpers ──────────────────────────────────────────────────
+
+function extractTileFromContent(
+  content: any[], fromGridId: string, fromColId: string, tileId: string,
+): { content: any[]; tile: any | null } {
+  let extracted: any = null;
+  const afterRemove = content.flatMap((block: any) => {
+    if (block.InfoId !== fromGridId) return [block];
+    const cols: any[] = block.Columns ?? [];
+    const origColCount = cols.length;
+    const srcCol = cols.find((c: any) => c.ColId === fromColId);
+    if (!srcCol) return [block];
+    extracted = (srcCol.Tiles ?? []).find((t: any) => t.Id === tileId);
+    if (!extracted) return [block];
+    const newCols = cols
+      .map((col: any) => col.ColId !== fromColId ? col : {
+        ...col, Tiles: (col.Tiles ?? []).filter((t: any) => t.Id !== tileId),
+      })
+      .filter((col: any) => (col.Tiles ?? []).length > 0);
+    if (newCols.length === 0) return [];
+    if (origColCount === 2 && newCols.length === 1 && (newCols[0].Tiles ?? []).length > 1) {
+      const ts = Date.now();
+      return (newCols[0].Tiles as any[]).map((tile: any, i: number) => ({
+        InfoId: `grid-${ts}-${i}`, InfoType: 'TileGrid',
+        Columns: [{ ColId: `col-${ts}-${i}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+      }));
+    }
+    if (origColCount === 2 && newCols.length === 2) {
+      const srcColAfter = newCols.find((c: any) => c.ColId === fromColId);
+      const oppColAfter = newCols.find((c: any) => c.ColId !== fromColId);
+      if (srcColAfter && oppColAfter && (oppColAfter.Tiles ?? []).length === 1) {
+        const n = (srcColAfter.Tiles ?? []).length;
+        const longHeight = n * TILE_H + Math.max(0, n - 1) * TILE_GAP;
+        return [{
+          ...block,
+          Columns: newCols.map((col: any) =>
+            col.ColId !== fromColId
+              ? { ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: longHeight })) }
+              : col
+          ),
+        }];
+      }
+    }
+    return [{ ...block, Columns: newCols }];
+  });
+  return { content: afterRemove, tile: extracted };
+}
+
+function insertTileAtPreview(content: any[], tile: any, preview: TileDropPreview): any[] {
+  const droppedTile = { ...tile, Height: TILE_H };
+  const ts = Date.now() + 1;
+  const targetIdx = content.findIndex((b: any) => b.InfoId === preview.targetGridId);
+  if (targetIdx === -1) return content;
+  const targetBlock = content[targetIdx];
+  if (preview.newColumn) {
+    const newCol = { ColId: `col-${ts}`, Tiles: [droppedTile] };
+    const cols = (targetBlock.Columns ?? []).map((col: any) => ({
+      ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })),
+    }));
+    const afterIdx = preview.insertColAfterColId
+      ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId) : -1;
+    cols.splice(afterIdx + 1, 0, newCol);
+    return [...content.slice(0, targetIdx), { ...targetBlock, Columns: cols }, ...content.slice(targetIdx + 1)];
+  }
+  const targetCols = targetBlock.Columns ?? [];
+  const targetColNow = targetCols.find((c: any) => c.ColId === preview.targetColId);
+  const newTileCount = (targetColNow?.Tiles ?? []).length + 1;
+  const oppCol = targetCols.length === 2 ? targetCols.find((c: any) => c.ColId !== preview.targetColId) : null;
+  const oppIsLong = (oppCol?.Tiles ?? []).length === 1;
+  const longHeight = oppIsLong ? newTileCount * TILE_H + Math.max(0, newTileCount - 1) * TILE_GAP : null;
+  const newBlock = {
+    ...targetBlock,
+    Columns: targetCols.map((col: any) => {
+      if (col.ColId === preview.targetColId) {
+        const tiles = [...(col.Tiles ?? [])];
+        tiles.splice(preview.insertIndex, 0, droppedTile);
+        return { ...col, Tiles: tiles };
+      }
+      if (longHeight !== null) return { ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: longHeight })) };
+      return col;
+    }),
+  };
+  return [...content.slice(0, targetIdx), newBlock, ...content.slice(targetIdx + 1)];
+}
+
 function parseInfoContent(): any[] {
   const cv = dataStore.get('Current_Version');
   const homePage = (cv?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home');
@@ -539,6 +624,25 @@ function App() {
     setInfoContent(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId));
   }
 
+  function handleCrossFrameTileDrop(
+    fromFrameIdx: number, toFrameIdx: number,
+    fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview,
+  ) {
+    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    if (!tile) return;
+    const newTgt = insertTileAtPreview(tgtContent, tile, preview);
+    if (fromFrameIdx === -1) setInfoContent(newSrc);
+    if (toFrameIdx === -1) setInfoContent(newTgt);
+    setNavContents(prev => {
+      let next = { ...prev };
+      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
+      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
+      return next;
+    });
+  }
+
   // ── Unified edit — searches home + all nav frames; only the matching tile updates ──
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => applyEditTile(prev, tileId, patch));
@@ -632,6 +736,7 @@ function App() {
           onFreeResizeRelease={handleFreeResizeRelease}
           onTileDrop={handleTileDrop}
           onTileDropAsNewBlock={handleTileDropAsNewBlock}
+          onCrossFrameTileDrop={handleCrossFrameTileDrop}
           linkedFrames={linkedFrames}
           onTileNavigate={handleTileNavigate}
           onCollapseDescendants={handleCollapseDescendants}
