@@ -1194,6 +1194,20 @@ export function MainCanvas({
 
   useEffect(() => { scrollToFrame(activeFrameIndex); }, [activeFrameIndex]);
 
+  // ── Scroll to newly opened / sibling-replaced linked frame ─────────────────
+  const prevLinkedFramesRef = useRef<typeof linkedFrames>(linkedFrames);
+  useEffect(() => {
+    const prev = prevLinkedFramesRef.current ?? [];
+    const curr = linkedFrames ?? [];
+    for (let i = 0; i < curr.length; i++) {
+      if (prev[i]?.page?.PageId !== curr[i]?.page?.PageId) {
+        scrollToFrame(i);
+        break;
+      }
+    }
+    prevLinkedFramesRef.current = linkedFrames;
+  }, [linkedFrames]);
+
   const statusBar = (
     <div className="phone-status-bar">
       <span className="phone-time">9:27</span>
