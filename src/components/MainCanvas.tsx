@@ -375,7 +375,9 @@ function TileGrids({
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;
-                      const showDel = isSelected && !isDraggingThis && hasIcon && hasText;
+                      const canEdit = isSelected && !isDraggingThis;
+                      const showDelIcon = canEdit && hasIcon;
+                      const showDelText = canEdit && hasIcon && hasText;
 
                       const delBtn = (onClick: (e: React.MouseEvent) => void, label: string) => (
                         <button
@@ -436,15 +438,15 @@ function TileGrids({
                             }}
                           >
                             {hasIcon && (
-                              <div className={`phone-tile-element${showDel ? ' phone-tile-element--deletable' : ''}`}>
+                              <div className={`phone-tile-element${showDelIcon ? ' phone-tile-element--deletable' : ''}`}>
                                 <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: iconSVG! }} />
-                                {showDel && delBtn(() => onEditTile?.(tile.Id, { IconSVG: null, IconId: null, IconCodeName: null }), 'Remove icon')}
+                                {showDelIcon && delBtn(() => onEditTile?.(tile.Id, { Icon: null, IconSVG: null, IconId: null, IconCodeName: null }), 'Remove icon')}
                               </div>
                             )}
                             {hasText && (
-                              <div className={`phone-tile-element${showDel ? ' phone-tile-element--deletable' : ''}`}>
+                              <div className={`phone-tile-element${showDelText ? ' phone-tile-element--deletable' : ''}`}>
                                 <span className="phone-tile-text">{tile.Text}</span>
-                                {showDel && delBtn(() => onEditTile?.(tile.Id, { Text: '' }), 'Remove text')}
+                                {showDelText && delBtn(() => onEditTile?.(tile.Id, { Text: '' }), 'Remove text')}
                               </div>
                             )}
                           </div>

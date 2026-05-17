@@ -296,20 +296,26 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
         </div>
       </div>
       <div className={`sr-icon-grid${visibleIcons.length === 1 ? ' sr-icon-grid--single' : ''}`}>
-        {visibleIcons.map(icon => (
-          <button
-            key={icon.IconId}
-            className={`sr-icon-cell${selectedTile?.IconId === icon.IconId ? ' sr-icon-cell--active' : ''}`}
-            type="button"
-            title={icon.IconName}
-            onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { IconSVG: icon.IconSVG, IconId: icon.IconId, IconCodeName: icon.IconCodeName })}
-          >
-            <span
-              className="sr-icon-wrap"
-              dangerouslySetInnerHTML={{ __html: icon.IconSVG }}
-            />
-          </button>
-        ))}
+        {visibleIcons.map(icon => {
+          const legacyMatch = selectedTile?.Icon &&
+            (icon.IconCodeName?.toLowerCase() === (selectedTile.Icon as string).toLowerCase() ||
+             icon.IconName?.toLowerCase() === (selectedTile.Icon as string).toLowerCase());
+          const isActive = !!(selectedTile && (selectedTile.IconId === icon.IconId || legacyMatch));
+          return (
+            <button
+              key={icon.IconId}
+              className={`sr-icon-cell${isActive ? ' sr-icon-cell--active' : ''}`}
+              type="button"
+              title={icon.IconName}
+              onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Icon: null, IconSVG: icon.IconSVG, IconId: icon.IconId, IconCodeName: icon.IconCodeName })}
+            >
+              <span
+                className="sr-icon-wrap"
+                dangerouslySetInnerHTML={{ __html: icon.IconSVG }}
+              />
+            </button>
+          );
+        })}
       </div>
 
     </aside>
