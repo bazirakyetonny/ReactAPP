@@ -643,6 +643,61 @@ function App() {
     });
   }
 
+  function handleCrossFrameTileDropToEmpty(
+    fromFrameIdx: number, toFrameIdx: number,
+    fromGridId: string, fromColId: string, tileId: string,
+  ) {
+    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    if (!tile) return;
+    const ts = Date.now();
+    const newTgt = [{
+      InfoId: `grid-${ts}`, InfoType: 'TileGrid',
+      Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+    }];
+    if (fromFrameIdx === -1) setInfoContent(newSrc);
+    if (toFrameIdx === -1) setInfoContent(newTgt);
+    setNavContents(prev => {
+      const next = { ...prev };
+      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
+      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
+      return next;
+    });
+  }
+
+  function handleCrossFrameTileDropAsNewBlock(
+    fromFrameIdx: number, toFrameIdx: number,
+    fromGridId: string, fromColId: string, tileId: string,
+    insertBeforeInfoId: string | null,
+  ) {
+    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    if (!tile) return;
+    const ts = Date.now();
+    const newGrid = {
+      InfoId: `grid-new-${ts}`, InfoType: 'TileGrid',
+      Columns: [{ ColId: `col-new-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+    };
+    let newTgt: any[];
+    if (insertBeforeInfoId === null) {
+      newTgt = [...tgtContent, newGrid];
+    } else {
+      const idx = tgtContent.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+      newTgt = idx === -1
+        ? [...tgtContent, newGrid]
+        : [...tgtContent.slice(0, idx), newGrid, ...tgtContent.slice(idx)];
+    }
+    if (fromFrameIdx === -1) setInfoContent(newSrc);
+    if (toFrameIdx === -1) setInfoContent(newTgt);
+    setNavContents(prev => {
+      const next = { ...prev };
+      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
+      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
+      return next;
+    });
+  }
+
   // ── Unified edit — searches home + all nav frames; only the matching tile updates ──
   function handleEditTile(tileId: string, patch: Record<string, any>) {
     setInfoContent(prev => applyEditTile(prev, tileId, patch));
@@ -737,6 +792,8 @@ function App() {
           onTileDrop={handleTileDrop}
           onTileDropAsNewBlock={handleTileDropAsNewBlock}
           onCrossFrameTileDrop={handleCrossFrameTileDrop}
+          onCrossFrameTileDropToEmpty={handleCrossFrameTileDropToEmpty}
+          onCrossFrameTileDropAsNewBlock={handleCrossFrameTileDropAsNewBlock}
           linkedFrames={linkedFrames}
           onTileNavigate={handleTileNavigate}
           onCollapseDescendants={handleCollapseDescendants}
