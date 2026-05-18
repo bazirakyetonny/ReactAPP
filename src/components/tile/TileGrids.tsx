@@ -140,7 +140,9 @@ export function TileGrids({
           }
         }
 
-        const dropZoneId = gridIdx < tileGrids.length - 1 ? tileGrids[gridIdx + 1].InfoId : null;
+        const dropZoneId = overrideAddBtnInsertBeforeInfoId !== undefined
+          ? overrideAddBtnInsertBeforeInfoId
+          : (gridIdx < tileGrids.length - 1 ? tileGrids[gridIdx + 1].InfoId : null);
         const isAddRowDropActive = isDraggingTile &&
           blockInsertPreview != null &&
           blockInsertPreview.insertBeforeInfoId === dropZoneId;
