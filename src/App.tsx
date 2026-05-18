@@ -22,6 +22,9 @@ import {
   applyAddDescription,
   applyEditDescription,
   applyDeleteBlock,
+  applyMoveBlock,
+  applyExtractBlock,
+  applyInsertBlock,
 } from './utils/contentTransforms';
 
 const TILE_H = 80;
@@ -143,6 +146,26 @@ function App() {
 
   function handleDeleteBlock(infoId: string) {
     setInfoContent(prev => applyDeleteBlock(prev, infoId));
+  }
+
+  function handleMoveBlock(infoId: string, insertBeforeInfoId: string | null) {
+    setInfoContent(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId));
+  }
+
+  function handleCrossFrameBlockDrop(infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) {
+    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
+    const { content: newSrc, block } = applyExtractBlock(srcContent, infoId);
+    if (!block) return;
+    const newTgt = applyInsertBlock(tgtContent, block, insertBeforeInfoId);
+    if (fromFrameIdx === -1) setInfoContent(newSrc);
+    if (toFrameIdx === -1) setInfoContent(newTgt);
+    setNavContents(prev => {
+      const next = { ...prev };
+      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
+      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
+      return next;
+    });
   }
 
   function handleFreeResizeRelease(gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) {
@@ -309,6 +332,8 @@ function App() {
         update(prev => applyEditDescription(prev, infoId, html)),
       onDeleteBlock: (infoId: string) =>
         update(prev => applyDeleteBlock(prev, infoId)),
+      onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) =>
+        update(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId)),
     };
   });
 
@@ -345,6 +370,8 @@ function App() {
           onAddDescription={handleAddDescription}
           onEditDescription={handleEditDescription}
           onDeleteBlock={handleDeleteBlock}
+          onMoveBlock={handleMoveBlock}
+          onCrossFrameBlockDrop={handleCrossFrameBlockDrop}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

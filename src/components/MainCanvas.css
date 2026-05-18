@@ -792,6 +792,41 @@
 .phone-desc-delete-btn{ right: 4px;  background: #ef4444; color: #fff; }
 .phone-desc-block:hover .phone-desc-edit-btn,
 .phone-desc-block:hover .phone-desc-delete-btn { opacity: 1; }
+.phone-desc-block--interactive { cursor: grab; }
+.phone-desc-block--interactive:active { cursor: grabbing; }
+.phone-desc-block--dragging { opacity: 0.3; pointer-events: none; }
+
+/* ── Block drag ghost & drop zone ─────────────────────────────────────────── */
+.phone-block-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  background: #fff;
+  border-radius: 6px;
+  opacity: 0.9;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1a2340;
+  overflow: hidden;
+  border: 2px solid #4c80f180;
+}
+.phone-block-ghost p { margin: 0 0 4px; }
+.phone-block-ghost p:last-child { margin-bottom: 0; }
+.block-drop-zone {
+  height: 72px;
+  margin: 4px 8px;
+  border-radius: 6px;
+  border: 2px dashed #4c80f1aa;
+  background: #4c80f118;
+  pointer-events: none;
+  animation: block-drop-zone-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes block-drop-zone-pulse {
+  from { border-color: #4c80f188; background: #4c80f110; }
+  to   { border-color: #4c80f1dd; background: #4c80f124; }
+}
 
 /* ── Quill editor modal ───────────────────────────────────────────────────── */
 .desc-modal-overlay {

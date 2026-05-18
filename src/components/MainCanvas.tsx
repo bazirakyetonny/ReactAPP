@@ -25,6 +25,8 @@ export interface LinkedFrame {
   onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
   onEditDescription?: (infoId: string, html: string) => void;
   onDeleteBlock?: (infoId: string) => void;
+  onMoveBlock?: (infoId: string, insertBeforeInfoId: string | null) => void;
+  onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
 }
 
 interface MainCanvasProps {
@@ -52,6 +54,8 @@ interface MainCanvasProps {
   onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
   onEditDescription?: (infoId: string, html: string) => void;
   onDeleteBlock?: (infoId: string) => void;
+  onMoveBlock?: (infoId: string, insertBeforeInfoId: string | null) => void;
+  onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
 }
 
 export function MainCanvas({
@@ -79,32 +83,42 @@ export function MainCanvas({
   onAddDescription,
   onEditDescription,
   onDeleteBlock,
+  onMoveBlock,
+  onCrossFrameBlockDrop,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
   // ── Cross-frame drag registry ──────────────────────────────────────────────
   const [crossFramePreview, setCrossFramePreview] = useState<CrossFramePreview | null>(null);
+  const [crossFrameBlockPreview, setCrossFrameBlockPreview] = useState<{ insertBeforeInfoId: string | null; targetFrameIdx: number } | null>(null);
   const allFrameColElsRef = useRef<Map<number, Map<string, HTMLElement>>>(new Map());
   const allFrameGridElsRef = useRef<Map<number, Map<string, HTMLElement>>>(new Map());
+  const allFrameBlockWrapperElsRef = useRef<Map<number, Map<string, HTMLElement>>>(new Map());
   const linkedFramesRef = useRef(linkedFrames);
   const infoContentRef_mc = useRef(infoContent);
   useEffect(() => { linkedFramesRef.current = linkedFrames; });
   useEffect(() => { infoContentRef_mc.current = infoContent; });
 
-  function registerFrameEl(frameIdx: number, type: 'col' | 'grid', id: string, el: HTMLElement | null) {
-    const map = type === 'col' ? allFrameColElsRef.current : allFrameGridElsRef.current;
+  function registerFrameEl(frameIdx: number, type: 'col' | 'grid' | 'blockWrapper', id: string, el: HTMLElement | null) {
+    const map = type === 'col' ? allFrameColElsRef.current
+      : type === 'grid' ? allFrameGridElsRef.current
+      : allFrameBlockWrapperElsRef.current;
     if (!map.has(frameIdx)) map.set(frameIdx, new Map());
     if (el) map.get(frameIdx)!.set(id, el);
     else map.get(frameIdx)!.delete(id);
   }
 
   function getAllFrameData(excludeFrameIdx: number): AllFrameData {
-    const result: AllFrameData = { frames: [], colEls: new Map(), gridEls: new Map(), frameEls: new Map() };
+    const result: AllFrameData = { frames: [], colEls: new Map(), gridEls: new Map(), frameEls: new Map(), blockWrapperEls: new Map() };
     const addFrame = (fi: number, fc: any[], frameEl: HTMLElement | null) => {
       if (fi === excludeFrameIdx) return;
       result.frames.push({ frameIndex: fi, infoContent: fc });
       for (const [id, el] of (allFrameColElsRef.current.get(fi) ?? new Map())) result.colEls.set(id, { el, frameIndex: fi });
-      for (const [id, el] of (allFrameGridElsRef.current.get(fi) ?? new Map())) result.gridEls.set(id, { el, frameIndex: fi });
+      for (const [id, el] of (allFrameGridElsRef.current.get(fi) ?? new Map())) {
+        result.gridEls.set(id, { el, frameIndex: fi });
+        result.blockWrapperEls.set(id, { el, frameIndex: fi });
+      }
+      for (const [id, el] of (allFrameBlockWrapperElsRef.current.get(fi) ?? new Map())) result.blockWrapperEls.set(id, { el, frameIndex: fi });
       if (frameEl) result.frameEls.set(fi, frameEl);
     };
     addFrame(-1, infoContentRef_mc.current, mainPhoneFrameRef.current);
@@ -204,9 +218,15 @@ export function MainCanvas({
             isExternalDragActive={!!(crossFramePreview?.frameIndex === -1 && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
             onColRef={(id, el) => registerFrameEl(-1, 'col', id, el)}
             onGridRef={(id, el) => registerFrameEl(-1, 'grid', id, el)}
+            onBlockWrapperRef={(id, el) => registerFrameEl(-1, 'blockWrapper', id, el)}
             onAddDescription={onAddDescription}
             onEditDescription={onEditDescription}
             onDeleteBlock={onDeleteBlock}
+            onMoveBlock={onMoveBlock}
+            onCrossFrameBlockDrop={onCrossFrameBlockDrop}
+            onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
+            externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === -1 ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
+            isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === -1}
           />
         </div>
 
@@ -251,9 +271,15 @@ export function MainCanvas({
                 isExternalDragActive={!!(crossFramePreview?.frameIndex === i && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
                 onColRef={(id, el) => registerFrameEl(i, 'col', id, el)}
                 onGridRef={(id, el) => registerFrameEl(i, 'grid', id, el)}
+                onBlockWrapperRef={(id, el) => registerFrameEl(i, 'blockWrapper', id, el)}
                 onAddDescription={frame.onAddDescription}
                 onEditDescription={frame.onEditDescription}
                 onDeleteBlock={frame.onDeleteBlock}
+                onMoveBlock={frame.onMoveBlock}
+                onCrossFrameBlockDrop={onCrossFrameBlockDrop}
+                onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
+                externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === i ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
+                isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === i}
               />
             </div>
           );

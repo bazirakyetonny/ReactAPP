@@ -1,8 +1,10 @@
 interface DescriptionBlockProps {
   block: { InfoId: string; InfoValue?: string };
   interactive?: boolean;
+  isDragging?: boolean;
   onEdit?: (infoId: string) => void;
   onDelete?: (infoId: string) => void;
+  onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
 }
 
 function PencilIcon() {
@@ -21,9 +23,18 @@ function TrashIcon() {
   );
 }
 
-export function DescriptionBlock({ block, interactive = false, onEdit, onDelete }: DescriptionBlockProps) {
+export function DescriptionBlock({ block, interactive = false, isDragging = false, onEdit, onDelete, onDragStart }: DescriptionBlockProps) {
   return (
-    <div className="phone-desc-block">
+    <div
+      className={[
+        'phone-desc-block',
+        interactive ? 'phone-desc-block--interactive' : '',
+        isDragging ? 'phone-desc-block--dragging' : '',
+      ].filter(Boolean).join(' ')}
+      onMouseDown={interactive && onDragStart
+        ? (e) => onDragStart(e, block.InfoId, e.currentTarget as HTMLElement)
+        : undefined}
+    >
       <div
         className="phone-desc-content"
         dangerouslySetInnerHTML={{ __html: block.InfoValue || '' }}
@@ -34,6 +45,7 @@ export function DescriptionBlock({ block, interactive = false, onEdit, onDelete 
             className="phone-desc-edit-btn"
             type="button"
             aria-label="Edit description"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onEdit?.(block.InfoId); }}
           >
             <PencilIcon />
@@ -42,6 +54,7 @@ export function DescriptionBlock({ block, interactive = false, onEdit, onDelete 
             className="phone-desc-delete-btn"
             type="button"
             aria-label="Delete description"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onDelete?.(block.InfoId); }}
           >
             <TrashIcon />

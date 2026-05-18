@@ -426,3 +426,23 @@ export function applyEditDescription(prev: any[], infoId: string, html: string):
 export function applyDeleteBlock(prev: any[], infoId: string): any[] {
   return prev.filter((b: any) => b.InfoId !== infoId);
 }
+
+export function applyMoveBlock(prev: any[], infoId: string, insertBeforeInfoId: string | null): any[] {
+  const block = prev.find((b: any) => b.InfoId === infoId);
+  if (!block) return prev;
+  const without = prev.filter((b: any) => b.InfoId !== infoId);
+  if (insertBeforeInfoId === null) return [...without, block];
+  const idx = without.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+  return idx === -1 ? [...without, block] : [...without.slice(0, idx), block, ...without.slice(idx)];
+}
+
+export function applyExtractBlock(prev: any[], infoId: string): { content: any[]; block: any | null } {
+  const block = prev.find((b: any) => b.InfoId === infoId) ?? null;
+  return { content: prev.filter((b: any) => b.InfoId !== infoId), block };
+}
+
+export function applyInsertBlock(prev: any[], block: any, insertBeforeInfoId: string | null): any[] {
+  if (insertBeforeInfoId === null) return [...prev, block];
+  const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+  return idx === -1 ? [...prev, block] : [...prev.slice(0, idx), block, ...prev.slice(idx)];
+}

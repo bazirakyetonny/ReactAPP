@@ -38,6 +38,7 @@ export interface AllFrameData {
   colEls: Map<string, { el: HTMLElement; frameIndex: number }>;
   gridEls: Map<string, { el: HTMLElement; frameIndex: number }>;
   frameEls: Map<number, HTMLElement>;
+  blockWrapperEls: Map<string, { el: HTMLElement; frameIndex: number }>;
 }
 
 export interface CrossFramePreview {
@@ -80,6 +81,12 @@ export interface DraggableScreenProps {
   onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
   onEditDescription?: (infoId: string, html: string) => void;
   onDeleteBlock?: (infoId: string) => void;
+  onMoveBlock?: (infoId: string, insertBeforeInfoId: string | null) => void;
+  onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
+  onCrossFrameBlockDragPreview?: (preview: { insertBeforeInfoId: string | null; targetFrameIdx: number } | null) => void;
+  isExternalBlockDragActive?: boolean;
+  externalBlockDropPreview?: { insertBeforeInfoId: string | null } | null;
+  onBlockWrapperRef?: (infoId: string, el: HTMLElement | null) => void;
 }
 
 export function DraggableScreen({
@@ -115,9 +122,18 @@ export function DraggableScreen({
   onAddDescription,
   onEditDescription,
   onDeleteBlock,
+  onMoveBlock,
+  onCrossFrameBlockDrop,
+  onCrossFrameBlockDragPreview,
+  isExternalBlockDragActive = false,
+  externalBlockDropPreview,
+  onBlockWrapperRef,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
+  const [blockDragId, setBlockDragId] = useState<string | null>(null);
+  const [blockGhostPos, setBlockGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const [blockDropPreview, setBlockDropPreview] = useState<{ insertBeforeInfoId: string | null } | null>(null);
 
   type EditorState =
     | { mode: 'create'; insertBeforeInfoId: string | null }
@@ -175,6 +191,12 @@ export function DraggableScreen({
   useEffect(() => { onCrossFrameTileDropToEmptyRef.current = onCrossFrameTileDropToEmpty; });
   useEffect(() => { onCrossFrameTileDropAsNewBlockRef.current = onCrossFrameTileDropAsNewBlock; });
   useEffect(() => { sourceFrameIndexRef.current = sourceFrameIndex; });
+  const onMoveBlockRef = useRef(onMoveBlock);
+  const onCrossFrameBlockDropRef = useRef(onCrossFrameBlockDrop);
+  const onCrossFrameBlockDragPreviewRef = useRef(onCrossFrameBlockDragPreview);
+  useEffect(() => { onMoveBlockRef.current = onMoveBlock; });
+  useEffect(() => { onCrossFrameBlockDropRef.current = onCrossFrameBlockDrop; });
+  useEffect(() => { onCrossFrameBlockDragPreviewRef.current = onCrossFrameBlockDragPreview; });
 
   const gridFrameIndexRef = useRef<Map<string, number>>(new Map());
   const extraFramesContentRef = useRef<Array<{ frameIndex: number; infoContent: any[] }>>([]);
@@ -211,6 +233,17 @@ export function DraggableScreen({
   const gridElRefs = useRef<Map<string, HTMLElement>>(new Map());
   const colRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
   const gridRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
+  const blockWrapperElsRef = useRef<Map<string, HTMLElement>>(new Map());
+  const blockWrapperRectsSnapshot = useRef<Map<string, DOMRect>>(new Map());
+  const blockDragInfoRef = useRef<{
+    infoId: string;
+    startX: number; startY: number;
+    offsetX: number; offsetY: number;
+    hasMoved: boolean;
+    ghostWidth: number;
+    ghostHtml: string;
+  } | null>(null);
+  const allFramesBlockRectsRef = useRef<Map<string, { rect: DOMRect; frameIndex: number }>>(new Map());
 
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
     setDragTileId(tileId);
@@ -410,23 +443,48 @@ export function DraggableScreen({
   function calcBlockInsertTarget(x: number, y: number): BlockInsertPreview | null {
     const drag = tileDragInfoRef.current;
     if (!drag || !drag.hasMoved) return null;
-    const grids = infoContentRef.current.filter((b: any) => b.InfoType === 'TileGrid');
-    if (grids.length === 0) return null;
+    const allBlocks = infoContentRef.current;
+    if (allBlocks.length === 0) return null;
     const entries: Array<{ id: string; rect: DOMRect }> = [];
-    for (const g of grids) {
-      const rect = gridRectsSnapshot.current.get(g.InfoId);
-      if (rect) entries.push({ id: g.InfoId, rect });
+    for (const b of allBlocks) {
+      const rect = blockWrapperRectsSnapshot.current.get(b.InfoId);
+      if (rect) entries.push({ id: b.InfoId, rect });
     }
     if (entries.length === 0) return null;
     const { left, right } = entries[0].rect;
     if (x < left - 16 || x > right + 16) return null;
-    if (y >= entries[0].rect.top - 60 && y < entries[0].rect.top + 4) return { insertBeforeInfoId: entries[0].id };
-    for (let i = 0; i < entries.length - 1; i++) {
-      if (y >= entries[i].rect.bottom && y <= entries[i + 1].rect.top + 4) return { insertBeforeInfoId: entries[i + 1].id };
+    // Skip when cursor is inside a TileGrid's rect — tile-drop detection handles that case
+    for (const [, rect] of gridRectsSnapshot.current) {
+      if (y > rect.top && y < rect.bottom && x > rect.left - 4 && x < rect.right + 4) return null;
     }
-    const last = entries[entries.length - 1];
-    if (y > last.rect.bottom - 4 && y <= last.rect.bottom + 60) return { insertBeforeInfoId: null };
-    return null;
+    const firstRect = entries[0].rect;
+    const lastRect = entries[entries.length - 1].rect;
+    if (y < firstRect.top - 120 || y > lastRect.bottom + 120) return null;
+    // Midpoint-based detection: boundary between slot i and i+1 is the midpoint of block i
+    const firstMid = (firstRect.top + firstRect.bottom) / 2;
+    if (y < firstMid) return { insertBeforeInfoId: entries[0].id };
+    for (let i = 0; i < entries.length - 1; i++) {
+      const mid0 = (entries[i].rect.top + entries[i].rect.bottom) / 2;
+      const mid1 = (entries[i + 1].rect.top + entries[i + 1].rect.bottom) / 2;
+      if (y >= mid0 && y < mid1) return { insertBeforeInfoId: entries[i + 1].id };
+    }
+    return { insertBeforeInfoId: null };
+  }
+
+  function calcBlockDropTargetForFrame(
+    y: number,
+    entries: Array<{ id: string; rect: DOMRect }>,
+    excludeInfoId: string | null,
+  ): { insertBeforeInfoId: string | null } | null {
+    const filtered = excludeInfoId ? entries.filter(e => e.id !== excludeInfoId) : entries;
+    if (filtered.length === 0) return { insertBeforeInfoId: null };
+    if (y < (filtered[0].rect.top + filtered[0].rect.bottom) / 2) return { insertBeforeInfoId: filtered[0].id };
+    for (let i = 0; i < filtered.length - 1; i++) {
+      const mid0 = (filtered[i].rect.top + filtered[i].rect.bottom) / 2;
+      const mid1 = (filtered[i + 1].rect.top + filtered[i + 1].rect.bottom) / 2;
+      if (y >= mid0 && y < mid1) return { insertBeforeInfoId: filtered[i + 1].id };
+    }
+    return { insertBeforeInfoId: null };
   }
 
   function calcCrossFrameBlockInsert(x: number, y: number, targetFrameIdx: number): BlockInsertPreview | null {
@@ -464,6 +522,7 @@ export function DraggableScreen({
     gridColCount: number,
     tile: any,
   ) {
+    if (blockDragInfoRef.current) return;
     const rect = tileWrapEl.getBoundingClientRect();
     tileDragInfoRef.current = {
       tileId, fromGridId: gridId, fromColId: colId,
@@ -490,6 +549,9 @@ export function DraggableScreen({
         );
         gridRectsSnapshot.current = new Map(
           [...gridElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
+        );
+        blockWrapperRectsSnapshot.current = new Map(
+          [...blockWrapperElsRef.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
         );
         const extraData = getAllFrameDataRef.current?.();
         if (extraData) {
@@ -581,10 +643,105 @@ export function DraggableScreen({
     document.addEventListener('mouseup', onUp);
   }
 
-  const isDraggingAnything = !!dragTileId || !!tileDragId;
+  function handleBlockDragStart(e: React.MouseEvent, infoId: string, wrapperEl: HTMLElement) {
+    if (tileDragInfoRef.current) return;
+    const rect = wrapperEl.getBoundingClientRect();
+    const block = infoContentRef.current.find((b: any) => b.InfoId === infoId);
+    blockDragInfoRef.current = {
+      infoId, startX: e.clientX, startY: e.clientY,
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      hasMoved: false, ghostWidth: rect.width, ghostHtml: block?.InfoValue ?? '',
+    };
+
+    function buildEntries(frameContent: any[], frameIdx: number): Array<{ id: string; rect: DOMRect }> {
+      const out: Array<{ id: string; rect: DOMRect }> = [];
+      for (const b of frameContent) {
+        const entry = allFramesBlockRectsRef.current.get(b.InfoId);
+        if (entry && entry.frameIndex === frameIdx) out.push({ id: b.InfoId, rect: entry.rect });
+      }
+      return out;
+    }
+
+    function detectFrame(clientX: number, clientY: number): { frameIdx: number; frameContent: any[] } {
+      for (const { frameIndex, infoContent: fc } of extraFramesContentRef.current) {
+        const frameEl = extraFrameElsRef.current.get(frameIndex);
+        if (!frameEl) continue;
+        const fr = frameEl.getBoundingClientRect();
+        if (clientX >= fr.left && clientX <= fr.right && clientY >= fr.top && clientY <= fr.bottom)
+          return { frameIdx: frameIndex, frameContent: fc };
+      }
+      return { frameIdx: sourceFrameIndexRef.current, frameContent: infoContentRef.current };
+    }
+
+    function onMove(ev: MouseEvent) {
+      const drag = blockDragInfoRef.current;
+      if (!drag) return;
+      if (!drag.hasMoved) {
+        if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
+        drag.hasMoved = true;
+        allFramesBlockRectsRef.current = new Map(
+          [...blockWrapperElsRef.current.entries()].map(([id, el]) => [id, { rect: el.getBoundingClientRect(), frameIndex: sourceFrameIndexRef.current }])
+        );
+        const extraData = getAllFrameDataRef.current?.();
+        if (extraData) {
+          for (const [id, { el, frameIndex }] of extraData.blockWrapperEls)
+            allFramesBlockRectsRef.current.set(id, { rect: el.getBoundingClientRect(), frameIndex });
+          extraFramesContentRef.current = extraData.frames;
+          extraFrameElsRef.current = extraData.frameEls ?? new Map();
+        }
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+        setBlockDragId(infoId);
+      }
+      setBlockGhostPos({ x: ev.clientX, y: ev.clientY });
+      const { frameIdx, frameContent } = detectFrame(ev.clientX, ev.clientY);
+      const isCross = frameIdx !== sourceFrameIndexRef.current;
+      const entries = buildEntries(frameContent, frameIdx);
+      const drop = calcBlockDropTargetForFrame(ev.clientY, entries, isCross ? null : drag.infoId);
+      if (isCross) {
+        setBlockDropPreview(null);
+        onCrossFrameBlockDragPreviewRef.current?.(drop ? { ...drop, targetFrameIdx: frameIdx } : null);
+      } else {
+        setBlockDropPreview(drop);
+        onCrossFrameBlockDragPreviewRef.current?.(null);
+      }
+    }
+
+    function onUp(ev: MouseEvent) {
+      const drag = blockDragInfoRef.current;
+      if (drag?.hasMoved) {
+        const { frameIdx, frameContent } = detectFrame(ev.clientX, ev.clientY);
+        const isCross = frameIdx !== sourceFrameIndexRef.current;
+        const entries = buildEntries(frameContent, frameIdx);
+        const drop = calcBlockDropTargetForFrame(ev.clientY, entries, isCross ? null : drag.infoId);
+        if (drop) {
+          if (isCross)
+            onCrossFrameBlockDropRef.current?.(drag.infoId, sourceFrameIndexRef.current, frameIdx, drop.insertBeforeInfoId);
+          else
+            onMoveBlockRef.current?.(drag.infoId, drop.insertBeforeInfoId);
+        }
+      }
+      blockDragInfoRef.current = null;
+      setBlockDragId(null);
+      setBlockGhostPos(null);
+      setBlockDropPreview(null);
+      onCrossFrameBlockDragPreviewRef.current?.(null);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  const isDraggingAnything = !!dragTileId || !!tileDragId || !!blockDragId;
   const effectiveTileDropPreview = tileDropPreview ?? externalTileDropPreview ?? null;
   const effectiveBlockInsertPreview = blockInsertPreview ?? externalBlockInsertPreview ?? null;
   const effectiveDraggingTile = !!(tileDragId || isExternalDragActive);
+  const effectiveBlockDropPreview = blockDropPreview ?? externalBlockDropPreview ?? null;
+  const effectiveBlockDragActive = !!(blockDragId || isExternalBlockDragActive);
 
   return (
     <>
@@ -596,7 +753,7 @@ export function DraggableScreen({
         <div className={[
           'phone-add-row',
           infoContent.length === 0 ? 'phone-add-row--visible' : '',
-          effectiveDraggingTile && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
+          (effectiveDraggingTile && tileGrids.length > 0) || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
           effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId
             ? 'phone-add-row--tile-drop-zone-active' : '',
         ].filter(Boolean).join(' ')}>
@@ -612,71 +769,103 @@ export function DraggableScreen({
             </svg>
           </button>
         </div>
+        {effectiveBlockDragActive && !!effectiveBlockDropPreview &&
+          effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId && infoContent.length > 0 && (
+          <div className="block-drop-zone" />
+        )}
         {infoContent.map((block: any, i: number) => {
           const nextInfoId: string | null = infoContent[i + 1]?.InfoId ?? null;
+          const nextBlock: any = infoContent[i + 1] ?? null;
+          // Tile drag: show drop zone after non-TileGrid→TileGrid transitions (TileGrids' add-row handles those)
+          const tileDragZoneActive = effectiveDraggingTile &&
+            !!effectiveBlockInsertPreview &&
+            effectiveBlockInsertPreview.insertBeforeInfoId === nextInfoId &&
+            (block.InfoType !== 'TileGrid' || nextBlock?.InfoType !== 'TileGrid');
+          // Block drag: show between all block pairs
+          const blockDragZoneActive = effectiveBlockDragActive &&
+            !!effectiveBlockDropPreview &&
+            effectiveBlockDropPreview.insertBeforeInfoId === nextInfoId;
+          const dropZoneAfterActive = tileDragZoneActive || blockDragZoneActive;
+
           if (block.InfoType === 'TileGrid') {
             return (
-              <TileGrids
-                key={block.InfoId}
-                tileGrids={[block]}
-                overrideAddBtnInsertBeforeInfoId={nextInfoId}
-                themeColors={themeColors}
-                themeIcons={themeIcons}
-                selectedTileId={selectedTileId}
-                onSelectTile={onSelectTile}
-                interactive={true}
-                onAddColumn={onAddColumn}
-                onDeleteTile={onDeleteTile}
-                onEditTile={onEditTile}
-                onResizeDragStart={handleResizeDragStart}
-                activeDragTileId={dragTileId}
-                splitPreview={splitPreview}
-                freeResizePreview={freeResizePreview}
-                onColRef={(id, el) => {
-                  if (el) colElRefs.current.set(id, el);
-                  else colElRefs.current.delete(id);
-                  onColRefExternal?.(id, el);
-                }}
-                onGridRef={(id, el) => {
-                  if (el) gridElRefs.current.set(id, el);
-                  else gridElRefs.current.delete(id);
-                  onGridRefExternal?.(id, el);
-                }}
-                onTileDragStart={handleTileDragStart}
-                tileDragId={tileDragId}
-                tileDropPreview={effectiveTileDropPreview}
-                tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
-                blockInsertPreview={effectiveBlockInsertPreview}
-                isDraggingTile={effectiveDraggingTile}
-                onTileNavigate={onTileNavigate}
-                onCollapseFromParent={onCollapseFromParent}
-                activeNavTileIds={activeNavTileIds}
-                onAddBtnClick={openAddMenu}
-              />
+              <React.Fragment key={block.InfoId}>
+                <TileGrids
+                  tileGrids={[block]}
+                  overrideAddBtnInsertBeforeInfoId={nextInfoId}
+                  themeColors={themeColors}
+                  themeIcons={themeIcons}
+                  selectedTileId={selectedTileId}
+                  onSelectTile={onSelectTile}
+                  interactive={true}
+                  onAddColumn={onAddColumn}
+                  onDeleteTile={onDeleteTile}
+                  onEditTile={onEditTile}
+                  onResizeDragStart={handleResizeDragStart}
+                  activeDragTileId={dragTileId}
+                  splitPreview={splitPreview}
+                  freeResizePreview={freeResizePreview}
+                  onColRef={(id, el) => {
+                    if (el) colElRefs.current.set(id, el);
+                    else colElRefs.current.delete(id);
+                    onColRefExternal?.(id, el);
+                  }}
+                  onGridRef={(id, el) => {
+                    // Register grid element for both within-grid drop detection and
+                    // block-level insertion detection (grid rect = tiles only, no add-row).
+                    if (el) { gridElRefs.current.set(id, el); blockWrapperElsRef.current.set(id, el); }
+                    else { gridElRefs.current.delete(id); blockWrapperElsRef.current.delete(id); }
+                    onGridRefExternal?.(id, el);
+                  }}
+                  onTileDragStart={handleTileDragStart}
+                  tileDragId={tileDragId}
+                  tileDropPreview={effectiveTileDropPreview}
+                  tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
+                  blockInsertPreview={effectiveBlockInsertPreview}
+                  isDraggingTile={effectiveDraggingTile}
+                  onTileNavigate={onTileNavigate}
+                  onCollapseFromParent={onCollapseFromParent}
+                  activeNavTileIds={activeNavTileIds}
+                  onAddBtnClick={openAddMenu}
+                />
+                {dropZoneAfterActive && <div className="block-drop-zone" />}
+              </React.Fragment>
             );
           }
           if (block.InfoType === 'Description') {
             return (
               <React.Fragment key={block.InfoId}>
-                <DescriptionBlock
-                  block={block}
-                  interactive={true}
-                  onEdit={(infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
-                  onDelete={(infoId) => onDeleteBlock?.(infoId)}
-                />
-                <div className="phone-add-row">
-                  <button
-                    className="phone-add-btn"
-                    type="button"
-                    aria-label="Add content block"
-                    onClick={(e) => openAddMenu(e, nextInfoId)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  </button>
+                <div ref={(el) => {
+                  if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
+                  else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
+                }}>
+                  <DescriptionBlock
+                    block={block}
+                    interactive={true}
+                    isDragging={blockDragId === block.InfoId}
+                    onEdit={(infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
+                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={handleBlockDragStart}
+                  />
                 </div>
+                {dropZoneAfterActive
+                  ? <div className="block-drop-zone" />
+                  : !effectiveBlockDragActive && (
+                    <div className="phone-add-row">
+                      <button
+                        className="phone-add-btn"
+                        type="button"
+                        aria-label="Add content block"
+                        onClick={(e) => openAddMenu(e, nextInfoId)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
+                }
               </React.Fragment>
             );
           }
@@ -724,6 +913,19 @@ export function DraggableScreen({
             </span>
           )}
         </div>
+      )}
+
+      {blockGhostPos && blockDragInfoRef.current && (
+        <div
+          className="phone-block-ghost"
+          style={{
+            left: blockGhostPos.x - blockDragInfoRef.current.offsetX,
+            top: blockGhostPos.y - blockDragInfoRef.current.offsetY,
+            width: blockDragInfoRef.current.ghostWidth,
+            maxHeight: 120,
+          }}
+          dangerouslySetInnerHTML={{ __html: blockDragInfoRef.current.ghostHtml }}
+        />
       )}
     </>
   );
