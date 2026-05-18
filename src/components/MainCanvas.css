@@ -715,3 +715,46 @@
     font-size: 9px;
   }
 }
+
+/* ── Add Block Menu ──────────────────────────────────────────────────────────── */
+
+.add-block-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #e2e6ef;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+  padding: 4px 0;
+  min-width: 160px;
+}
+
+.add-block-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #1a2340;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.add-block-menu__item:hover:not(.add-block-menu__item--disabled) {
+  background: #f0f3fa;
+}
+
+.add-block-menu__item--disabled {
+  color: #b0b8c4;
+  cursor: default;
+}
+
+.add-block-menu__arrow {
+  font-size: 15px;
+  color: #b0b8c4;
+  margin-left: 8px;
+}

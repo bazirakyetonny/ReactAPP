@@ -71,6 +71,22 @@ function applyAddStandaloneTile(prev: any[]): any[] {
   }];
 }
 
+function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId: string | null): any[] {
+  const ts = Date.now();
+  let newBlock: any;
+  if (blockType === 'TileGrid') {
+    newBlock = {
+      InfoId: `grid-${ts}`, InfoType: 'TileGrid',
+      Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
+    };
+  } else {
+    return prev;
+  }
+  if (insertBeforeInfoId === null) return [...prev, newBlock];
+  const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+  return idx === -1 ? [...prev, newBlock] : [...prev.slice(0, idx), newBlock, ...prev.slice(idx)];
+}
+
 function applyEditTile(prev: any[], tileId: string, patch: Record<string, any>): any[] {
   return prev.map((block: any) => {
     if (block.InfoType !== 'TileGrid') return block;
@@ -608,6 +624,10 @@ function App() {
     }]);
   }
 
+  function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
+    setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+  }
+
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
     setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
   }
@@ -758,6 +778,8 @@ function App() {
       },
       onEditTile: handleEditTile,
       onAddStandaloneTile: () => update(prev => applyAddStandaloneTile(prev)),
+      onAddBlock: (blockType: string, insertBeforeInfoId: string | null) =>
+        update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId)),
       onAddTilesToColumn: (gridId: string, colId: string, count: number) =>
         update(prev => applyAddTilesToColumn(prev, gridId, colId, count)),
       onFreeResizeRelease: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) =>
@@ -788,6 +810,7 @@ function App() {
           onEditTile={handleEditTile}
           onAddTilesToColumn={handleAddTilesToColumn}
           onAddStandaloneTile={handleAddStandaloneTile}
+          onAddBlock={handleAddBlock}
           onFreeResizeRelease={handleFreeResizeRelease}
           onTileDrop={handleTileDrop}
           onTileDropAsNewBlock={handleTileDropAsNewBlock}

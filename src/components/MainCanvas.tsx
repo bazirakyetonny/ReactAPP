@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import './MainCanvas.css';
 import { dataStore } from '../data/datastore';
 import type { ThemeColors, ThemeIcon } from '../types';
@@ -196,6 +197,58 @@ function getTilesForRender(
   return result;
 }
 
+// ── AddBlockMenu ──────────────────────────────────────────────────────────────
+
+interface AddBlockMenuProps {
+  pos: { x: number; y: number };
+  onSelect: (blockType: string) => void;
+  onClose: () => void;
+}
+
+const ADD_BLOCK_ITEMS = [
+  { label: 'Call To Action', type: 'Cta', arrow: true, disabled: true },
+  { label: 'Description', type: 'Description', disabled: true },
+  { label: 'Image', type: 'Image', disabled: true },
+  { label: 'Tile', type: 'TileGrid', disabled: false },
+] as const;
+
+function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div ref={ref} className="add-block-menu" style={{ left: pos.x, top: pos.y }}>
+      {ADD_BLOCK_ITEMS.map(item => (
+        <button
+          key={item.type}
+          className={`add-block-menu__item${item.disabled ? ' add-block-menu__item--disabled' : ''}`}
+          onMouseDown={e => { e.stopPropagation(); if (!item.disabled) onSelect(item.type); }}
+        >
+          <span>{item.label}</span>
+          {'arrow' in item && item.arrow && <span className="add-block-menu__arrow">›</span>}
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
+}
+
+// ── TileGrids ─────────────────────────────────────────────────────────────────
+
 interface TileGridsProps {
   tileGrids: any[];
   themeColors: ThemeColors | undefined;
@@ -227,6 +280,7 @@ interface TileGridsProps {
   onTileNavigate?: (pageId: string) => void;
   onCollapseFromParent?: () => void;
   activeNavTileIds?: Set<string>;
+  onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
 }
 
 function TileGrids({
@@ -254,6 +308,7 @@ function TileGrids({
   onTileNavigate,
   onCollapseFromParent,
   activeNavTileIds,
+  onAddBtnClick,
 }: TileGridsProps) {
   return (
     <>
@@ -542,7 +597,12 @@ function TileGrids({
               isAddRowDropActive ? 'phone-add-row--tile-drop-zone-active' : '',
             ].filter(Boolean).join(' ') : 'phone-add-row'}>
               {interactive && (
-                <button className="phone-add-btn" type="button" aria-label="Add content">
+                <button
+                  className="phone-add-btn"
+                  type="button"
+                  aria-label="Add content"
+                  onClick={(e) => onAddBtnClick?.(e, tileGrids[gridIdx + 1]?.InfoId ?? null)}
+                >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -583,6 +643,7 @@ export interface LinkedFrame {
   onDeleteTile?: (gridId: string, colId: string, tileId: string) => void;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddStandaloneTile?: () => void;
+  onAddBlock?: (blockType: string, insertBeforeInfoId: string | null) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
@@ -604,6 +665,7 @@ interface DraggableScreenProps {
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onAddStandaloneTile?: () => void;
+  onAddBlock?: (blockType: string, insertBeforeInfoId: string | null) => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
@@ -637,6 +699,7 @@ function DraggableScreen({
   onEditTile,
   onAddTilesToColumn,
   onAddStandaloneTile,
+  onAddBlock,
   onFreeResizeRelease,
   onTileDrop,
   onTileDropAsNewBlock,
@@ -655,6 +718,20 @@ function DraggableScreen({
   onColRef: onColRefExternal,
   onGridRef: onGridRefExternal,
 }: DraggableScreenProps) {
+
+  // ── Add block menu state ────────────────────────────────────────────────────
+  const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
+
+  function openAddMenu(e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setAddMenu({ insertBeforeInfoId, pos: { x: rect.left, y: rect.bottom + 4 } });
+  }
+
+  function handleMenuSelect(blockType: string) {
+    if (addMenu) onAddBlock?.(blockType, addMenu.insertBeforeInfoId);
+    setAddMenu(null);
+  }
 
   // ── Resize drag state ───────────────────────────────────────────────────────
   const [dragTileId, setDragTileId] = useState<string | null>(null);
@@ -1180,7 +1257,7 @@ function DraggableScreen({
             className="phone-add-btn"
             type="button"
             aria-label="Add content block"
-            onClick={onAddStandaloneTile}
+            onClick={(e) => openAddMenu(e, infoContent[0]?.InfoId ?? null)}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -1221,8 +1298,17 @@ function DraggableScreen({
           onTileNavigate={onTileNavigate}
           onCollapseFromParent={onCollapseFromParent}
           activeNavTileIds={activeNavTileIds}
+          onAddBtnClick={openAddMenu}
         />
       </div>
+
+      {addMenu && (
+        <AddBlockMenu
+          pos={addMenu.pos}
+          onSelect={handleMenuSelect}
+          onClose={() => setAddMenu(null)}
+        />
+      )}
 
       {/* Floating ghost tile — position:fixed so it renders above everything */}
       {ghostPos && tileDragInfoRef.current && (
@@ -1261,6 +1347,7 @@ interface MainCanvasProps {
   onEditTile: (tileId: string, patch: Record<string, any>) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onAddStandaloneTile?: () => void;
+  onAddBlock?: (blockType: string, insertBeforeInfoId: string | null) => void;
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
@@ -1284,6 +1371,7 @@ export function MainCanvas({
   onEditTile,
   onAddTilesToColumn,
   onAddStandaloneTile,
+  onAddBlock,
   onFreeResizeRelease,
   onTileDrop,
   onTileDropAsNewBlock,
@@ -1420,6 +1508,7 @@ export function MainCanvas({
             onEditTile={onEditTile}
             onAddTilesToColumn={onAddTilesToColumn}
             onAddStandaloneTile={onAddStandaloneTile}
+            onAddBlock={onAddBlock}
             onFreeResizeRelease={onFreeResizeRelease}
             onTileDrop={onTileDrop}
             onTileDropAsNewBlock={onTileDropAsNewBlock}
@@ -1463,6 +1552,7 @@ export function MainCanvas({
                 onEditTile={frame.onEditTile}
                 onAddTilesToColumn={frame.onAddTilesToColumn}
                 onAddStandaloneTile={frame.onAddStandaloneTile}
+                onAddBlock={frame.onAddBlock}
                 onFreeResizeRelease={frame.onFreeResizeRelease}
                 onTileDrop={frame.onTileDrop}
                 onTileDropAsNewBlock={frame.onTileDropAsNewBlock}
