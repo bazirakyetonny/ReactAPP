@@ -40,7 +40,7 @@ export function PhoneLinkedHeader({ pageName, onBack }: { pageName: string; onBa
       <button className="phone-back-btn" type="button" aria-label="Go back" onClick={onBack}>
         <BackArrowIcon />
       </button>
-      <span className="phone-linked-page-name">{pageName}</span>
+      <span className="phone-linked-page-name">{pageName.toUpperCase()}</span>
     </div>
   );
 }
