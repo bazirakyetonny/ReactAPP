@@ -53,16 +53,14 @@ export function applyDeleteTile(prev: any[], gridId: string, colId: string, tile
   });
 }
 
-export function applyAddStandaloneTile(prev: any[]): any[] {
-  const ts = Date.now();
+export function applyAddStandaloneTile(prev: any[], ts = Date.now()): any[] {
   return [...prev, {
     InfoId: `grid-${ts}`, InfoType: 'TileGrid',
     Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
   }];
 }
 
-export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId: string | null): any[] {
-  const ts = Date.now();
+export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId: string | null, ts = Date.now()): any[] {
   if (blockType !== 'TileGrid') return prev;
   const newBlock = {
     InfoId: `grid-${ts}`, InfoType: 'TileGrid',

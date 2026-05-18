@@ -106,11 +106,19 @@ function App() {
   }
 
   function handleAddStandaloneTile() {
-    setInfoContent(prev => applyAddStandaloneTile(prev));
+    const ts = Date.now();
+    setInfoContent(prev => applyAddStandaloneTile(prev, ts));
+    setSelectedTileId(`tile-${ts}`);
   }
 
   function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
-    setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+    if (blockType === 'TileGrid') {
+      const ts = Date.now();
+      setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
+      setSelectedTileId(`tile-${ts}`);
+    } else {
+      setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+    }
   }
 
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
@@ -253,9 +261,20 @@ function App() {
         update(prev => applyDeleteTile(prev, gridId, colId, tileId));
       },
       onEditTile: handleEditTile,
-      onAddStandaloneTile: () => update(prev => applyAddStandaloneTile(prev)),
-      onAddBlock: (blockType: string, insertBeforeInfoId: string | null) =>
-        update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId)),
+      onAddStandaloneTile: () => {
+        const ts = Date.now();
+        update(prev => applyAddStandaloneTile(prev, ts));
+        setSelectedTileId(`tile-${ts}`);
+      },
+      onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
+        if (blockType === 'TileGrid') {
+          const ts = Date.now();
+          update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
+          setSelectedTileId(`tile-${ts}`);
+        } else {
+          update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+        }
+      },
       onAddTilesToColumn: (gridId: string, colId: string, count: number) =>
         update(prev => applyAddTilesToColumn(prev, gridId, colId, count)),
       onFreeResizeRelease: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) =>
