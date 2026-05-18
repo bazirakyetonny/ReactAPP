@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { ThemeColors, ThemeIcon, TileDropPreview, BlockInsertPreview } from '../../types';
 import { TILE_H, TILE_GAP } from '../../constants';
 import { resolveColor } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
 import type { SplitPreview, FreeResizePreview } from './TileGrids';
 import { AddBlockMenu } from '../phone/AddBlockMenu';
+import { DescriptionBlock } from '../phone/DescriptionBlock';
+import { QuillEditorModal } from '../phone/QuillEditorModal';
 
 const SNAP_POINTS = [80, 120, 160];
 const SPLIT_SNAPS = [TILE_H, TILE_H * 2 + TILE_GAP, TILE_H * 3 + TILE_GAP * 2];
@@ -75,6 +77,9 @@ export interface DraggableScreenProps {
   isExternalDragActive?: boolean;
   onColRef?: (id: string, el: HTMLElement | null) => void;
   onGridRef?: (id: string, el: HTMLElement | null) => void;
+  onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
+  onEditDescription?: (infoId: string, html: string) => void;
+  onDeleteBlock?: (infoId: string) => void;
 }
 
 export function DraggableScreen({
@@ -107,9 +112,17 @@ export function DraggableScreen({
   isExternalDragActive = false,
   onColRef: onColRefExternal,
   onGridRef: onGridRefExternal,
+  onAddDescription,
+  onEditDescription,
+  onDeleteBlock,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
+
+  type EditorState =
+    | { mode: 'create'; insertBeforeInfoId: string | null }
+    | { mode: 'edit'; infoId: string; currentHtml: string };
+  const [editorState, setEditorState] = useState<EditorState | null>(null);
 
   function openAddMenu(e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) {
     e.stopPropagation();
@@ -118,7 +131,11 @@ export function DraggableScreen({
   }
 
   function handleMenuSelect(blockType: string) {
-    if (addMenu) onAddBlock?.(blockType, addMenu.insertBeforeInfoId);
+    if (blockType === 'Description') {
+      setEditorState({ mode: 'create', insertBeforeInfoId: addMenu!.insertBeforeInfoId });
+    } else {
+      if (addMenu) onAddBlock?.(blockType, addMenu.insertBeforeInfoId);
+    }
     setAddMenu(null);
   }
 
@@ -580,7 +597,7 @@ export function DraggableScreen({
           'phone-add-row',
           infoContent.length === 0 ? 'phone-add-row--visible' : '',
           effectiveDraggingTile && tileGrids.length > 0 ? 'phone-add-row--tile-drop-zone' : '',
-          effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === tileGrids[0]?.InfoId
+          effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId
             ? 'phone-add-row--tile-drop-zone-active' : '',
         ].filter(Boolean).join(' ')}>
           <button
@@ -595,41 +612,76 @@ export function DraggableScreen({
             </svg>
           </button>
         </div>
-        <TileGrids
-          tileGrids={tileGrids}
-          themeColors={themeColors}
-          themeIcons={themeIcons}
-          selectedTileId={selectedTileId}
-          onSelectTile={onSelectTile}
-          interactive={true}
-          onAddColumn={onAddColumn}
-          onDeleteTile={onDeleteTile}
-          onEditTile={onEditTile}
-          onResizeDragStart={handleResizeDragStart}
-          activeDragTileId={dragTileId}
-          splitPreview={splitPreview}
-          freeResizePreview={freeResizePreview}
-          onColRef={(id, el) => {
-            if (el) colElRefs.current.set(id, el);
-            else colElRefs.current.delete(id);
-            onColRefExternal?.(id, el);
-          }}
-          onGridRef={(id, el) => {
-            if (el) gridElRefs.current.set(id, el);
-            else gridElRefs.current.delete(id);
-            onGridRefExternal?.(id, el);
-          }}
-          onTileDragStart={handleTileDragStart}
-          tileDragId={tileDragId}
-          tileDropPreview={effectiveTileDropPreview}
-          tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
-          blockInsertPreview={effectiveBlockInsertPreview}
-          isDraggingTile={effectiveDraggingTile}
-          onTileNavigate={onTileNavigate}
-          onCollapseFromParent={onCollapseFromParent}
-          activeNavTileIds={activeNavTileIds}
-          onAddBtnClick={openAddMenu}
-        />
+        {infoContent.map((block: any, i: number) => {
+          const nextInfoId: string | null = infoContent[i + 1]?.InfoId ?? null;
+          if (block.InfoType === 'TileGrid') {
+            return (
+              <TileGrids
+                key={block.InfoId}
+                tileGrids={[block]}
+                overrideAddBtnInsertBeforeInfoId={nextInfoId}
+                themeColors={themeColors}
+                themeIcons={themeIcons}
+                selectedTileId={selectedTileId}
+                onSelectTile={onSelectTile}
+                interactive={true}
+                onAddColumn={onAddColumn}
+                onDeleteTile={onDeleteTile}
+                onEditTile={onEditTile}
+                onResizeDragStart={handleResizeDragStart}
+                activeDragTileId={dragTileId}
+                splitPreview={splitPreview}
+                freeResizePreview={freeResizePreview}
+                onColRef={(id, el) => {
+                  if (el) colElRefs.current.set(id, el);
+                  else colElRefs.current.delete(id);
+                  onColRefExternal?.(id, el);
+                }}
+                onGridRef={(id, el) => {
+                  if (el) gridElRefs.current.set(id, el);
+                  else gridElRefs.current.delete(id);
+                  onGridRefExternal?.(id, el);
+                }}
+                onTileDragStart={handleTileDragStart}
+                tileDragId={tileDragId}
+                tileDropPreview={effectiveTileDropPreview}
+                tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
+                blockInsertPreview={effectiveBlockInsertPreview}
+                isDraggingTile={effectiveDraggingTile}
+                onTileNavigate={onTileNavigate}
+                onCollapseFromParent={onCollapseFromParent}
+                activeNavTileIds={activeNavTileIds}
+                onAddBtnClick={openAddMenu}
+              />
+            );
+          }
+          if (block.InfoType === 'Description') {
+            return (
+              <React.Fragment key={block.InfoId}>
+                <DescriptionBlock
+                  block={block}
+                  interactive={true}
+                  onEdit={(infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
+                  onDelete={(infoId) => onDeleteBlock?.(infoId)}
+                />
+                <div className="phone-add-row">
+                  <button
+                    className="phone-add-btn"
+                    type="button"
+                    aria-label="Add content block"
+                    onClick={(e) => openAddMenu(e, nextInfoId)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </React.Fragment>
+            );
+          }
+          return null;
+        })}
       </div>
 
       {addMenu && (
@@ -637,6 +689,20 @@ export function DraggableScreen({
           pos={addMenu.pos}
           onSelect={handleMenuSelect}
           onClose={() => setAddMenu(null)}
+        />
+      )}
+
+      {editorState && (
+        <QuillEditorModal
+          initialHtml={editorState.mode === 'edit' ? editorState.currentHtml : ''}
+          onSave={(html) => {
+            if (editorState.mode === 'create')
+              onAddDescription?.(html, editorState.insertBeforeInfoId);
+            else
+              onEditDescription?.(editorState.infoId, html);
+            setEditorState(null);
+          }}
+          onCancel={() => setEditorState(null)}
         />
       )}
 

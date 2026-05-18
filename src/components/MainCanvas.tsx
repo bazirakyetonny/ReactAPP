@@ -5,6 +5,7 @@ import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
 import { TileGrids } from './tile/TileGrids';
+import { DescriptionBlock } from './phone/DescriptionBlock';
 
 export type { TileDropPreview, BlockInsertPreview, AllFrameData };
 
@@ -21,6 +22,9 @@ export interface LinkedFrame {
   onFreeResizeRelease?: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, oppColTiles: any[]) => void;
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
+  onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
+  onEditDescription?: (infoId: string, html: string) => void;
+  onDeleteBlock?: (infoId: string) => void;
 }
 
 interface MainCanvasProps {
@@ -45,6 +49,9 @@ interface MainCanvasProps {
   onTileNavigate?: (pageId: string, parentIndex: number) => void;
   onCollapseDescendants?: (parentIndex: number) => void;
   activeNavTileIds?: Set<string>;
+  onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
+  onEditDescription?: (infoId: string, html: string) => void;
+  onDeleteBlock?: (infoId: string) => void;
 }
 
 export function MainCanvas({
@@ -69,6 +76,9 @@ export function MainCanvas({
   onTileNavigate,
   onCollapseDescendants,
   activeNavTileIds,
+  onAddDescription,
+  onEditDescription,
+  onDeleteBlock,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -194,6 +204,9 @@ export function MainCanvas({
             isExternalDragActive={!!(crossFramePreview?.frameIndex === -1 && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
             onColRef={(id, el) => registerFrameEl(-1, 'col', id, el)}
             onGridRef={(id, el) => registerFrameEl(-1, 'grid', id, el)}
+            onAddDescription={onAddDescription}
+            onEditDescription={onEditDescription}
+            onDeleteBlock={onDeleteBlock}
           />
         </div>
 
@@ -238,6 +251,9 @@ export function MainCanvas({
                 isExternalDragActive={!!(crossFramePreview?.frameIndex === i && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
                 onColRef={(id, el) => registerFrameEl(i, 'col', id, el)}
                 onGridRef={(id, el) => registerFrameEl(i, 'grid', id, el)}
+                onAddDescription={frame.onAddDescription}
+                onEditDescription={frame.onEditDescription}
+                onDeleteBlock={frame.onDeleteBlock}
               />
             </div>
           );
@@ -257,34 +273,43 @@ export function MainCanvas({
             <PhoneStatusBar />
             <PhoneAppHeader />
             <div className="phone-screen">
-              <div className={`phone-add-row${tileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
-              <TileGrids tileGrids={tileGrids} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />
+              <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
+              {infoContent.map((block: any) => {
+                if (block.InfoType === 'TileGrid')
+                  return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
+                if (block.InfoType === 'Description')
+                  return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
+                return null;
+              })}
             </div>
           </div>
         </div>
 
-        {linkedFrames?.map((frame, i) => {
-          const thumbTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
-          return (
+        {linkedFrames?.map((frame, i) => (
+          <div
+            key={frame.page?.PageId ?? i}
+            className={`page-thumb-clip${activeFrameIndex === i ? ' page-thumb-clip--active' : ''}`}
+            onClick={() => { setManualActiveIndex(i); scrollToFrame(i); }}
+          >
             <div
-              key={frame.page?.PageId ?? i}
-              className={`page-thumb-clip${activeFrameIndex === i ? ' page-thumb-clip--active' : ''}`}
-              onClick={() => { setManualActiveIndex(i); scrollToFrame(i); }}
+              className="phone-frame page-thumb-frame"
+              style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
             >
-              <div
-                className="phone-frame page-thumb-frame"
-                style={{ width: thumbFrameW, transform: `scale(${(45 / thumbFrameW).toFixed(6)})` }}
-              >
-                <PhoneStatusBar />
-                <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
-                <div className="phone-screen">
-                  <div className={`phone-add-row${thumbTileGrids.length === 0 ? ' phone-add-row--visible' : ''}`} />
-                  <TileGrids tileGrids={thumbTileGrids} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />
-                </div>
+              <PhoneStatusBar />
+              <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
+              <div className="phone-screen">
+                <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
+                {frame.infoContent.map((block: any) => {
+                  if (block.InfoType === 'TileGrid')
+                    return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
+                  if (block.InfoType === 'Description')
+                    return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
+                  return null;
+                })}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </main>
   );

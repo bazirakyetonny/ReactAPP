@@ -19,6 +19,9 @@ import {
   extractTileFromContent,
   insertTileAtPreview,
   parseInfoContent,
+  applyAddDescription,
+  applyEditDescription,
+  applyDeleteBlock,
 } from './utils/contentTransforms';
 
 const TILE_H = 80;
@@ -123,6 +126,23 @@ function App() {
 
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
     setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+  }
+
+  function handleAddDescription(html: string, insertBeforeInfoId: string | null) {
+    setInfoContent(prev => applyAddDescription(prev, html, insertBeforeInfoId));
+  }
+
+  function handleEditDescription(infoId: string, html: string) {
+    setInfoContent(prev => applyEditDescription(prev, infoId, html));
+    setNavContents(prev => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditDescription(blocks, infoId, html);
+      return next;
+    });
+  }
+
+  function handleDeleteBlock(infoId: string) {
+    setInfoContent(prev => applyDeleteBlock(prev, infoId));
   }
 
   function handleFreeResizeRelease(gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) {
@@ -283,6 +303,12 @@ function App() {
         update(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview)),
       onTileDropAsNewBlock: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) =>
         update(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId)),
+      onAddDescription: (html: string, insertBeforeInfoId: string | null) =>
+        update(prev => applyAddDescription(prev, html, insertBeforeInfoId)),
+      onEditDescription: (infoId: string, html: string) =>
+        update(prev => applyEditDescription(prev, infoId, html)),
+      onDeleteBlock: (infoId: string) =>
+        update(prev => applyDeleteBlock(prev, infoId)),
     };
   });
 
@@ -316,6 +342,9 @@ function App() {
           onTileNavigate={handleTileNavigate}
           onCollapseDescendants={handleCollapseDescendants}
           activeNavTileIds={activeNavTileIds}
+          onAddDescription={handleAddDescription}
+          onEditDescription={handleEditDescription}
+          onDeleteBlock={handleDeleteBlock}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

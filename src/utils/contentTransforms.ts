@@ -409,3 +409,20 @@ export function parseInfoContent(): any[] {
     return [];
   }
 }
+
+export function applyAddDescription(prev: any[], html: string, insertBeforeInfoId: string | null, ts = Date.now()): any[] {
+  const newBlock = { InfoId: `desc-${ts}`, InfoType: 'Description', InfoValue: html };
+  if (insertBeforeInfoId === null) return [...prev, newBlock];
+  const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+  return idx === -1 ? [...prev, newBlock] : [...prev.slice(0, idx), newBlock, ...prev.slice(idx)];
+}
+
+export function applyEditDescription(prev: any[], infoId: string, html: string): any[] {
+  return prev.map((b: any) =>
+    b.InfoId === infoId && b.InfoType === 'Description' ? { ...b, InfoValue: html } : b
+  );
+}
+
+export function applyDeleteBlock(prev: any[], infoId: string): any[] {
+  return prev.filter((b: any) => b.InfoId !== infoId);
+}

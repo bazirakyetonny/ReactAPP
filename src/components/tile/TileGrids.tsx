@@ -46,6 +46,7 @@ interface TileGridsProps {
   onCollapseFromParent?: () => void;
   activeNavTileIds?: Set<string>;
   onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
+  overrideAddBtnInsertBeforeInfoId?: string | null;
 }
 
 function getColsForRender(
@@ -106,6 +107,7 @@ export function TileGrids({
   onCollapseFromParent,
   activeNavTileIds,
   onAddBtnClick,
+  overrideAddBtnInsertBeforeInfoId,
 }: TileGridsProps) {
   return (
     <>
@@ -388,7 +390,11 @@ export function TileGrids({
                   className="phone-add-btn"
                   type="button"
                   aria-label="Add content"
-                  onClick={(e) => onAddBtnClick?.(e, tileGrids[gridIdx + 1]?.InfoId ?? null)}
+                  onClick={(e) => onAddBtnClick?.(e,
+                    overrideAddBtnInsertBeforeInfoId !== undefined
+                      ? overrideAddBtnInsertBeforeInfoId
+                      : tileGrids[gridIdx + 1]?.InfoId ?? null
+                  )}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
