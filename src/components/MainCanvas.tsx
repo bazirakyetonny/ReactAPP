@@ -1098,11 +1098,16 @@ function DraggableScreen({
           setBlockInsertPreview(null);
           if (emptyFrameDrop) {
             onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: null, biPreview: null, emptyDrop: true });
-          } else if (preview) {
-            onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: preview, biPreview: null, emptyDrop: false });
           } else {
+            // Block insert takes priority over tile drop — same as within-frame behavior
             const crossBi = calcCrossFrameBlockInsert(ev.clientX, ev.clientY, targetFrameIdx);
-            onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: null, biPreview: crossBi, emptyDrop: false });
+            if (crossBi) {
+              onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: null, biPreview: crossBi, emptyDrop: false });
+            } else if (preview) {
+              onCrossFrameDragPreviewRef.current?.({ frameIndex: targetFrameIdx, tdPreview: preview, biPreview: null, emptyDrop: false });
+            } else {
+              onCrossFrameDragPreviewRef.current?.(null);
+            }
           }
         } else {
           setTileDropPreview(preview);
@@ -1123,11 +1128,14 @@ function DraggableScreen({
           const isCross = targetFrameIdx !== sourceFrameIndexRef.current;
           if (isCross && emptyFrameDrop) {
             onCrossFrameTileDropToEmptyRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx);
-          } else if (isCross && preview?.valid) {
-            onCrossFrameTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx, preview);
           } else if (isCross) {
+            // Block insert takes priority over tile drop
             const crossBi = calcCrossFrameBlockInsert(ev.clientX, ev.clientY, targetFrameIdx);
-            if (crossBi) onCrossFrameTileDropAsNewBlockRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx, crossBi.insertBeforeInfoId);
+            if (crossBi) {
+              onCrossFrameTileDropAsNewBlockRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx, crossBi.insertBeforeInfoId);
+            } else if (preview?.valid) {
+              onCrossFrameTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, targetFrameIdx, preview);
+            }
           } else if (!isCross && preview?.valid) {
             onTileDropRef.current?.(drag.fromGridId, drag.fromColId, drag.tileId, preview);
           }
