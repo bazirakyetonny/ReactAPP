@@ -462,3 +462,17 @@ export interface MoodColor {
   ColorName: string;
   MoodColorCode: string;
 }
+
+export interface TileDropPreview {
+  targetGridId: string;
+  targetColId: string;
+  insertIndex: number;
+  newColumn: boolean;
+  insertColAfterColId: string | null;
+  isColumnSwap: boolean;
+  valid: boolean;
+}
+
+export interface BlockInsertPreview {
+  insertBeforeInfoId: string | null;
+}

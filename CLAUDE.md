@@ -35,3 +35,38 @@ ESLint is configured for `.js`/`.jsx` files with `react-hooks` and `react-refres
 ## App Builder
 
 - [Page Structure](app_builder/page_structure.md) — data model for app versions, pages, and page content building blocks (TileGrid, Cta, Description, Image)
+
+## Component & File Organisation Rules
+
+### File size limit
+Keep every source file under **400 lines**. When a file approaches this limit, extract sub-components or utilities before adding more code.
+
+### Folder structure
+```
+src/
+  constants.ts                    # Shared numeric/string constants (TILE_H, TILE_GAP, …)
+  types.ts                        # All shared TypeScript interfaces and types
+  utils/
+    contentTransforms.ts          # Pure content-array transform functions (apply*)
+    tileUtils.ts                  # Tile rendering helpers (resolveColor, resolveIconSVG)
+  components/
+    phone/                        # Phone chrome UI (status bar, headers, menus)
+      StatusBar.tsx
+      PhoneHeaders.tsx
+      AddBlockMenu.tsx
+    tile/                         # Tile drag-and-drop system
+      TileGrids.tsx               # Stateless tile grid renderer
+      DraggableScreen.tsx         # Drag/resize state + event wiring
+    MainCanvas.tsx                # Orchestrator: frame registry, scroll, thumbnails
+    NavBar.tsx
+    SidebarRight.tsx
+```
+
+### Rules to follow
+- **One responsibility per file.** UI components live in `components/`, pure functions in `utils/`, shared types in `types.ts`, and magic numbers in `constants.ts`.
+- **No inlining large sub-trees.** If a JSX subtree exceeds ~40 lines or has its own props interface, extract it to its own component file.
+- **Shared constants go in `src/constants.ts`.** Never duplicate a magic number across files — define it once and import it.
+- **Shared types go in `src/types.ts`.** Types used by more than one file belong there, not re-defined locally.
+- **Pure transform functions go in `src/utils/`.** Functions that take data and return new data (no side-effects, no React) belong in utils, not in components.
+- **No barrel index files.** Import directly from the source file (e.g. `'./tile/TileGrids'`), not from a re-exporting `index.ts`.
+- **CSS stays with its owning component.** Component-specific CSS files (e.g. `MainCanvas.css`) live alongside the component that imports them.
