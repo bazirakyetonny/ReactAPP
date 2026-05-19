@@ -4,7 +4,8 @@
       "PowerShell(netstat -ano)",
       "Skill(commit)",
       "Skill(commit:*)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git add *)"
     ]
   }
 }
