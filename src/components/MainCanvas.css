@@ -968,6 +968,7 @@
 /* ── Image block ─────────────────────────────────────────────────────────── */
 .phone-image-block {
   position: relative;
+  padding: 0 10px;
 }
 .phone-image-block--interactive {
   cursor: grab;
@@ -980,8 +981,13 @@
   pointer-events: none;
 }
 .phone-image-single {
+  max-height: 156px;
+  min-height: 156px;
   width: 100%;
+  border-radius: 13px;
+  object-fit: cover;
   display: block;
+  border: 1px dashed #222f54;
 }
 .phone-image-empty {
   padding: 24px;
@@ -1025,11 +1031,15 @@
 /* Carousel */
 .phone-image-carousel {
   position: relative;
-  overflow: hidden;
 }
 .phone-carousel-img {
+  max-height: 156px;
+  min-height: 156px;
   width: 100%;
+  border-radius: 13px;
+  object-fit: cover;
   display: block;
+  border: 1px dashed #222f54;
 }
 .phone-carousel-prev,
 .phone-carousel-next {
