@@ -25,6 +25,8 @@ import {
   applyMoveBlock,
   applyExtractBlock,
   applyInsertBlock,
+  applyAddImage,
+  applyEditImageSelection,
 } from './utils/contentTransforms';
 
 const TILE_H = 80;
@@ -146,6 +148,19 @@ function App() {
 
   function handleDeleteBlock(infoId: string) {
     setInfoContent(prev => applyDeleteBlock(prev, infoId));
+  }
+
+  function handleAddImage(images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) {
+    setInfoContent(prev => applyAddImage(prev, images, insertBeforeInfoId));
+  }
+
+  function handleEditImage(infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) {
+    setInfoContent(prev => applyEditImageSelection(prev, infoId, images));
+    setNavContents(prev => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditImageSelection(blocks, infoId, images);
+      return next;
+    });
   }
 
   function handleMoveBlock(infoId: string, insertBeforeInfoId: string | null) {
@@ -334,6 +349,10 @@ function App() {
         update(prev => applyDeleteBlock(prev, infoId)),
       onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) =>
         update(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId)),
+      onAddImage: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) =>
+        update(prev => applyAddImage(prev, images, insertBeforeInfoId)),
+      onEditImage: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) =>
+        update(prev => applyEditImageSelection(prev, infoId, images)),
     };
   });
 
@@ -372,6 +391,8 @@ function App() {
           onDeleteBlock={handleDeleteBlock}
           onMoveBlock={handleMoveBlock}
           onCrossFrameBlockDrop={handleCrossFrameBlockDrop}
+          onAddImage={handleAddImage}
+          onEditImage={handleEditImage}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}

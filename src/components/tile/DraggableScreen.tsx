@@ -7,6 +7,9 @@ import type { SplitPreview, FreeResizePreview } from './TileGrids';
 import { AddBlockMenu } from '../phone/AddBlockMenu';
 import { DescriptionBlock } from '../phone/DescriptionBlock';
 import { QuillEditorModal } from '../phone/QuillEditorModal';
+import { ImageBlock } from '../phone/ImageBlock';
+import { MediaLibraryModal } from '../phone/MediaLibraryModal';
+import type { Image } from '../../types';
 
 const SNAP_POINTS = [80, 120, 160];
 const SPLIT_SNAPS = [TILE_H, TILE_H * 2 + TILE_GAP, TILE_H * 3 + TILE_GAP * 2];
@@ -87,6 +90,8 @@ export interface DraggableScreenProps {
   isExternalBlockDragActive?: boolean;
   externalBlockDropPreview?: { insertBeforeInfoId: string | null } | null;
   onBlockWrapperRef?: (infoId: string, el: HTMLElement | null) => void;
+  onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
+  onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
 }
 
 export function DraggableScreen({
@@ -128,6 +133,8 @@ export function DraggableScreen({
   isExternalBlockDragActive = false,
   externalBlockDropPreview,
   onBlockWrapperRef,
+  onAddImage,
+  onEditImage,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -140,6 +147,11 @@ export function DraggableScreen({
     | { mode: 'edit'; infoId: string; currentHtml: string };
   const [editorState, setEditorState] = useState<EditorState | null>(null);
 
+  type ImageEditorState =
+    | { mode: 'create'; insertBeforeInfoId: string | null }
+    | { mode: 'edit'; infoId: string; currentImages: Image[] };
+  const [imageEditorState, setImageEditorState] = useState<ImageEditorState | null>(null);
+
   function openAddMenu(e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -149,6 +161,8 @@ export function DraggableScreen({
   function handleMenuSelect(blockType: string) {
     if (blockType === 'Description') {
       setEditorState({ mode: 'create', insertBeforeInfoId: addMenu!.insertBeforeInfoId });
+    } else if (blockType === 'Image') {
+      setImageEditorState({ mode: 'create', insertBeforeInfoId: addMenu!.insertBeforeInfoId });
     } else {
       if (addMenu) onAddBlock?.(blockType, addMenu.insertBeforeInfoId);
     }
@@ -869,6 +883,43 @@ export function DraggableScreen({
               </React.Fragment>
             );
           }
+          if (block.InfoType === 'Images') {
+            return (
+              <React.Fragment key={block.InfoId}>
+                <div ref={(el) => {
+                  if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
+                  else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
+                }}>
+                  <ImageBlock
+                    block={block}
+                    interactive={true}
+                    isDragging={blockDragId === block.InfoId}
+                    onEdit={(infoId) => setImageEditorState({ mode: 'edit', infoId, currentImages: block.Images ?? [] })}
+                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={handleBlockDragStart}
+                  />
+                </div>
+                {dropZoneAfterActive
+                  ? <div className="block-drop-zone" />
+                  : !effectiveBlockDragActive && (
+                    <div className="phone-add-row">
+                      <button
+                        className="phone-add-btn"
+                        type="button"
+                        aria-label="Add content block"
+                        onClick={(e) => openAddMenu(e, nextInfoId)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
+                }
+              </React.Fragment>
+            );
+          }
           return null;
         })}
       </div>
@@ -892,6 +943,20 @@ export function DraggableScreen({
             setEditorState(null);
           }}
           onCancel={() => setEditorState(null)}
+        />
+      )}
+
+      {imageEditorState && (
+        <MediaLibraryModal
+          initialSelectedIds={imageEditorState.mode === 'edit' ? imageEditorState.currentImages.map(img => img.InfoImageId) : []}
+          onSelect={(images) => {
+            if (imageEditorState.mode === 'create')
+              onAddImage?.(images, imageEditorState.insertBeforeInfoId);
+            else
+              onEditImage?.(imageEditorState.infoId, images);
+            setImageEditorState(null);
+          }}
+          onCancel={() => setImageEditorState(null)}
         />
       )}
 

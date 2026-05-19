@@ -446,3 +446,25 @@ export function applyInsertBlock(prev: any[], block: any, insertBeforeInfoId: st
   const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
   return idx === -1 ? [...prev, block] : [...prev.slice(0, idx), block, ...prev.slice(idx)];
 }
+
+export function applyAddImage(
+  prev: any[],
+  images: { InfoImageId: string; InfoImageValue: string }[],
+  insertBeforeInfoId: string | null,
+  ts = Date.now()
+): any[] {
+  const newBlock = { InfoId: `img-${ts}`, InfoType: 'Images', InfoValue: '', Images: images };
+  if (insertBeforeInfoId === null) return [...prev, newBlock];
+  const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+  return idx === -1 ? [...prev, newBlock] : [...prev.slice(0, idx), newBlock, ...prev.slice(idx)];
+}
+
+export function applyEditImageSelection(
+  prev: any[],
+  infoId: string,
+  images: { InfoImageId: string; InfoImageValue: string }[]
+): any[] {
+  return prev.map((b: any) =>
+    b.InfoId === infoId && b.InfoType === 'Images' ? { ...b, Images: images } : b
+  );
+}

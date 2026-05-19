@@ -10,7 +10,7 @@ export interface AddBlockMenuProps {
 const ADD_BLOCK_ITEMS = [
   { label: 'Call To Action', type: 'Cta', arrow: true, disabled: true },
   { label: 'Description', type: 'Description', disabled: false },
-  { label: 'Image', type: 'Image', disabled: true },
+  { label: 'Image', type: 'Image', disabled: false },
   { label: 'Tile', type: 'TileGrid', disabled: false },
 ] as const;
 

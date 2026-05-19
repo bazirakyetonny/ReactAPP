@@ -6,6 +6,7 @@ import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
 import { TileGrids } from './tile/TileGrids';
 import { DescriptionBlock } from './phone/DescriptionBlock';
+import { ImageBlock } from './phone/ImageBlock';
 
 export type { TileDropPreview, BlockInsertPreview, AllFrameData };
 
@@ -27,6 +28,8 @@ export interface LinkedFrame {
   onDeleteBlock?: (infoId: string) => void;
   onMoveBlock?: (infoId: string, insertBeforeInfoId: string | null) => void;
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
+  onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
+  onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
 }
 
 interface MainCanvasProps {
@@ -56,6 +59,8 @@ interface MainCanvasProps {
   onDeleteBlock?: (infoId: string) => void;
   onMoveBlock?: (infoId: string, insertBeforeInfoId: string | null) => void;
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
+  onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
+  onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
 }
 
 export function MainCanvas({
@@ -85,6 +90,8 @@ export function MainCanvas({
   onDeleteBlock,
   onMoveBlock,
   onCrossFrameBlockDrop,
+  onAddImage,
+  onEditImage,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -227,6 +234,8 @@ export function MainCanvas({
             onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
             externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === -1 ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
             isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === -1}
+            onAddImage={onAddImage}
+            onEditImage={onEditImage}
           />
         </div>
 
@@ -280,6 +289,8 @@ export function MainCanvas({
                 onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
                 externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === i ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
                 isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === i}
+                onAddImage={frame.onAddImage}
+                onEditImage={frame.onEditImage}
               />
             </div>
           );
@@ -305,6 +316,8 @@ export function MainCanvas({
                   return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
                 if (block.InfoType === 'Description')
                   return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
+                if (block.InfoType === 'Images')
+                  return <ImageBlock key={block.InfoId} block={block} interactive={false} />;
                 return null;
               })}
             </div>
@@ -330,6 +343,8 @@ export function MainCanvas({
                     return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
                   if (block.InfoType === 'Description')
                     return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
+                  if (block.InfoType === 'Images')
+                    return <ImageBlock key={block.InfoId} block={block} interactive={false} />;
                   return null;
                 })}
               </div>
