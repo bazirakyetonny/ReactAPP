@@ -29,7 +29,7 @@ function ImageCarousel({ images }: { images: Image[] }) {
         type="button"
         aria-label="Previous image"
         onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); setIdx(i => Math.max(0, i - 1)); }}
+        onClick={(e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); }}
       >
         ‹
       </button>
@@ -38,7 +38,7 @@ function ImageCarousel({ images }: { images: Image[] }) {
         type="button"
         aria-label="Next image"
         onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); setIdx(i => Math.min(images.length - 1, i + 1)); }}
+        onClick={(e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); }}
       >
         ›
       </button>
