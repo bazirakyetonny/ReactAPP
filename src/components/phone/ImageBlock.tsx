@@ -23,7 +23,7 @@ function ImageCarousel({ images }: { images: Image[] }) {
   const img = images[clamped];
   return (
     <div className="phone-image-carousel">
-      <img src={img.InfoImageValue} alt="" className="phone-carousel-img" />
+      <img src={img.InfoImageValue} alt="" className="phone-carousel-img" draggable={false} />
       <button
         className="phone-carousel-prev"
         type="button"
@@ -77,7 +77,7 @@ export function ImageBlock({ block, interactive = false, isDragging = false, onE
         <div className="phone-image-empty">No image selected</div>
       )}
       {images.length === 1 && (
-        <img src={images[0].InfoImageValue} alt="" className="phone-image-single" />
+        <img src={images[0].InfoImageValue} alt="" className="phone-image-single" draggable={false} />
       )}
       {images.length > 1 && (
         <ImageCarousel images={images} />
