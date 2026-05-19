@@ -256,6 +256,7 @@ export function DraggableScreen({
     hasMoved: boolean;
     ghostWidth: number;
     ghostHtml: string;
+    ghostImages: Image[];
   } | null>(null);
   const allFramesBlockRectsRef = useRef<Map<string, { rect: DOMRect; frameIndex: number }>>(new Map());
 
@@ -664,7 +665,7 @@ export function DraggableScreen({
     blockDragInfoRef.current = {
       infoId, startX: e.clientX, startY: e.clientY,
       offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
-      hasMoved: false, ghostWidth: rect.width, ghostHtml: block?.InfoValue ?? '',
+      hasMoved: false, ghostWidth: rect.width, ghostHtml: block?.InfoValue ?? '', ghostImages: block?.Images ?? [],
     };
 
     function buildEntries(frameContent: any[], frameIdx: number): Array<{ id: string; rect: DOMRect }> {
@@ -989,8 +990,18 @@ export function DraggableScreen({
             width: blockDragInfoRef.current.ghostWidth,
             maxHeight: 120,
           }}
-          dangerouslySetInnerHTML={{ __html: blockDragInfoRef.current.ghostHtml }}
-        />
+        >
+          {blockDragInfoRef.current.ghostImages.length > 0 ? (
+            <img
+              src={blockDragInfoRef.current.ghostImages[0].InfoImageValue}
+              alt=""
+              draggable={false}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 13 }}
+            />
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: blockDragInfoRef.current.ghostHtml }} />
+          )}
+        </div>
       )}
     </>
   );
