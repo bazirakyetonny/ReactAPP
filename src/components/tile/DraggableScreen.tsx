@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ThemeColors, ThemeIcon, TileDropPreview, BlockInsertPreview } from '../../types';
 import { TILE_H, TILE_GAP } from '../../constants';
-import { resolveColor } from '../../utils/tileUtils';
+import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
 import type { SplitPreview, FreeResizePreview } from './TileGrids';
 import { AddBlockMenu } from '../phone/AddBlockMenu';
@@ -185,6 +185,7 @@ export function DraggableScreen({
   const onTileDropAsNewBlockRef = useRef(onTileDropAsNewBlock);
   const infoContentRef = useRef(infoContent);
   const themeColorsRef = useRef(themeColors);
+  const themeIconsRef = useRef(themeIcons);
   const getAllFrameDataRef = useRef(getAllFrameData);
   const onCrossFrameDragPreviewRef = useRef(onCrossFrameDragPreview);
   const onCrossFrameTileDropRef = useRef(onCrossFrameTileDrop);
@@ -199,6 +200,7 @@ export function DraggableScreen({
   useEffect(() => { onTileDropAsNewBlockRef.current = onTileDropAsNewBlock; });
   useEffect(() => { infoContentRef.current = infoContent; });
   useEffect(() => { themeColorsRef.current = themeColors; });
+  useEffect(() => { themeIconsRef.current = themeIcons; });
   useEffect(() => { getAllFrameDataRef.current = getAllFrameData; });
   useEffect(() => { onCrossFrameDragPreviewRef.current = onCrossFrameDragPreview; });
   useEffect(() => { onCrossFrameTileDropRef.current = onCrossFrameTileDrop; });
@@ -241,6 +243,7 @@ export function DraggableScreen({
     bgColor: string;
     tileColor: string;
     tileData: any;
+    ghostIconSvg: string | null;
   } | null>(null);
 
   const colElRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -551,6 +554,7 @@ export function DraggableScreen({
       bgColor: resolveColor(tile.BGColor, themeColorsRef.current),
       tileColor: tile.Color ?? '#ffffff',
       tileData: tile,
+      ghostIconSvg: resolveIconSVG(tile, themeIconsRef.current),
     };
 
     function onMove(ev: MouseEvent) {
@@ -961,25 +965,38 @@ export function DraggableScreen({
         />
       )}
 
-      {ghostPos && tileDragInfoRef.current && (
-        <div
-          className="phone-tile-floating-ghost"
-          style={{
-            left: ghostPos.x - tileDragInfoRef.current.offsetX,
-            top: ghostPos.y - tileDragInfoRef.current.offsetY,
-            width: tileDragInfoRef.current.ghostWidth,
-            height: tileDragInfoRef.current.ghostHeight,
-            background: tileDragInfoRef.current.bgColor,
-            color: tileDragInfoRef.current.tileColor,
-          }}
-        >
-          {tileDragInfoRef.current.tileData?.Text && (
-            <span className="phone-tile-text" style={{ padding: '0 6px' }}>
-              {tileDragInfoRef.current.tileData.Text}
-            </span>
-          )}
-        </div>
-      )}
+      {ghostPos && tileDragInfoRef.current && (() => {
+        const tg = tileDragInfoRef.current!;
+        return (
+          <div
+            className="phone-tile-floating-ghost"
+            style={{
+              left: ghostPos.x - tg.offsetX,
+              top: ghostPos.y - tg.offsetY,
+              width: tg.ghostWidth,
+              height: tg.ghostHeight,
+            }}
+          >
+            <div
+              className="phone-tile"
+              style={{
+                background: tg.bgColor,
+                color: tg.tileColor,
+                textAlign: tg.tileData?.Align ?? 'center',
+                alignItems: tg.tileData?.Align === 'left' ? 'flex-start' : tg.tileData?.Align === 'right' ? 'flex-end' : 'center',
+                justifyContent: tg.tileData?.Align === 'left' ? 'flex-start' : 'center',
+              }}
+            >
+              {tg.ghostIconSvg && (
+                <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: tg.ghostIconSvg }} />
+              )}
+              {tg.tileData?.Text && (
+                <span className="phone-tile-text">{tg.tileData.Text}</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {blockGhostPos && blockDragId && blockDragInfoRef.current && (() => {
         const drag = blockDragInfoRef.current!;
