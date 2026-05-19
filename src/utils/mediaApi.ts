@@ -20,25 +20,22 @@ export async function getMedia(): Promise<MediaItem[]> {
   return data.SDT_MediaCollection ?? [];
 }
 
-export async function uploadMedia(file: File): Promise<MediaItem> {
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+export interface UploadPayload {
+  name: string;
+  base64: string;
+  size: number;
+  type: string;
+}
 
+export async function uploadMedia(payload: UploadPayload): Promise<MediaItem> {
   const res = await fetch(`${BASE}/media/upload`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      MediaName: file.name,
-      MediaImageData: base64,
-      MediaSize: file.size,
-      MediaType: file.type,
+      MediaName: payload.name,
+      MediaImageData: payload.base64,
+      MediaSize: payload.size,
+      MediaType: payload.type,
     }),
   });
   if (!res.ok) throw new Error(`uploadMedia failed: ${res.status}`);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { getMedia, uploadMedia, deleteMedia } from '../../utils/mediaApi';
+import { getMedia, uploadMedia } from '../../utils/mediaApi';
 import type { MediaItem } from '../../utils/mediaApi';
 
 interface MediaLibraryModalProps {
@@ -9,14 +9,52 @@ interface MediaLibraryModalProps {
   onCancel: () => void;
 }
 
+function compressImage(
+  file: File,
+  maxWidth = 1400,
+  quality = 0.82,
+): Promise<{ base64: string; type: string; size: number; name: string }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, maxWidth / img.naturalWidth);
+      const w = Math.round(img.naturalWidth * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => {
+        if (!blob) { reject(new Error('Compression failed')); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            base64: (reader.result as string).split(',')[1],
+            type: 'image/jpeg',
+            size: blob.size,
+            name: file.name.replace(/\.[^.]+$/, '.jpg'),
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Load failed')); };
+    img.src = objectUrl;
+  });
+}
+
 export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: MediaLibraryModalProps) {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialSelectedIds));
-  const [uploading, setUploading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number; phase: 'compressing' | 'uploading' } | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,84 +65,170 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
     return () => { cancelled = true; };
   }, []);
 
+  const allSelected = mediaList.length > 0 && mediaList.every((m) => selectedIds.has(m.MediaId));
+  const someSelected = !allSelected && mediaList.some((m) => selectedIds.has(m.MediaId));
+
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
+  }, [someSelected]);
+
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(mediaList.map((m) => m.MediaId)));
+  }
+
   function toggleSelect(mediaId: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(mediaId)) next.delete(mediaId);
-      else next.add(mediaId);
+      if (next.has(mediaId)) next.delete(mediaId); else next.add(mediaId);
       return next;
     });
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    setUploading(true);
-    try {
-      const newItem = await uploadMedia(file);
-      setMediaList((prev) => [newItem, ...prev]);
-    } catch (err: any) {
-      alert(err.message ?? 'Upload failed');
-    } finally {
-      setUploading(false);
+  async function processFiles(files: File[]) {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    if (images.length === 0) return;
+
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i];
+
+      setUploadProgress({ done: i, total: images.length, phase: 'compressing' });
+      let payload;
+      try {
+        const compressed = await compressImage(file);
+        payload = compressed;
+      } catch {
+        const b64 = await new Promise<string>((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res((r.result as string).split(',')[1]);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+        payload = { base64: b64, type: file.type, size: file.size, name: file.name };
+      }
+
+      setUploadProgress({ done: i, total: images.length, phase: 'uploading' });
+      try {
+        const newItem = await uploadMedia(payload);
+        setMediaList((prev) => [newItem, ...prev]);
+      } catch (err: any) {
+        console.error('Upload failed:', file.name, err.message);
+      }
+
+      setUploadProgress({ done: i + 1, total: images.length, phase: 'uploading' });
     }
+
+    setUploadProgress(null);
   }
 
-  async function handleDelete(e: React.MouseEvent, mediaId: string) {
-    e.stopPropagation();
-    setDeletingId(mediaId);
-    try {
-      await deleteMedia(mediaId);
-      setMediaList((prev) => prev.filter((m) => m.MediaId !== mediaId));
-      setSelectedIds((prev) => { const s = new Set(prev); s.delete(mediaId); return s; });
-    } catch (err: any) {
-      alert(err.message ?? 'Delete failed');
-    } finally {
-      setDeletingId(null);
-    }
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    await processFiles(files);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDraggingOver(false);
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    await processFiles(Array.from(e.dataTransfer.files));
   }
 
   function handleConfirm() {
     const selected = mediaList.filter((m) => selectedIds.has(m.MediaId));
-    const images = selected.map((m) => ({
+    onSelect(selected.map((m) => ({
       InfoImageId: m.MediaId,
       InfoImageValue: m.MediaUrl || `data:${m.MediaType};base64,${m.MediaImage}`,
-    }));
-    onSelect(images);
+    })));
   }
+
+  const progressPct = uploadProgress
+    ? Math.round((uploadProgress.done / uploadProgress.total) * 100)
+    : 0;
 
   const modal = (
     <div className="media-modal-overlay" onMouseDown={(e) => e.stopPropagation()}>
       <div className="media-modal">
+
         <div className="media-modal-header">
-          <span>Media Library</span>
-          <button
-            className="media-upload-btn"
-            type="button"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {uploading ? 'Uploading…' : '+ Upload'}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
+          <span>Edit Content</span>
+          <button className="media-modal-close" type="button" onClick={onCancel} aria-label="Close">×</button>
+        </div>
+
+        <div
+          className={`media-upload-zone${isDraggingOver ? ' media-upload-zone--active' : ''}${uploadProgress ? ' media-upload-zone--busy' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !uploadProgress && fileInputRef.current?.click()}
+        >
+          {uploadProgress ? (
+            <div className="media-upload-progress">
+              <div className="media-upload-spinner" />
+              <p className="media-upload-progress-label">
+                {uploadProgress.phase === 'compressing' ? 'Compressing images…' : 'Uploading images…'}
+              </p>
+              <div className="media-upload-bar-track">
+                <div className="media-upload-bar-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <p className="media-upload-progress-count">{uploadProgress.done} / {uploadProgress.total}</p>
+            </div>
+          ) : (
+            <>
+              <svg className="media-upload-icon" width="42" height="36" viewBox="0 0 42 36" fill="none">
+                <rect x="1" y="1" width="40" height="34" rx="4" stroke="#d1d5db" strokeWidth="0" />
+                <path d="M8 28l8-11 7 8 5-6 8 9" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                <circle cx="13" cy="12" r="3" fill="#9ca3af" />
+              </svg>
+              <p className="media-upload-hint">
+                Drag and drop or{' '}
+                <span
+                  className="media-upload-browse"
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                >
+                  browse
+                </span>
+              </p>
+            </>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
+        <div className="media-select-all-row">
+          <label className="media-select-all-label">
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+            />
+            Select Images
+          </label>
         </div>
 
         <div className="media-grid">
           {loading && <div className="media-grid-loading">Loading…</div>}
           {!loading && error && <div className="media-grid-error">{error}</div>}
           {!loading && !error && mediaList.length === 0 && (
-            <div className="media-grid-empty">No media yet. Upload an image to get started.</div>
+            <div className="media-grid-empty">No media yet. Upload images to get started.</div>
           )}
           {mediaList.map((item) => {
             const isSelected = selectedIds.has(item.MediaId);
-            const isDeleting = deletingId === item.MediaId;
             const thumb = item.MediaUrl || `data:${item.MediaType};base64,${item.MediaImage}`;
             return (
               <div
@@ -112,20 +236,14 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
                 className={`media-item${isSelected ? ' media-item--selected' : ''}`}
                 onClick={() => toggleSelect(item.MediaId)}
               >
-                <img src={thumb} alt={item.MediaName} />
-                {isSelected && (
-                  <div className="media-item-check">✓</div>
-                )}
-                <button
-                  className="media-item-delete"
-                  type="button"
-                  aria-label="Delete media"
-                  disabled={isDeleting}
-                  onClick={(e) => handleDelete(e, item.MediaId)}
-                >
-                  {isDeleting ? '…' : '×'}
-                </button>
-                <div className="media-item-name">{item.MediaName}</div>
+                <input
+                  type="checkbox"
+                  className="media-item-checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleSelect(item.MediaId)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <img src={thumb} alt={item.MediaName} draggable={false} />
               </div>
             );
           })}
@@ -133,11 +251,9 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
 
         <div className="media-modal-footer">
           <span className="media-selected-count">
-            {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'No images selected'}
+            {selectedIds.size > 0 ? `${selectedIds.size} image${selectedIds.size !== 1 ? 's' : ''} selected` : ''}
           </span>
-          <button className="media-cancel-btn" type="button" onClick={onCancel}>
-            Cancel
-          </button>
+          <button className="media-cancel-btn" type="button" onClick={onCancel}>Cancel</button>
           <button
             className="media-select-btn"
             type="button"
@@ -147,6 +263,7 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
             Select
           </button>
         </div>
+
       </div>
     </div>
   );
