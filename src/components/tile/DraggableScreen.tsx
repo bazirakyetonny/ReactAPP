@@ -362,17 +362,32 @@ export function DraggableScreen({
     };
   }, [dragTileId]);
 
-  function calcInsertIndexInCol(col: any, y: number): number {
+  function calcInsertIndexInCol(col: any, y: number, skipIndex?: number): number {
     const rect = colRectsSnapshot.current.get(col.ColId);
     if (!rect) return (col.Tiles ?? []).length;
-    let cumY = rect.top;
     const tiles: any[] = col.Tiles ?? [];
-    for (let i = 0; i < tiles.length; i++) {
+    const N = tiles.length;
+    if (skipIndex !== undefined) {
+      // Build only the valid insert positions — exclude skipIndex and skipIndex+1 (both are no-ops).
+      // Dividing the column into exactly this many zones eliminates dead zones where no feedback shows.
+      const validInserts: number[] = [];
+      for (let i = 0; i <= N; i++) {
+        if (i !== skipIndex && i !== skipIndex + 1) validInserts.push(i);
+      }
+      if (validInserts.length === 0) return skipIndex;
+      const colH = rect.bottom - rect.top;
+      if (colH <= 0) return validInserts[0];
+      const relY = Math.max(0, Math.min(colH, y - rect.top));
+      const zoneIdx = Math.min(validInserts.length - 1, Math.floor(relY * validInserts.length / colH));
+      return validInserts[zoneIdx];
+    }
+    let cumY = rect.top;
+    for (let i = 0; i < N; i++) {
       const h = tiles[i].Height ?? TILE_H;
       if (y < cumY + h / 2) return i;
       cumY += h + TILE_GAP;
     }
-    return tiles.length;
+    return N;
   }
 
   function findColByX(cols: any[], x: number): any | null {
@@ -411,9 +426,8 @@ export function DraggableScreen({
       if (sameGrid && frameIdx === srcIdx) {
         if (hoverCol.ColId === d.fromColId) {
           if (d.fromColTileCount <= 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
-          const insertIndex = calcInsertIndexInCol(hoverCol, y);
-          const isSamePos = insertIndex === d.fromTileIndex || insertIndex === d.fromTileIndex + 1;
-          return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: !isSamePos }, targetFrameIdx: frameIdx };
+          const insertIndex = calcInsertIndexInCol(hoverCol, y, d.fromTileIndex);
+          return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: true }, targetFrameIdx: frameIdx };
         } else {
           if (d.fromColTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true }, targetFrameIdx: frameIdx };
           if (hoverTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };

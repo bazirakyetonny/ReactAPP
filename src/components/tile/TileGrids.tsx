@@ -210,11 +210,7 @@ export function TileGrids({
                           : derivedLongTileHeight ?? `${tile.Height ?? 80}px`;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
-                      const isSameColReorderSource = isTileDragging &&
-                        tileDropPreview != null && tileDropPreview.valid &&
-                        !tileDropPreview.newColumn &&
-                        tileDropPreview.targetGridId === grid.InfoId &&
-                        tileDropPreview.targetColId === col.ColId;
+                      const isSameColReorderSource = isTileDragging;
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;

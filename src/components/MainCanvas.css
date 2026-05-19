@@ -192,6 +192,10 @@
   transition: none;
 }
 
+.phone-screen--dragging .phone-tile-wrap--tile-drag-source {
+  transition: height 0.12s ease, min-height 0.12s ease;
+}
+
 .phone-screen--dragging .phone-add-row {
   height: 6px;
   pointer-events: none;
