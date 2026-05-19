@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import "./App.css";
 import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
@@ -43,6 +43,71 @@ function App() {
 
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
+
+  type Snapshot = { infoContent: any[]; navContents: Record<string, any[]>; navStack: string[] };
+  const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
+  const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
+  const isResizingRef = useRef(false);
+
+  // Refs always hold latest values — eliminates stale-closure bugs in undo/redo
+  const infoContentRef = useRef(infoContent);
+  const navContentsRef = useRef(navContents);
+  const navStackRef = useRef(navStack);
+  const undoStackRef = useRef(undoStack);
+  const redoStackRef = useRef(redoStack);
+  useLayoutEffect(() => { infoContentRef.current = infoContent; });
+  useLayoutEffect(() => { navContentsRef.current = navContents; });
+  useLayoutEffect(() => { navStackRef.current = navStack; });
+  useLayoutEffect(() => { undoStackRef.current = undoStack; });
+  useLayoutEffect(() => { redoStackRef.current = redoStack; });
+
+  function currentSnapshot(): Snapshot {
+    return { infoContent: infoContentRef.current, navContents: navContentsRef.current, navStack: navStackRef.current };
+  }
+
+  function pushSnapshot() {
+    setUndoStack(prev => [...prev, currentSnapshot()]);
+    setRedoStack([]);
+  }
+
+  function restoreSnapshot(snap: Snapshot) {
+    setInfoContent(snap.infoContent);
+    setNavContents(snap.navContents);
+    setNavStack(snap.navStack);
+  }
+
+  function handleUndo() {
+    const stack = undoStackRef.current;
+    if (!stack.length) return;
+    const snap = stack[stack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    setRedoStack(s => [...s, currentSnapshot()]);
+    restoreSnapshot(snap);
+  }
+
+  function handleRedo() {
+    const stack = redoStackRef.current;
+    if (!stack.length) return;
+    const snap = stack[stack.length - 1];
+    setRedoStack(s => s.slice(0, -1));
+    setUndoStack(s => [...s, currentSnapshot()]);
+    restoreSnapshot(snap);
+  }
+
+  const handleUndoRef = useRef(handleUndo);
+  const handleRedoRef = useRef(handleRedo);
+  useLayoutEffect(() => { handleUndoRef.current = handleUndo; });
+  useLayoutEffect(() => { handleRedoRef.current = handleRedo; });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); handleUndoRef.current(); }
+      if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); handleRedoRef.current(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const selectedTheme = themes.find(t => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter(m => m.ThemeId === selectedThemeId);
@@ -105,21 +170,25 @@ function App() {
   }, [navContents]);
 
   function handleAddColumn(gridId: string, afterColId: string) {
+    pushSnapshot();
     setInfoContent(prev => applyAddColumn(prev, gridId, afterColId));
   }
 
   function handleDeleteTile(gridId: string, colId: string, tileId: string) {
     if (selectedTileId === tileId) setSelectedTileId(null);
+    pushSnapshot();
     setInfoContent(prev => applyDeleteTile(prev, gridId, colId, tileId));
   }
 
   function handleAddStandaloneTile() {
+    if (!isResizingRef.current) pushSnapshot();
     const ts = Date.now();
     setInfoContent(prev => applyAddStandaloneTile(prev, ts));
     setSelectedTileId(`tile-${ts}`);
   }
 
   function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
+    pushSnapshot();
     if (blockType === 'TileGrid') {
       const ts = Date.now();
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
@@ -130,14 +199,17 @@ function App() {
   }
 
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
+    if (!isResizingRef.current) pushSnapshot();
     setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
   }
 
   function handleAddDescription(html: string, insertBeforeInfoId: string | null) {
+    pushSnapshot();
     setInfoContent(prev => applyAddDescription(prev, html, insertBeforeInfoId));
   }
 
   function handleEditDescription(infoId: string, html: string) {
+    pushSnapshot();
     setInfoContent(prev => applyEditDescription(prev, infoId, html));
     setNavContents(prev => {
       const next: Record<string, any[]> = {};
@@ -147,14 +219,17 @@ function App() {
   }
 
   function handleDeleteBlock(infoId: string) {
+    pushSnapshot();
     setInfoContent(prev => applyDeleteBlock(prev, infoId));
   }
 
   function handleAddImage(images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) {
+    pushSnapshot();
     setInfoContent(prev => applyAddImage(prev, images, insertBeforeInfoId));
   }
 
   function handleEditImage(infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) {
+    pushSnapshot();
     setInfoContent(prev => applyEditImageSelection(prev, infoId, images));
     setNavContents(prev => {
       const next: Record<string, any[]> = {};
@@ -164,10 +239,12 @@ function App() {
   }
 
   function handleMoveBlock(infoId: string, insertBeforeInfoId: string | null) {
+    pushSnapshot();
     setInfoContent(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId));
   }
 
   function handleCrossFrameBlockDrop(infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) {
+    pushSnapshot();
     const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
     const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
     const { content: newSrc, block } = applyExtractBlock(srcContent, infoId);
@@ -184,14 +261,17 @@ function App() {
   }
 
   function handleFreeResizeRelease(gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) {
+    isResizingRef.current = false;
     setInfoContent(prev => applyFreeResizeRelease(prev, gridId, longTileId, snapH, zoneCount, initialCount, oppColId, allOppTiles));
   }
 
   function handleTileDrop(fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) {
+    pushSnapshot();
     setInfoContent(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview));
   }
 
   function handleTileDropAsNewBlock(fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) {
+    pushSnapshot();
     setInfoContent(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId));
   }
 
@@ -199,6 +279,7 @@ function App() {
     fromFrameIdx: number, toFrameIdx: number,
     fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview,
   ) {
+    pushSnapshot();
     const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
     const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
     const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
@@ -218,6 +299,7 @@ function App() {
     fromFrameIdx: number, toFrameIdx: number,
     fromGridId: string, fromColId: string, tileId: string,
   ) {
+    pushSnapshot();
     const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
     const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
     if (!tile) return;
@@ -241,6 +323,7 @@ function App() {
     fromGridId: string, fromColId: string, tileId: string,
     insertBeforeInfoId: string | null,
   ) {
+    pushSnapshot();
     const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
     const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
     const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
@@ -267,6 +350,12 @@ function App() {
   }
 
   function handleEditTile(tileId: string, patch: Record<string, any>) {
+    const isHeightOnly = Object.keys(patch).length === 1 && 'Height' in patch;
+    if (isHeightOnly) {
+      if (!isResizingRef.current) { pushSnapshot(); isResizingRef.current = true; }
+    } else {
+      pushSnapshot();
+    }
     setInfoContent(prev => applyEditTile(prev, tileId, patch));
     setNavContents(prev => {
       const next: Record<string, any[]> = {};
@@ -312,19 +401,24 @@ function App() {
       page,
       infoContent: navContents[pageId] ?? [],
       onClose: () => handleCloseFromIndex(index),
-      onAddColumn: (gridId: string, afterColId: string) =>
-        update(prev => applyAddColumn(prev, gridId, afterColId)),
+      onAddColumn: (gridId: string, afterColId: string) => {
+        pushSnapshot();
+        update(prev => applyAddColumn(prev, gridId, afterColId));
+      },
       onDeleteTile: (gridId: string, colId: string, tileId: string) => {
         if (selectedTileId === tileId) setSelectedTileId(null);
+        pushSnapshot();
         update(prev => applyDeleteTile(prev, gridId, colId, tileId));
       },
       onEditTile: handleEditTile,
       onAddStandaloneTile: () => {
+        if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
         update(prev => applyAddStandaloneTile(prev, ts));
         setSelectedTileId(`tile-${ts}`);
       },
       onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
+        pushSnapshot();
         if (blockType === 'TileGrid') {
           const ts = Date.now();
           update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
@@ -333,26 +427,46 @@ function App() {
           update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
         }
       },
-      onAddTilesToColumn: (gridId: string, colId: string, count: number) =>
-        update(prev => applyAddTilesToColumn(prev, gridId, colId, count)),
-      onFreeResizeRelease: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) =>
-        update(prev => applyFreeResizeRelease(prev, gridId, longTileId, snapH, zoneCount, initialCount, oppColId, allOppTiles)),
-      onTileDrop: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) =>
-        update(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview)),
-      onTileDropAsNewBlock: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) =>
-        update(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId)),
-      onAddDescription: (html: string, insertBeforeInfoId: string | null) =>
-        update(prev => applyAddDescription(prev, html, insertBeforeInfoId)),
-      onEditDescription: (infoId: string, html: string) =>
-        update(prev => applyEditDescription(prev, infoId, html)),
-      onDeleteBlock: (infoId: string) =>
-        update(prev => applyDeleteBlock(prev, infoId)),
-      onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) =>
-        update(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId)),
-      onAddImage: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) =>
-        update(prev => applyAddImage(prev, images, insertBeforeInfoId)),
-      onEditImage: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) =>
-        update(prev => applyEditImageSelection(prev, infoId, images)),
+      onAddTilesToColumn: (gridId: string, colId: string, count: number) => {
+        if (!isResizingRef.current) pushSnapshot();
+        update(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+      },
+      onFreeResizeRelease: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) => {
+        isResizingRef.current = false;
+        update(prev => applyFreeResizeRelease(prev, gridId, longTileId, snapH, zoneCount, initialCount, oppColId, allOppTiles));
+      },
+      onTileDrop: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => {
+        pushSnapshot();
+        update(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview));
+      },
+      onTileDropAsNewBlock: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => {
+        pushSnapshot();
+        update(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId));
+      },
+      onAddDescription: (html: string, insertBeforeInfoId: string | null) => {
+        pushSnapshot();
+        update(prev => applyAddDescription(prev, html, insertBeforeInfoId));
+      },
+      onEditDescription: (infoId: string, html: string) => {
+        pushSnapshot();
+        update(prev => applyEditDescription(prev, infoId, html));
+      },
+      onDeleteBlock: (infoId: string) => {
+        pushSnapshot();
+        update(prev => applyDeleteBlock(prev, infoId));
+      },
+      onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) => {
+        pushSnapshot();
+        update(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId));
+      },
+      onAddImage: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => {
+        pushSnapshot();
+        update(prev => applyAddImage(prev, images, insertBeforeInfoId));
+      },
+      onEditImage: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => {
+        pushSnapshot();
+        update(prev => applyEditImageSelection(prev, infoId, images));
+      },
     };
   });
 
@@ -362,6 +476,10 @@ function App() {
         themes={themes}
         selectedThemeId={selectedThemeId}
         onThemeChange={setSelectedThemeId}
+        canUndo={undoStack.length > 0}
+        canRedo={redoStack.length > 0}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
       />
       <div className="app-body">
         <MainCanvas

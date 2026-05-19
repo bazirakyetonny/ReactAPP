@@ -7,6 +7,10 @@ interface NavBarProps {
   selectedThemeId?: string;
   onThemeChange?: (id: string) => void;
   onPublish?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -140,7 +144,7 @@ function UploadIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChange, onPublish }: NavBarProps) {
+export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChange, onPublish, canUndo = false, canRedo = false, onUndo, onRedo }: NavBarProps) {
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -164,10 +168,10 @@ export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChan
 
       {/* Right: history + content actions + theme + publish */}
       <div className="navbar-right">
-        <button className="navbar-icon-btn" type="button" title="Undo">
+        <button className="navbar-icon-btn" type="button" title="Undo" disabled={!canUndo} onClick={onUndo}>
           <UndoIcon />
         </button>
-        <button className="navbar-icon-btn" type="button" title="Redo">
+        <button className="navbar-icon-btn" type="button" title="Redo" disabled={!canRedo} onClick={onRedo}>
           <RedoIcon />
         </button>
         <button className="navbar-icon-btn" type="button" title="History">
