@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { getMedia, uploadMedia } from '../../utils/mediaApi';
+import { getMedia, uploadMedia, deleteMedia } from '../../utils/mediaApi';
 import type { MediaItem } from '../../utils/mediaApi';
 
 interface MediaLibraryModalProps {
@@ -53,6 +53,8 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number; phase: 'compressing' | 'uploading' } | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -154,11 +156,25 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
     await processFiles(Array.from(e.dataTransfer.files));
   }
 
+  async function handleDelete(mediaId: string) {
+    setDeletingId(mediaId);
+    setConfirmDeleteId(null);
+    try {
+      await deleteMedia(mediaId);
+      setMediaList((prev) => prev.filter((m) => m.MediaId !== mediaId));
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(mediaId); return next; });
+    } catch (err: any) {
+      console.error('Delete failed:', err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function handleConfirm() {
     const selected = mediaList.filter((m) => selectedIds.has(m.MediaId));
     onSelect(selected.map((m) => ({
       InfoImageId: m.MediaId,
-      InfoImageValue: m.MediaUrl || `data:${m.MediaType};base64,${m.MediaImage}`,
+      InfoImageValue: m.MediaUrl,
     })));
   }
 
@@ -248,7 +264,7 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
           )}
           {mediaList.map((item) => {
             const isSelected = selectedIds.has(item.MediaId);
-            const thumb = item.MediaUrl || `data:${item.MediaType};base64,${item.MediaImage}`;
+            const thumb = item.MediaUrl;
             return (
               <div
                 key={item.MediaId}
@@ -262,12 +278,52 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
                   onChange={() => toggleSelect(item.MediaId)}
                   onClick={(e) => e.stopPropagation()}
                 />
+                <button
+                  className="media-item-delete"
+                  type="button"
+                  disabled={deletingId === item.MediaId}
+                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.MediaId); }}
+                  aria-label="Delete image"
+                >
+                  {deletingId === item.MediaId ? (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="4" stroke="#fff" strokeWidth="1.5" strokeDasharray="6 6" />
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4h6v2" />
+                    </svg>
+                  )}
+                </button>
                 <img src={thumb} alt={item.MediaName} draggable={false} />
               </div>
             );
           })}
         </div>
 
+        {confirmDeleteId && (
+          <div className="media-confirm-overlay">
+            <div className="media-confirm-dialog">
+              <button className="media-confirm-close" type="button" onClick={() => setConfirmDeleteId(null)} aria-label="Close">×</button>
+              <h3 className="media-confirm-title">Delete selected media files</h3>
+              <p className="media-confirm-message">Are you sure you want to delete this media file?</p>
+              <div className="media-confirm-actions">
+                <button
+                  className="media-confirm-btn"
+                  type="button"
+                  disabled={!!deletingId}
+                  onClick={() => handleDelete(confirmDeleteId)}
+                >
+                  {deletingId ? 'Deleting…' : 'Confirm'}
+                </button>
+                <button className="media-confirm-cancel-btn" type="button" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

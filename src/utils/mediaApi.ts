@@ -47,11 +47,7 @@ export async function uploadMedia(payload: UploadPayload): Promise<MediaItem> {
 }
 
 export async function deleteMedia(mediaId: string): Promise<void> {
-  const res = await fetch(`${BASE}/media/delete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Mediaid: mediaId }),
-  });
+  const res = await fetch(`${BASE}/media/delete?Mediaid=${encodeURIComponent(mediaId)}`);
   if (!res.ok) throw new Error(`deleteMedia failed: ${res.status}`);
   const data = await res.json();
   if (data.error?.Status && data.error.Status !== 'OK' && data.error.Status !== '') {
