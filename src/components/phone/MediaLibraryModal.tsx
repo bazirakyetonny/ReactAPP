@@ -4,7 +4,7 @@ import { getMedia, uploadMedia } from '../../utils/mediaApi';
 import type { MediaItem } from '../../utils/mediaApi';
 
 interface MediaLibraryModalProps {
-  initialSelectedIds: string[];
+  initialImages: { InfoImageId: string; InfoImageValue?: string }[];
   onSelect: (images: { InfoImageId: string; InfoImageValue: string }[]) => void;
   onCancel: () => void;
 }
@@ -46,11 +46,11 @@ function compressImage(
   });
 }
 
-export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: MediaLibraryModalProps) {
+export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLibraryModalProps) {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialSelectedIds));
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number; phase: 'compressing' | 'uploading' } | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +64,19 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (mediaList.length === 0 || initialImages.length === 0) return;
+    const matched = new Set<string>();
+    for (const item of mediaList) {
+      if (initialImages.some(
+        (img) => img.InfoImageId === item.MediaId || (img.InfoImageValue && img.InfoImageValue === item.MediaUrl)
+      )) {
+        matched.add(item.MediaId);
+      }
+    }
+    if (matched.size > 0) setSelectedIds(matched);
+  }, [mediaList]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allSelected = mediaList.length > 0 && mediaList.every((m) => selectedIds.has(m.MediaId));
   const someSelected = !allSelected && mediaList.some((m) => selectedIds.has(m.MediaId));
@@ -219,6 +232,12 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
             />
             Select Images
           </label>
+          {selectedIds.size > 0 && (
+            <div className="media-actions-row">
+              <button className="media-cancel-btn" type="button" onClick={onCancel}>Cancel</button>
+              <button className="media-select-btn" type="button" onClick={handleConfirm}>Save</button>
+            </div>
+          )}
         </div>
 
         <div className="media-grid">
@@ -249,20 +268,6 @@ export function MediaLibraryModal({ initialSelectedIds, onSelect, onCancel }: Me
           })}
         </div>
 
-        <div className="media-modal-footer">
-          <span className="media-selected-count">
-            {selectedIds.size > 0 ? `${selectedIds.size} image${selectedIds.size !== 1 ? 's' : ''} selected` : ''}
-          </span>
-          <button className="media-cancel-btn" type="button" onClick={onCancel}>Cancel</button>
-          <button
-            className="media-select-btn"
-            type="button"
-            disabled={selectedIds.size === 0}
-            onClick={handleConfirm}
-          >
-            Select
-          </button>
-        </div>
 
       </div>
     </div>

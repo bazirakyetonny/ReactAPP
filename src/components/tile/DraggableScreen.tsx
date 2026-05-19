@@ -948,7 +948,7 @@ export function DraggableScreen({
 
       {imageEditorState && (
         <MediaLibraryModal
-          initialSelectedIds={imageEditorState.mode === 'edit' ? imageEditorState.currentImages.map(img => img.InfoImageId) : []}
+          initialImages={imageEditorState.mode === 'edit' ? imageEditorState.currentImages : []}
           onSelect={(images) => {
             if (imageEditorState.mode === 'create')
               onAddImage?.(images, imageEditorState.insertBeforeInfoId);
