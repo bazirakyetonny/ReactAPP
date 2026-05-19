@@ -981,28 +981,26 @@ export function DraggableScreen({
         </div>
       )}
 
-      {blockGhostPos && blockDragInfoRef.current && (
-        <div
-          className="phone-block-ghost"
-          style={{
-            left: blockGhostPos.x - blockDragInfoRef.current.offsetX,
-            top: blockGhostPos.y - blockDragInfoRef.current.offsetY,
-            width: blockDragInfoRef.current.ghostWidth,
-            maxHeight: 120,
-          }}
-        >
-          {blockDragInfoRef.current.ghostImages.length > 0 ? (
-            <img
-              src={blockDragInfoRef.current.ghostImages[0].InfoImageValue}
-              alt=""
-              draggable={false}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 13 }}
-            />
-          ) : (
-            <div dangerouslySetInnerHTML={{ __html: blockDragInfoRef.current.ghostHtml }} />
-          )}
-        </div>
-      )}
+      {blockGhostPos && blockDragId && blockDragInfoRef.current && (() => {
+        const drag = blockDragInfoRef.current!;
+        const block = infoContent.find((b: any) => b.InfoId === blockDragId);
+        return (
+          <div
+            className="phone-block-ghost"
+            style={{
+              left: blockGhostPos.x - drag.offsetX,
+              top: blockGhostPos.y - drag.offsetY,
+              width: drag.ghostWidth,
+            }}
+          >
+            {block?.InfoType === 'Images' ? (
+              <ImageBlock block={block} interactive={false} />
+            ) : block ? (
+              <DescriptionBlock block={block} interactive={false} />
+            ) : null}
+          </div>
+        );
+      })()}
     </>
   );
 }
