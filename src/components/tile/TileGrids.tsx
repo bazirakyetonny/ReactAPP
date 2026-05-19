@@ -172,27 +172,18 @@ export function TileGrids({
                   grid.InfoId === freeResizePreview.gridId &&
                   col.ColId === freeResizePreview.oppColId
                 );
-                const isDropTargetCol = !!(
-                  tileDropPreview &&
-                  tileDropPreview.targetGridId === grid.InfoId &&
-                  tileDropPreview.targetColId === col.ColId &&
-                  !tileDropPreview.newColumn
-                );
-                const dropColClass = isDropTargetCol
-                  ? (tileDropPreview!.valid ? ' phone-column--drop-valid' : ' phone-column--drop-invalid')
-                  : '';
                 const tilesForRender = getTilesForRender(col, grid.InfoId, tileDropPreview);
 
                 return (
                   <div
                     key={col.ColId}
-                    className={`phone-column${dropColClass}`}
+                    className="phone-column"
                     ref={(el) => onColRef?.(col.ColId, el as HTMLElement | null)}
                   >
                     {tilesForRender.map((item: any) => {
                       if (item._slot) {
                         return (
-                          <div key="drop-slot" className="phone-tile-drop-slot" style={{ height: `${TILE_H}px` }} />
+                          <div key="drop-slot" className="block-drop-zone block-drop-zone--in-col" />
                         );
                       }
 
@@ -369,23 +360,19 @@ export function TileGrids({
                     })}
 
                     {isSplitOpposite && Array.from({ length: (splitPreview?.count ?? 1) - 1 }).map((_, i) => (
-                      <div key={`skeleton-${i}`} className="phone-tile-wrap" style={{ height: `${TILE_H}px` }}>
-                        <div className="phone-tile phone-tile--skeleton" />
-                      </div>
+                      <div key={`skeleton-${i}`} className="block-drop-zone block-drop-zone--in-col" />
                     ))}
                     {isFreeResizeOppCol && (freeResizePreview?.extraSkeletonCount ?? 0) > 0 && Array.from({ length: freeResizePreview!.extraSkeletonCount }).map((_, i) => (
-                      <div key={`fr-skeleton-${i}`} className="phone-tile-wrap" style={{ height: `${TILE_H}px` }}>
-                        <div className="phone-tile phone-tile--skeleton" />
-                      </div>
+                      <div key={`fr-skeleton-${i}`} className="block-drop-zone block-drop-zone--in-col" />
                     ))}
                   </div>
                 );
               })}
             </div>
+            {isAddRowDropActive && <div className="block-drop-zone" />}
             <div className={interactive ? [
               'phone-add-row',
               isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
-              isAddRowDropActive ? 'phone-add-row--tile-drop-zone-active' : '',
             ].filter(Boolean).join(' ') : 'phone-add-row'}>
               {interactive && (
                 <button

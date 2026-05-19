@@ -804,8 +804,6 @@ export function DraggableScreen({
           const blockDragZoneActive = effectiveBlockDragActive &&
             !!effectiveBlockDropPreview &&
             effectiveBlockDropPreview.insertBeforeInfoId === nextInfoId;
-          const dropZoneAfterActive = tileDragZoneActive || blockDragZoneActive;
-
           if (block.InfoType === 'TileGrid') {
             return (
               <React.Fragment key={block.InfoId}>
@@ -847,7 +845,7 @@ export function DraggableScreen({
                   activeNavTileIds={activeNavTileIds}
                   onAddBtnClick={openAddMenu}
                 />
-                {dropZoneAfterActive && <div className="block-drop-zone" />}
+                {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
             );
           }
@@ -867,7 +865,7 @@ export function DraggableScreen({
                     onDragStart={handleBlockDragStart}
                   />
                 </div>
-                {dropZoneAfterActive
+                {(tileDragZoneActive || blockDragZoneActive)
                   ? <div className="block-drop-zone" />
                   : !effectiveBlockDragActive && (
                     <div className="phone-add-row">
@@ -904,7 +902,7 @@ export function DraggableScreen({
                     onDragStart={handleBlockDragStart}
                   />
                 </div>
-                {dropZoneAfterActive
+                {(tileDragZoneActive || blockDragZoneActive)
                   ? <div className="block-drop-zone" />
                   : !effectiveBlockDragActive && (
                     <div className="phone-add-row">
@@ -965,38 +963,6 @@ export function DraggableScreen({
         />
       )}
 
-      {ghostPos && tileDragInfoRef.current && (() => {
-        const tg = tileDragInfoRef.current!;
-        return (
-          <div
-            className="phone-tile-floating-ghost"
-            style={{
-              left: ghostPos.x - tg.offsetX,
-              top: ghostPos.y - tg.offsetY,
-              width: tg.ghostWidth,
-              height: tg.ghostHeight,
-            }}
-          >
-            <div
-              className="phone-tile"
-              style={{
-                background: tg.bgColor,
-                color: tg.tileColor,
-                textAlign: tg.tileData?.Align ?? 'center',
-                alignItems: tg.tileData?.Align === 'left' ? 'flex-start' : tg.tileData?.Align === 'right' ? 'flex-end' : 'center',
-                justifyContent: tg.tileData?.Align === 'left' ? 'flex-start' : 'center',
-              }}
-            >
-              {tg.ghostIconSvg && (
-                <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: tg.ghostIconSvg }} />
-              )}
-              {tg.tileData?.Text && (
-                <span className="phone-tile-text">{tg.tileData.Text}</span>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       {blockGhostPos && blockDragId && blockDragInfoRef.current && (() => {
         const drag = blockDragInfoRef.current!;

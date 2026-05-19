@@ -350,105 +350,29 @@
 }
 
 /* Drop slot — shown at the tile insertion point within a column */
-.phone-tile-drop-slot {
-  border-radius: 6px;
-  background: rgba(61, 90, 158, 0.1);
-  border: 1.5px dashed rgba(61, 90, 158, 0.5);
-  flex-shrink: 0;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-}
-
 /* Skeleton column — shown when a new column will be created on drop */
 .phone-column--new-col-preview {
+  flex: 1;
   border-radius: 6px;
-  background: rgba(61, 90, 158, 0.08);
-  border: 1.5px dashed rgba(61, 90, 158, 0.4);
+  background: #4c80f118;
+  border: 2px dashed #4c80f1aa;
   min-height: 80px;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-}
-
-/* Valid drop target column highlight */
-.phone-column--drop-valid {
-  position: relative;
-}
-.phone-column--drop-valid::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 9px;
-  border: 2px dashed rgba(61, 90, 158, 0.55);
-  background: rgba(61, 90, 158, 0.05);
   pointer-events: none;
-  z-index: 1;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  animation: block-drop-zone-pulse 0.8s ease-in-out infinite alternate;
 }
 
-/* Invalid drop target column highlight */
-.phone-column--drop-invalid {
-  position: relative;
-}
-.phone-column--drop-invalid::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 9px;
-  border: 2px dashed rgba(220, 38, 38, 0.5);
-  background: rgba(220, 38, 38, 0.04);
-  pointer-events: none;
-  z-index: 1;
+/* Inside-column drop slot — same visual as block-drop-zone but no side margin */
+.block-drop-zone--in-col {
+  margin: 0;
+  height: 80px;
+  flex-shrink: 0;
 }
 
-/* Skeleton tile — shown in opposite column during split drag preview */
-.phone-tile--skeleton {
-  background: rgba(61, 90, 158, 0.07);
-  border: 1.5px dashed rgba(61, 90, 158, 0.35);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* During tile drag: add-rows that straddle block boundaries become drop zones.
-   Override the phone-screen--dragging collapse rules with higher specificity. */
+/* During tile drag: hide add-row button, keep minimal height */
 .phone-screen--dragging .phone-add-row--tile-drop-zone {
   height: 8px;
   pointer-events: none;
   transition: height 0.15s ease;
-}
-
-.phone-screen--dragging .phone-add-row--tile-drop-zone-active {
-  height: 104px; /* 12px top + 80px tile + 12px bottom */
-  background: rgba(61, 90, 158, 0.04);
-  border: 1.5px dashed rgba(61, 90, 158, 0.45);
-  border-radius: 8px;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-  box-sizing: border-box;
-  position: relative;
-}
-
-/* Inner tile shape — mirrors the 80px tile that will appear on drop */
-.phone-screen--dragging .phone-add-row--tile-drop-zone-active::after {
-  content: "";
-  position: absolute;
-  top: 12px;
-  left: 8px;
-  right: 8px;
-  height: 80px;
-  border-radius: 6px;
-  background: rgba(61, 90, 158, 0.1);
-  border: 1px dashed rgba(61, 90, 158, 0.3);
-}
-
-.phone-screen--dragging .phone-add-row--tile-drop-zone-active::before,
-.phone-screen--dragging .phone-add-row--tile-drop-zone-active .phone-add-btn {
-  opacity: 0;
 }
 
 /* Placeholder tile — no background, dashed border */
