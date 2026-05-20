@@ -11,6 +11,7 @@ interface NavBarProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  onExpand?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -122,12 +123,13 @@ function PathIcon() {
 
 function ExpandIcon() {
   return (
-    <svg width="21" height="21" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="1" stroke="currentColor" strokeWidth="0.9" />
-      <path d="M5.5 5.5L2.5 2.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-      <path d="M10.5 5.5L13.5 2.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-      <path d="M5.5 10.5L2.5 13.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-      <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="25" viewBox="0 0 20 25">
+      <g id="window-maximize" transform="translate(-3.25 -3.25)">
+        <path id="Path_989" data-name="Path 989" d="M20.107,23.25H13.25a.857.857,0,1,1,0-1.714h6.857a1.429,1.429,0,0,0,1.429-1.429V6.393a1.429,1.429,0,0,0-1.429-1.429H6.393A1.429,1.429,0,0,0,4.964,6.393V13.25a.857.857,0,0,1-1.714,0V6.393A3.143,3.143,0,0,1,6.393,3.25H20.107A3.143,3.143,0,0,1,23.25,6.393V20.107a3.143,3.143,0,0,1-3.143,3.143Z" fill="#7c8791"></path>
+        <path id="Path_990" data-name="Path 990" d="M16.159,12.934a.785.785,0,0,1-.775-.775V8.8H12.025a.775.775,0,1,1,0-1.55h4.133a.785.785,0,0,1,.775.775v4.133A.785.785,0,0,1,16.159,12.934Z" transform="translate(1.544 0.772)" fill="#7c8791"></path>
+        <path id="Path_991" data-name="Path 991" d="M11.523,13.449a.765.765,0,0,1-.517-.258.775.775,0,0,1,0-1.033l4.65-4.65a.775.775,0,0,1,1.1,1.1L12.04,13.19A.765.765,0,0,1,11.523,13.449Z" transform="translate(1.506 0.807)" fill="#7c8791"></path>
+        <path id="Path_992" data-name="Path 992" d="M8.159,20.967h-3.1A1.819,1.819,0,0,1,3.25,19.159v-3.1A1.819,1.819,0,0,1,5.058,14.25h3.1a1.819,1.819,0,0,1,1.808,1.808v3.1A1.819,1.819,0,0,1,8.159,20.967ZM5.058,15.8a.258.258,0,0,0-.258.258v3.1a.258.258,0,0,0,.258.258h3.1a.258.258,0,0,0,.258-.258v-3.1a.258.258,0,0,0-.258-.258Z" transform="translate(0 2.283)" fill="#7c8791"></path>
+      </g>
     </svg>
   );
 }
@@ -144,7 +146,7 @@ function UploadIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChange, onPublish, canUndo = false, canRedo = false, onUndo, onRedo }: NavBarProps) {
+export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChange, onPublish, canUndo = false, canRedo = false, onUndo, onRedo, onExpand }: NavBarProps) {
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -187,7 +189,7 @@ export function NavBar({ version, themes = [], selectedThemeId = '', onThemeChan
         <button className="navbar-icon-btn" type="button" title="Path">
           <PathIcon />
         </button>
-        <button className="navbar-icon-btn" type="button" title="Expand">
+        <button className="navbar-icon-btn" type="button" title="Expand" onClick={onExpand}>
           <ExpandIcon />
         </button>
         <select

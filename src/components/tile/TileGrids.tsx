@@ -207,7 +207,7 @@ export function TileGrids({
                         ? `${TILE_H}px`
                         : (col.ColId === previewLongColId && previewLongHeight !== null)
                           ? `${previewLongHeight}px`
-                          : derivedLongTileHeight ?? `${tile.Height ?? 80}px`;
+                          : derivedLongTileHeight ?? `${tile.Height || 80}px`;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const isSameColReorderSource = isTileDragging;

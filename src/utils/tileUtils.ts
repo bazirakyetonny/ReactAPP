@@ -10,7 +10,7 @@ export function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): 
   if (themeIcons) {
     if (tile.IconCodeName) {
       const match = themeIcons.find((i) => i.IconCodeName === tile.IconCodeName);
-      if (match) return match.IconSVG;
+      if (match?.IconSVG) return match.IconSVG;
     }
     if (tile.Icon) {
       const lower = (tile.Icon as string).toLowerCase();
@@ -19,7 +19,7 @@ export function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): 
           (i.IconCodeName && i.IconCodeName.toLowerCase() === lower) ||
           i.IconName.toLowerCase() === lower,
       );
-      if (match) return match.IconSVG;
+      if (match?.IconSVG) return match.IconSVG;
     }
   }
   return tile.IconSVG ?? null;

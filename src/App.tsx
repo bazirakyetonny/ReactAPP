@@ -4,6 +4,7 @@ import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
 import type { TileDropPreview } from './components/MainCanvas';
 import { SidebarRight } from './components/SidebarRight';
+import { PageBubbleTree } from './components/tree/PageBubbleTree';
 import { dataStore } from './data/datastore';
 import type { Theme, Mood } from './types';
 import {
@@ -43,6 +44,7 @@ function App() {
 
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
+  const [treeOpen, setTreeOpen] = useState(false);
 
   type Snapshot = { infoContent: any[]; navContents: Record<string, any[]>; navStack: string[] };
   const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
@@ -385,6 +387,34 @@ function App() {
     setNavStack(prev => prev.length <= cutAt ? prev : prev.slice(0, cutAt));
   }
 
+  function handleNavigateToPath(pageIds: string[]) {
+    setNavStack(pageIds);
+    setNavContents(prev => {
+      const next = { ...prev };
+      for (const pageId of pageIds) {
+        if (next[pageId] !== undefined) continue;
+        const cv = dataStore.get('Current_Version');
+        const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
+        if (!page?.PageStructure) { next[pageId] = []; continue; }
+        try { next[pageId] = JSON.parse(page.PageStructure).InfoContent ?? []; }
+        catch { next[pageId] = []; }
+      }
+      return next;
+    });
+    setTreeOpen(false);
+  }
+
+  function handleDeletePage(pageId: string) {
+    const cv = dataStore.get('Current_Version');
+    if (!cv) return;
+    dataStore.set('Current_Version', {
+      ...cv,
+      Page: (cv.Page ?? []).filter((p: any) => p.PageId !== pageId),
+    });
+    setNavStack(prev => prev.filter(id => id !== pageId));
+    setNavContents(prev => { const n = { ...prev }; delete n[pageId]; return n; });
+  }
+
   function handleCloseFromIndex(stackIndex: number) {
     setNavStack(prev => prev.slice(0, stackIndex));
   }
@@ -480,8 +510,22 @@ function App() {
         canRedo={redoStack.length > 0}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        onExpand={() => setTreeOpen(v => !v)}
       />
       <div className="app-body">
+        {treeOpen && (
+          <PageBubbleTree
+            allPages={allPages}
+            infoContent={infoContent}
+            navContents={navContents}
+            navStack={navStack}
+            themeColors={selectedTheme?.ThemeColors}
+            themeIcons={selectedTheme?.ThemeIcons ?? []}
+            onClose={() => setTreeOpen(false)}
+            onNavigateToPath={handleNavigateToPath}
+            onDeletePage={handleDeletePage}
+          />
+        )}
         <MainCanvas
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
