@@ -46,6 +46,27 @@ export async function uploadMedia(payload: UploadPayload): Promise<MediaItem> {
   return data;
 }
 
+export interface CroppedUploadPayload {
+  name: string; base64: string; size: number; type: string; originalMediaId: string;
+}
+
+export async function uploadCroppedMedia(payload: CroppedUploadPayload): Promise<MediaItem> {
+  const res = await fetch(`${BASE}/media/upload/cropped`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      MediaName: payload.name, MediaImageData: payload.base64,
+      MediaSize: payload.size, MediaType: payload.type,
+      CroppedOriginalMediaId: payload.originalMediaId,
+    }),
+  });
+  if (!res.ok) throw new Error(`uploadCroppedMedia failed: ${res.status}`);
+  const data = await res.json();
+  if (data.error?.Status && data.error.Status !== 'OK' && data.error.Status !== '')
+    throw new Error(data.error.Message || 'uploadCroppedMedia error');
+  return data;
+}
+
 export async function deleteMedia(mediaId: string): Promise<void> {
   const res = await fetch(`${BASE}/media/delete?Mediaid=${encodeURIComponent(mediaId)}`);
   if (!res.ok) throw new Error(`deleteMedia failed: ${res.status}`);

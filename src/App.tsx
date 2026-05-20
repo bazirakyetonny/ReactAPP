@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import "./App.css";
 import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
+import { TileImageModal } from './components/phone/TileImageModal';
 import type { TileDropPreview } from './components/MainCanvas';
 import { SidebarRight } from './components/SidebarRight';
 import { PageBubbleTree } from './components/tree/PageBubbleTree';
@@ -45,6 +46,10 @@ function App() {
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
   const [treeOpen, setTreeOpen] = useState(false);
+  const [tileImageModal, setTileImageModal] = useState<{
+    tileId: string; tileWidth: number; tileHeight: number;
+    initialOriginalUrl?: string; initialOpacity?: number;
+  } | null>(null);
 
   type Snapshot = { infoContent: any[]; navContents: Record<string, any[]>; navStack: string[] };
   const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
@@ -352,10 +357,12 @@ function App() {
   }
 
   function handleEditTile(tileId: string, patch: Record<string, any>) {
-    const isHeightOnly = Object.keys(patch).length === 1 && 'Height' in patch;
+    const keys = Object.keys(patch);
+    const isHeightOnly = keys.length === 1 && 'Height' in patch;
+    const isOpacityOnly = keys.length === 1 && 'Opacity' in patch;
     if (isHeightOnly) {
       if (!isResizingRef.current) { pushSnapshot(); isResizingRef.current = true; }
-    } else {
+    } else if (!isOpacityOnly) {
       pushSnapshot();
     }
     setInfoContent(prev => applyEditTile(prev, tileId, patch));
@@ -364,6 +371,39 @@ function App() {
       for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditTile(blocks, tileId, patch);
       return next;
     });
+  }
+
+  function handleTileDoubleClick(tileId: string, rect: DOMRect) {
+    let tile: any = null;
+    const findTile = (blocks: any[]) => {
+      for (const b of blocks) for (const col of b.Columns ?? []) {
+        const found = (col.Tiles ?? []).find((t: any) => t.Id === tileId);
+        if (found) tile = found;
+      }
+    };
+    findTile(infoContentRef.current);
+    for (const blocks of Object.values(navContentsRef.current)) findTile(blocks);
+    setTileImageModal({ tileId, tileWidth: rect.width, tileHeight: rect.height, initialOriginalUrl: tile?.OriginalImageUrl, initialOpacity: tile?.Opacity });
+  }
+
+  function handleTileImageConfirm(result: { bgImageUrl: string; opacity: number; originalImageUrl: string; originalMediaId: string }) {
+    if (!tileImageModal) return;
+    pushSnapshot();
+    const patch = { BGImageUrl: result.bgImageUrl, OriginalImageUrl: result.originalImageUrl, Opacity: result.opacity, BGColor: null };
+    setInfoContent(prev => applyEditTile(prev, tileImageModal.tileId, patch));
+    setNavContents(prev => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditTile(blocks, tileImageModal.tileId, patch);
+      return next;
+    });
+    setTileImageModal(null);
+  }
+
+  function handleOpenTileImageFromSidebar() {
+    if (!selectedTileId) return;
+    const el = document.querySelector(`[data-tile-id="${selectedTileId}"]`);
+    if (!el) return;
+    handleTileDoubleClick(selectedTileId, el.getBoundingClientRect());
   }
 
   function handleTileNavigate(pageId: string, parentIndex: number) {
@@ -441,6 +481,7 @@ function App() {
         update(prev => applyDeleteTile(prev, gridId, colId, tileId));
       },
       onEditTile: handleEditTile,
+      onTileDoubleClick: handleTileDoubleClick,
       onAddStandaloneTile: () => {
         if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
@@ -555,6 +596,7 @@ function App() {
           onCrossFrameBlockDrop={handleCrossFrameBlockDrop}
           onAddImage={handleAddImage}
           onEditImage={handleEditImage}
+          onTileDoubleClick={handleTileDoubleClick}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
@@ -562,8 +604,20 @@ function App() {
           moods={themeMoods}
           selectedTile={selectedTile}
           onEditTile={handleEditTile}
+          onOpenTileImage={handleOpenTileImageFromSidebar}
+          onBeforeOpacityChange={pushSnapshot}
         />
       </div>
+      {tileImageModal && (
+        <TileImageModal
+          tileWidth={tileImageModal.tileWidth}
+          tileHeight={tileImageModal.tileHeight}
+          initialOriginalUrl={tileImageModal.initialOriginalUrl}
+          initialOpacity={tileImageModal.initialOpacity}
+          onConfirm={handleTileImageConfirm}
+          onCancel={() => setTileImageModal(null)}
+        />
+      )}
     </>
   );
 }

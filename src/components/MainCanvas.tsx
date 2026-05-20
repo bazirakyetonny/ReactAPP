@@ -30,6 +30,7 @@ export interface LinkedFrame {
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 interface MainCanvasProps {
@@ -61,6 +62,7 @@ interface MainCanvasProps {
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 export function MainCanvas({
@@ -92,6 +94,7 @@ export function MainCanvas({
   onCrossFrameBlockDrop,
   onAddImage,
   onEditImage,
+  onTileDoubleClick,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -236,6 +239,7 @@ export function MainCanvas({
             isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === -1}
             onAddImage={onAddImage}
             onEditImage={onEditImage}
+            onTileDoubleClick={onTileDoubleClick}
           />
         </div>
 
@@ -291,6 +295,7 @@ export function MainCanvas({
                 isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === i}
                 onAddImage={frame.onAddImage}
                 onEditImage={frame.onEditImage}
+                onTileDoubleClick={frame.onTileDoubleClick}
               />
             </div>
           );

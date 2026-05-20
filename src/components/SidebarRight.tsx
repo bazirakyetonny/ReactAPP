@@ -23,11 +23,20 @@ function MoodToggleIcon() {
   );
 }
 
-function PlusSmIcon() {
+function AddImageIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <line x1="6" y1="2" x2="6" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="1" y="2.5" width="12" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1 9.5l3-3.5 2.5 2.5 2-2 3.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="4.5" cy="5.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="12" height="13" viewBox="0 0 12 13" fill="none" aria-hidden="true">
+      <path d="M1 3h10M4 3V2h4v1M2 3l.7 8h6.6L10 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -101,12 +110,14 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile }: {
+export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   moods?: Mood[];
   selectedTile?: any;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
+  onOpenTileImage?: () => void;
+  onBeforeOpacityChange?: () => void;
 }) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
@@ -164,7 +175,7 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
                       style={{ background: mc.ColorCode }}
                       type="button"
                       aria-label={`Apply colour ${mc.ColorCode}`}
-                      onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: mc.ColorCode })}
+                      onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: mc.ColorCode, BGImageUrl: null, OriginalImageUrl: null, Opacity: null })}
                     />
                   ))}
                 </div>
@@ -178,7 +189,7 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
                 style={{ background: c }}
                 type="button"
                 aria-label={c}
-                onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: c })}
+                onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { BGColor: c, BGImageUrl: null, OriginalImageUrl: null, Opacity: null })}
               />
             ))
           )}
@@ -193,12 +204,39 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
         </button>
       </div>
 
-      {/* 2b. Palette tools */}
-      <div className="sr-palette-row">
-        <button className="sr-icon-btn" type="button" title="Add color">
-          <PlusSmIcon />
+      {/* 2b. Image tools */}
+      <div className="sr-image-tools">
+        <button
+          className="sr-icon-btn"
+          type="button"
+          title={selectedTile?.BGImageUrl ? 'Change image' : 'Add image'}
+          disabled={!selectedTile}
+          onClick={onOpenTileImage}
+        >
+          <AddImageIcon />
         </button>
-        <span className="sr-zoom-label">100 %</span>
+        {selectedTile?.BGImageUrl && (
+          <>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((selectedTile.Opacity ?? 0) * 100)}
+              className="sr-opacity-slider"
+              onPointerDown={onBeforeOpacityChange}
+              onChange={e => selectedTile && onEditTile?.(selectedTile.Id, { Opacity: Number(e.target.value) / 100 })}
+            />
+            <span className="sr-zoom-label">{Math.round((selectedTile.Opacity ?? 0) * 100)}%</span>
+            <button
+              className="sr-icon-btn sr-icon-btn--danger"
+              type="button"
+              title="Remove image"
+              onClick={() => onEditTile?.(selectedTile.Id, { BGImageUrl: null, OriginalImageUrl: null, Opacity: null })}
+            >
+              <TrashIcon />
+            </button>
+          </>
+        )}
       </div>
 
       {/* 2c. Text input — bound to selected tile */}

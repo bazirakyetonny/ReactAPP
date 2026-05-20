@@ -92,6 +92,7 @@ export interface DraggableScreenProps {
   onBlockWrapperRef?: (infoId: string, el: HTMLElement | null) => void;
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 export function DraggableScreen({
@@ -135,6 +136,7 @@ export function DraggableScreen({
   onBlockWrapperRef,
   onAddImage,
   onEditImage,
+  onTileDoubleClick,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -862,6 +864,7 @@ export function DraggableScreen({
                   onCollapseFromParent={onCollapseFromParent}
                   activeNavTileIds={activeNavTileIds}
                   onAddBtnClick={openAddMenu}
+                  onTileDoubleClick={onTileDoubleClick}
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
@@ -995,13 +998,17 @@ export function DraggableScreen({
             <div
               className="phone-tile"
               style={{
-                background: drag.bgColor,
+                background: tileData.BGImageUrl ? undefined : drag.bgColor,
                 color: drag.tileColor,
                 textAlign: tileData.Align ?? 'center',
                 alignItems: tileData.Align === 'left' ? 'flex-start' : tileData.Align === 'right' ? 'flex-end' : 'center',
                 justifyContent: tileData.Align === 'left' ? 'flex-start' : 'center',
               }}
             >
+              {tileData.BGImageUrl && <>
+                <div className="phone-tile-bg-img" style={{ backgroundImage: `url("${tileData.BGImageUrl}")` }} />
+                <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(tileData.Opacity ?? 0).toFixed(2)})` }} />
+              </>}
               {hasIcon && (
                 <div className="phone-tile-element">
                   <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: drag.ghostIconSvg! }} />

@@ -45,6 +45,50 @@
 
 /* ── Color palette + zoom ───────────────────────────────────────────────────── */
 
+.sr-image-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sr-opacity-slider {
+  flex: 1;
+  min-width: 0;
+  height: 3px;
+  appearance: none;
+  background: #d1d5db;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.sr-opacity-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1a3a6e;
+  cursor: pointer;
+  border: none;
+}
+
+.sr-opacity-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1a3a6e;
+  cursor: pointer;
+  border: none;
+}
+
+.sr-icon-btn--danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
 .sr-palette-row {
   display: flex;
   align-items: center;

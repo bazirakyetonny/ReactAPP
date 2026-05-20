@@ -241,6 +241,7 @@
 }
 
 .phone-tile {
+  position: relative;
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -253,6 +254,22 @@
   overflow: hidden;
   cursor: pointer;
   box-sizing: border-box;
+}
+
+.phone-tile-bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.phone-tile-bg-dim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .phone-tile-icon {
@@ -387,7 +404,8 @@
 
 /* Existing tile with no BGColor and no BGImageUrl — dotted border so boundaries are visible */
 .phone-tile--no-bg {
-  border: 1.5px dashed rgba(61, 90, 158, 0.45);
+  border: 1.5px dashed rgba(150, 160, 190, 0.7);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* Nav-active tile — blue outline marks tiles whose linked page is open */

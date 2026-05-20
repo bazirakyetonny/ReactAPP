@@ -48,6 +48,7 @@ interface TileGridsProps {
   activeNavTileIds?: Set<string>;
   onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
   overrideAddBtnInsertBeforeInfoId?: string | null;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 function getColsForRender(
@@ -116,6 +117,7 @@ export function TileGrids({
   activeNavTileIds,
   onAddBtnClick,
   overrideAddBtnInsertBeforeInfoId,
+  onTileDoubleClick,
 }: TileGridsProps) {
   return (
     <>
@@ -192,8 +194,7 @@ export function TileGrids({
 
                       const { tile, origIndex: tileIndex } = item;
                       const isPlaceholder = tile._new === true;
-                      const hasNoBg = !tile.BGColor && !tile.BGImageUrl;
-                      const bg = resolveColor(tile.BGColor, themeColors);
+                      const bg = tile.BGImageUrl ? undefined : resolveColor(tile.BGColor, themeColors);
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
 
@@ -213,7 +214,6 @@ export function TileGrids({
                           : derivedLongTileHeight ?? `${tile.Height || 80}px`;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
-                      const isSameColReorderSource = isTileDragging;
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;
@@ -222,12 +222,7 @@ export function TileGrids({
                       const showDelText = canEdit && hasIcon && hasText;
 
                       const delBtn = (onClick: (e: React.MouseEvent) => void, label: string) => (
-                        <button
-                          className="phone-tile-element-delete"
-                          type="button"
-                          aria-label={label}
-                          onClick={(e) => { e.stopPropagation(); onClick(e); }}
-                        >
+                        <button className="phone-tile-element-delete" type="button" aria-label={label} onClick={(e) => { e.stopPropagation(); onClick(e); }}>
                           <svg width="6" height="6" viewBox="0 0 6 6" fill="none" aria-hidden="true">
                             <line x1="1" y1="1" x2="5" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                             <line x1="5" y1="1" x2="1" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -238,6 +233,7 @@ export function TileGrids({
                       return (
                         <div
                           key={tile.Id}
+                          data-tile-id={tile.Id}
                           className={[
                             'phone-tile-wrap',
                             isSelected ? 'selected' : '',
@@ -245,7 +241,7 @@ export function TileGrids({
                             isGhost ? 'phone-tile-wrap--ghost' : '',
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
                           ].filter(Boolean).join(' ')}
-                          style={isSameColReorderSource ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
+                          style={isTileDragging ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
                           onClick={interactive && onSelectTile ? () => {
                             onSelectTile(tile.Id);
                             if (tile.Action?.ObjectType === 'Information' && tile.Action?.ObjectId) {
@@ -255,6 +251,7 @@ export function TileGrids({
                             }
                           } : undefined}
                           onDragStart={(e) => e.preventDefault()}
+                          onDoubleClick={interactive && onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(tile.Id, (e.currentTarget as HTMLElement).getBoundingClientRect()); } : undefined}
                           onMouseDown={interactive && onTileDragStart ? (e: React.MouseEvent) => {
                             const target = e.target as HTMLElement;
                             if (
@@ -271,7 +268,7 @@ export function TileGrids({
                           } : undefined}
                         >
                           <div
-                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : hasNoBg ? ' phone-tile--no-bg' : ''}`}
+                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : !tile.BGColor && !tile.BGImageUrl ? ' phone-tile--no-bg' : ''}`}
                             style={{
                               background: bg,
                               color: tile.Color ?? '#ffffff',
@@ -282,6 +279,10 @@ export function TileGrids({
                               justifyContent: tile.Align === 'left' ? 'flex-start' : 'center',
                             }}
                           >
+                            {tile.BGImageUrl && <>
+                              <div className="phone-tile-bg-img" style={{ backgroundImage: `url("${tile.BGImageUrl}")` }} />
+                              <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(tile.Opacity ?? 0).toFixed(2)})` }} />
+                            </>}
                             {hasIcon && (
                               <div className={`phone-tile-element${showDelIcon ? ' phone-tile-element--deletable' : ''}`}>
                                 <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: iconSVG! }} />
