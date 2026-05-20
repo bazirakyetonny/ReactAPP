@@ -41,6 +41,14 @@ interface SimNode extends GraphNode {
   fy: number | null;
 }
 
+function borderPoint(fromX: number, fromY: number, nodeX: number, nodeY: number) {
+  const cx = nodeX + NODE_W / 2, cy = nodeY + NODE_H / 2;
+  const dx = fromX - cx, dy = fromY - cy;
+  if (!dx && !dy) return { x: cx, y: cy };
+  const t = Math.min((NODE_W / 2) / Math.abs(dx || 1e-9), (NODE_H / 2) / Math.abs(dy || 1e-9));
+  return { x: cx + dx * t, y: cy + dy * t };
+}
+
 // ── Tile content inside the mini phone ───────────────────────────────────────
 function PhoneNodeContent({
   content,
@@ -287,12 +295,6 @@ export function PageBubbleTree({
 
       {/* ── SVG canvas ── */}
       <svg ref={svgRef} className="tree-svg">
-        <defs>
-          <marker id="tree-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
-            <polygon points="0 0, 8 3.5, 0 7" fill="#64748b" />
-          </marker>
-        </defs>
-
         {/* Links */}
         {visibleEdges.map((edge, i) => {
           const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id;
@@ -300,17 +302,26 @@ export function PageBubbleTree({
           const src = posMap.get(srcId);
           const tgt = posMap.get(tgtId);
           if (!src || !tgt) return null;
-          const sx = src.x + NODE_W / 2, sy = src.y + NODE_H / 2;
-          const tx = tgt.x + NODE_W / 2, ty = tgt.y + NODE_H / 2;
-          const mx = (sx + tx) / 2, my = (sy + ty) / 2;
+          const sc = { x: src.x + NODE_W / 2, y: src.y + NODE_H / 2 };
+          const tc = { x: tgt.x + NODE_W / 2, y: tgt.y + NODE_H / 2 };
+          const sPt = borderPoint(tc.x, tc.y, src.x, src.y);
+          const tPt = borderPoint(sc.x, sc.y, tgt.x, tgt.y);
+          const qx = (sc.x + tc.x) / 2, qy = (sc.y + tc.y) / 2;
+          // Bezier midpoint (t=0.5) and tangent direction
+          const midX = 0.25 * sPt.x + 0.5 * qx + 0.25 * tPt.x;
+          const midY = 0.25 * sPt.y + 0.5 * qy + 0.25 * tPt.y;
+          const angle = Math.atan2(tPt.y - sPt.y, tPt.x - sPt.x) * (180 / Math.PI);
+          const d = `M${sPt.x},${sPt.y} Q${qx},${qy} ${tPt.x},${tPt.y}`;
           return (
-            <path
-              key={i}
-              className="tree-link"
-              d={`M${sx},${sy} Q${mx},${my} ${tx},${ty}`}
-              markerEnd="url(#tree-arrow)"
-              onClick={(e) => { e.stopPropagation(); handleEdgeClick(edge); }}
-            />
+            <g key={i}>
+              <path fill="none" stroke="transparent" strokeWidth={14} d={d}
+                onClick={(e) => { e.stopPropagation(); handleEdgeClick(edge); }}
+                style={{ cursor: 'pointer', pointerEvents: 'stroke' }} />
+              <path className="tree-link" d={d} style={{ pointerEvents: 'none' }} />
+              <polygon points="-4,-3 0,0 -4,3" fill="#64748b"
+                transform={`translate(${midX},${midY}) rotate(${angle})`}
+                style={{ pointerEvents: 'none' }} />
+            </g>
           );
         })}
 
