@@ -110,7 +110,7 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange }: {
+export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, pageName }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   moods?: Mood[];
@@ -118,6 +118,7 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onOpenTileImage?: () => void;
   onBeforeOpacityChange?: () => void;
+  pageName?: string;
 }) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
@@ -153,13 +154,23 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
   return (
     <aside className="app-sidebar-right">
 
-      {/* 1. PAGE / TEMPLATE tabs */}
-      <div className="sr-tabs">
-        <button className="sr-tab sr-tab-active" type="button">PAGE</button>
-        <button className="sr-tab" type="button">TEMPLATE</button>
+      {/* 1. Page name */}
+      <div className="sr-page-name">{(pageName ?? '').toUpperCase()}</div>
+
+      {/* 2a. Palette header: label + toggle */}
+      <div className="sr-palette-header">
+        <span className="sr-palette-label">{showMoods ? 'Moods' : 'Theme Colors'}</span>
+        <button
+          className={`sr-icon-btn${showMoods ? ' sr-icon-btn-active' : ''}`}
+          type="button"
+          title={showMoods ? 'Show theme colors' : 'Show moods'}
+          onClick={() => setShowMoods(v => !v)}
+        >
+          <MoodToggleIcon />
+        </button>
       </div>
 
-      {/* 2a. Color chips / mood chips + toggle */}
+      {/* 2b. Color chips / mood chips */}
       <div className="sr-palette-row">
         <div className="sr-palette">
           {showMoods ? (
@@ -194,14 +205,6 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
             ))
           )}
         </div>
-        <button
-          className={`sr-icon-btn${showMoods ? ' sr-icon-btn-active' : ''}`}
-          type="button"
-          title={showMoods ? 'Show theme colors' : 'Show moods'}
-          onClick={() => setShowMoods(v => !v)}
-        >
-          <MoodToggleIcon />
-        </button>
       </div>
 
       {/* 2b. Image tools */}

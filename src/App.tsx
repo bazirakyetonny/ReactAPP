@@ -119,6 +119,10 @@ function App() {
   const selectedTheme = themes.find(t => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter(m => m.ThemeId === selectedThemeId);
   const allPages: any[] = dataStore.get('Current_Version')?.Page ?? [];
+  const activePageId = navStack[navStack.length - 1];
+  const activePageName = activePageId
+    ? (allPages.find(p => p.PageId === activePageId)?.PageName ?? '')
+    : 'Home';
 
   const selectedTile = selectedTileId
     ? [
@@ -606,6 +610,7 @@ function App() {
           onEditTile={handleEditTile}
           onOpenTileImage={handleOpenTileImageFromSidebar}
           onBeforeOpacityChange={pushSnapshot}
+          pageName={activePageName}
         />
       </div>
       {tileImageModal && (
