@@ -485,9 +485,13 @@ export function DraggableScreen({
     if (entries.length === 0) return null;
     const { left, right } = entries[0].rect;
     if (x < left - 16 || x > right + 16) return null;
-    // Skip when cursor is inside a TileGrid's rect — tile-drop detection handles that case
+    // Skip tile-drop detection only for the inner core of each grid.
+    // The top/bottom 24 px edges stay active for block-insert so the user can
+    // target "insert between grids" without needing to hit the narrow gap precisely.
+    const GRID_EDGE = 24;
     for (const [, rect] of gridRectsSnapshot.current) {
-      if (y > rect.top && y < rect.bottom && x > rect.left - 4 && x < rect.right + 4) return null;
+      const innerTop = rect.top + GRID_EDGE, innerBot = rect.bottom - GRID_EDGE;
+      if (innerTop < innerBot && y > innerTop && y < innerBot && x > rect.left - 4 && x < rect.right + 4) return null;
     }
     const firstRect = entries[0].rect;
     const lastRect = entries[entries.length - 1].rect;
