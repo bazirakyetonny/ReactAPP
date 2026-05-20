@@ -62,7 +62,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
       setMediaList(list);
       if (initialOriginalUrl) {
         const match = list.find(m => m.MediaUrl === initialOriginalUrl);
-        if (match) setSelectedMedia(match);
+        setSelectedMedia(match ?? { MediaId: '', MediaName: '', MediaUrl: initialOriginalUrl });
       }
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
