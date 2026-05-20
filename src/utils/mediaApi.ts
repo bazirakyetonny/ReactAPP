@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:8082/Comforta_version21DevelopmentNETPostgreSQL/api';
+const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export interface MediaItem {
   MediaId: string;
