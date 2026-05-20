@@ -429,7 +429,7 @@ export function DraggableScreen({
           const insertIndex = calcInsertIndexInCol(hoverCol, y, d.fromTileIndex);
           return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: true }, targetFrameIdx: frameIdx };
         } else {
-          if (d.fromColTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true }, targetFrameIdx: frameIdx };
+          if (d.fromColTileCount === 1) { const insertIndex = calcInsertIndexInCol(hoverCol, y); return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex, newColumn: false, insertColAfterColId: null, isColumnSwap: true, valid: true, slotHeight: d.ghostHeight }, targetFrameIdx: frameIdx }; }
           if (hoverTileCount === 1) return { preview: { targetGridId: grid.InfoId, targetColId: hoverCol.ColId, insertIndex: 0, newColumn: false, insertColAfterColId: null, isColumnSwap: false, valid: false }, targetFrameIdx: frameIdx };
           return null;
         }
@@ -808,12 +808,11 @@ export function DraggableScreen({
         )}
         {infoContent.map((block: any, i: number) => {
           const nextInfoId: string | null = infoContent[i + 1]?.InfoId ?? null;
-          const nextBlock: any = infoContent[i + 1] ?? null;
-          // Tile drag: show drop zone after non-TileGrid→TileGrid transitions (TileGrids' add-row handles those)
+          // Tile drag: show drop zone only after non-TileGrid blocks (TileGrid's own add-row handles its own zone)
           const tileDragZoneActive = effectiveDraggingTile &&
             !!effectiveBlockInsertPreview &&
             effectiveBlockInsertPreview.insertBeforeInfoId === nextInfoId &&
-            (block.InfoType !== 'TileGrid' || nextBlock?.InfoType !== 'TileGrid');
+            block.InfoType !== 'TileGrid';
           // Block drag: show between all block pairs
           const blockDragZoneActive = effectiveBlockDragActive &&
             !!effectiveBlockDropPreview &&
@@ -852,6 +851,7 @@ export function DraggableScreen({
                   tileDragId={tileDragId}
                   tileDropPreview={effectiveTileDropPreview}
                   tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
+                  tileDragFromColId={tileDragInfoRef.current?.fromColId ?? null}
                   blockInsertPreview={effectiveBlockInsertPreview}
                   isDraggingTile={effectiveDraggingTile}
                   onTileNavigate={onTileNavigate}
@@ -977,6 +977,41 @@ export function DraggableScreen({
         />
       )}
 
+
+      {ghostPos && tileDragId && tileDragInfoRef.current && (() => {
+        const drag = tileDragInfoRef.current!;
+        const { tileData } = drag;
+        const hasIcon = !!drag.ghostIconSvg;
+        const hasText = !!tileData.Text;
+        return (
+          <div
+            className="phone-tile-ghost"
+            style={{ left: ghostPos.x - drag.offsetX, top: ghostPos.y - drag.offsetY, width: drag.ghostWidth, height: drag.ghostHeight }}
+          >
+            <div
+              className="phone-tile"
+              style={{
+                background: drag.bgColor,
+                color: drag.tileColor,
+                textAlign: tileData.Align ?? 'center',
+                alignItems: tileData.Align === 'left' ? 'flex-start' : tileData.Align === 'right' ? 'flex-end' : 'center',
+                justifyContent: tileData.Align === 'left' ? 'flex-start' : 'center',
+              }}
+            >
+              {hasIcon && (
+                <div className="phone-tile-element">
+                  <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: drag.ghostIconSvg! }} />
+                </div>
+              )}
+              {hasText && (
+                <div className="phone-tile-element">
+                  <span className="phone-tile-text">{tileData.Text}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {blockGhostPos && blockDragId && blockDragInfoRef.current && (() => {
         const drag = blockDragInfoRef.current!;

@@ -40,6 +40,7 @@ interface TileGridsProps {
   tileDragId?: string | null;
   tileDropPreview?: TileDropPreview | null;
   tileDragFromGridId?: string | null;
+  tileDragFromColId?: string | null;
   blockInsertPreview?: BlockInsertPreview | null;
   isDraggingTile?: boolean;
   onTileNavigate?: (pageId: string) => void;
@@ -50,15 +51,21 @@ interface TileGridsProps {
 }
 
 function getColsForRender(
-  cols: any[],
-  gridId: string,
-  preview: TileDropPreview | null | undefined,
-): Array<any | { _newColSkeleton: true }> {
-  if (!preview || !preview.newColumn || preview.targetGridId !== gridId || !preview.valid) return cols;
+  cols: any[], gridId: string, preview: TileDropPreview | null | undefined, fromColId?: string | null,
+): Array<any | { _newColSkeleton: true } | { _swapColSkeleton: true; slotHeight?: number }> {
+  if (!preview || !preview.valid || preview.targetGridId !== gridId) return cols;
+  if (preview.isColumnSwap && fromColId) {
+    const si = cols.findIndex((c: any) => c.ColId === fromColId);
+    const ti = cols.findIndex((c: any) => c.ColId === preview.targetColId);
+    if (si === -1 || ti === -1) return cols;
+    const r: Array<any | { _swapColSkeleton: true; slotHeight?: number }> = [...cols];
+    [r[si], r[ti]] = [r[ti], r[si]];
+    r[ti] = { _swapColSkeleton: true as const, slotHeight: preview.slotHeight };
+    return r;
+  }
+  if (!preview.newColumn) return cols;
   const result: Array<any | { _newColSkeleton: true }> = [...cols];
-  const afterIdx = preview.insertColAfterColId
-    ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId)
-    : -1;
+  const afterIdx = preview.insertColAfterColId ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId) : -1;
   result.splice(afterIdx + 1, 0, { _newColSkeleton: true as const });
   return result;
 }
@@ -67,7 +74,7 @@ function getTilesForRender(
   col: any,
   gridId: string,
   preview: TileDropPreview | null | undefined,
-): Array<{ tile: any; origIndex: number } | { _slot: true }> {
+): Array<{ tile: any; origIndex: number } | { _slot: true; slotHeight?: number }> {
   const tiles: any[] = col.Tiles ?? [];
   const withIdx = tiles.map((tile, i) => ({ tile, origIndex: i }));
   if (
@@ -76,8 +83,8 @@ function getTilesForRender(
   ) {
     return withIdx;
   }
-  const result: Array<{ tile: any; origIndex: number } | { _slot: true }> = [...withIdx];
-  result.splice(preview.insertIndex, 0, { _slot: true as const });
+  const result: Array<{ tile: any; origIndex: number } | { _slot: true; slotHeight?: number }> = [...withIdx];
+  result.splice(preview.insertIndex, 0, { _slot: true as const, slotHeight: preview.slotHeight });
   return result;
 }
 
@@ -101,6 +108,7 @@ export function TileGrids({
   tileDragId,
   tileDropPreview,
   tileDragFromGridId,
+  tileDragFromColId,
   blockInsertPreview,
   isDraggingTile = false,
   onTileNavigate,
@@ -118,7 +126,7 @@ export function TileGrids({
           !atMax &&
           !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
 
-        const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview);
+        const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview, tileDragFromColId);
         const previewResetHeight = !!(
           tileDropPreview?.newColumn &&
           tileDropPreview.valid &&
@@ -140,8 +148,7 @@ export function TileGrids({
           }
         }
 
-        const dropZoneId = overrideAddBtnInsertBeforeInfoId !== undefined
-          ? overrideAddBtnInsertBeforeInfoId
+        const dropZoneId = overrideAddBtnInsertBeforeInfoId !== undefined ? overrideAddBtnInsertBeforeInfoId
           : (gridIdx < tileGrids.length - 1 ? tileGrids[gridIdx + 1].InfoId : null);
         const isAddRowDropActive = isDraggingTile &&
           blockInsertPreview != null &&
@@ -157,21 +164,18 @@ export function TileGrids({
                 if (colOrSkel._newColSkeleton) {
                   return <div key="new-col-skel" className="phone-column phone-column--new-col-preview" />;
                 }
+                if (colOrSkel._swapColSkeleton) {
+                  return (
+                    <div key="swap-col-skel" className="phone-column">
+                      <div className="block-drop-zone block-drop-zone--in-col" style={{ height: colOrSkel.slotHeight ?? TILE_H }} />
+                    </div>
+                  );
+                }
 
                 const col = colOrSkel;
-                const canResize =
-                  (cols.length === 1 && (col.Tiles ?? []).length === 1) ||
-                  (cols.length === 2 && (col.Tiles ?? []).length === 1);
-                const isSplitOpposite = !!(
-                  splitPreview &&
-                  grid.InfoId === splitPreview.gridId &&
-                  col.ColId === splitPreview.oppositeColId
-                );
-                const isFreeResizeOppCol = !!(
-                  freeResizePreview &&
-                  grid.InfoId === freeResizePreview.gridId &&
-                  col.ColId === freeResizePreview.oppColId
-                );
+                const canResize = (col.Tiles ?? []).length === 1 && (cols.length === 1 || cols.length === 2);
+                const isSplitOpposite = !!(splitPreview && grid.InfoId === splitPreview.gridId && col.ColId === splitPreview.oppositeColId);
+                const isFreeResizeOppCol = !!(freeResizePreview && grid.InfoId === freeResizePreview.gridId && col.ColId === freeResizePreview.oppColId);
                 const tilesForRender = getTilesForRender(col, grid.InfoId, tileDropPreview);
 
                 return (
@@ -182,9 +186,8 @@ export function TileGrids({
                   >
                     {tilesForRender.map((item: any) => {
                       if (item._slot) {
-                        return (
-                          <div key="drop-slot" className="block-drop-zone block-drop-zone--in-col" />
-                        );
+                        return <div key="drop-slot" className="block-drop-zone block-drop-zone--in-col"
+                          style={item.slotHeight != null ? { height: item.slotHeight } : undefined} />;
                       }
 
                       const { tile, origIndex: tileIndex } = item;

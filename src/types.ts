@@ -471,6 +471,7 @@ export interface TileDropPreview {
   insertColAfterColId: string | null;
   isColumnSwap: boolean;
   valid: boolean;
+  slotHeight?: number;
 }
 
 export interface BlockInsertPreview {
