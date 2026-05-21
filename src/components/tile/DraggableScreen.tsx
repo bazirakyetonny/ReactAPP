@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { ThemeColors, ThemeIcon, TileDropPreview, BlockInsertPreview } from '../../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../../types';
 import { TILE_H, TILE_GAP } from '../../constants';
 import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
@@ -8,6 +8,7 @@ import { AddBlockMenu } from '../phone/AddBlockMenu';
 import { DescriptionBlock } from '../phone/DescriptionBlock';
 import { QuillEditorModal } from '../phone/QuillEditorModal';
 import { ImageBlock } from '../phone/ImageBlock';
+import { CtaBlock } from '../phone/CtaBlock';
 import { MediaLibraryModal } from '../phone/MediaLibraryModal';
 import type { Image } from '../../types';
 
@@ -34,6 +35,32 @@ function snapSplit(raw: number): number {
   return SPLIT_SNAPS.reduce((prev, curr) =>
     Math.abs(curr - raw) < Math.abs(prev - raw) ? curr : prev
   );
+}
+
+type RenderGroup =
+  | { type: 'single'; block: any; nextInfoId: string | null }
+  | { type: 'round-row'; blocks: any[]; nextInfoId: string | null };
+
+function isRoundCta(block: any): boolean {
+  return block.InfoType === 'Cta' && (block.CtaAttributes?.CtaButtonType || 'Round') === 'Round';
+}
+
+function groupInfoContent(infoContent: any[]): RenderGroup[] {
+  const groups: RenderGroup[] = [];
+  let i = 0;
+  while (i < infoContent.length) {
+    if (isRoundCta(infoContent[i])) {
+      const rowBlocks: any[] = [];
+      while (i < infoContent.length && isRoundCta(infoContent[i]) && rowBlocks.length < 3) {
+        rowBlocks.push(infoContent[i++]);
+      }
+      groups.push({ type: 'round-row', blocks: rowBlocks, nextInfoId: infoContent[i]?.InfoId ?? null });
+    } else {
+      groups.push({ type: 'single', block: infoContent[i], nextInfoId: infoContent[i + 1]?.InfoId ?? null });
+      i++;
+    }
+  }
+  return groups;
 }
 
 export interface AllFrameData {
@@ -93,6 +120,10 @@ export interface DraggableScreenProps {
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onDeselectTile?: () => void;
+  onSelectCta?: (ctaId: string) => void;
+  selectedCtaId?: string | null;
+  themeCtaColors?: ThemeCtaColor[];
 }
 
 export function DraggableScreen({
@@ -137,6 +168,10 @@ export function DraggableScreen({
   onAddImage,
   onEditImage,
   onTileDoubleClick,
+  onDeselectTile,
+  onSelectCta,
+  selectedCtaId,
+  themeCtaColors,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -812,14 +847,60 @@ export function DraggableScreen({
           effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId && infoContent.length > 0 && (
           <div className="block-drop-zone" />
         )}
-        {infoContent.map((block: any, i: number) => {
-          const nextInfoId: string | null = infoContent[i + 1]?.InfoId ?? null;
-          // Tile drag: show drop zone only after non-TileGrid blocks (TileGrid's own add-row handles its own zone)
+        {groupInfoContent(infoContent).map((group) => {
+          if (group.type === 'round-row') {
+            const { blocks, nextInfoId } = group;
+            const rowKey = blocks.map(b => b.InfoId).join('-');
+            const tileDragZoneActive = effectiveDraggingTile &&
+              !!effectiveBlockInsertPreview &&
+              effectiveBlockInsertPreview.insertBeforeInfoId === nextInfoId;
+            const blockDragZoneActive = effectiveBlockDragActive &&
+              !!effectiveBlockDropPreview &&
+              (effectiveBlockDropPreview.insertBeforeInfoId === nextInfoId ||
+               blocks.some(b => b !== blocks[0] && b.InfoId === effectiveBlockDropPreview?.insertBeforeInfoId));
+            return (
+              <React.Fragment key={rowKey}>
+                <div className="phone-round-cta-row">
+                  {blocks.map(block => (
+                    <div key={block.InfoId} ref={(el) => {
+                      if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
+                      else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
+                    }}>
+                      <CtaBlock
+                        block={block}
+                        ctaColors={themeCtaColors}
+                        interactive={true}
+                        isDragging={blockDragId === block.InfoId}
+                        isSelected={selectedCtaId === block.InfoId}
+                        onSelect={onSelectCta}
+                        onDelete={(infoId) => onDeleteBlock?.(infoId)}
+                        onDragStart={handleBlockDragStart}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {(tileDragZoneActive || blockDragZoneActive)
+                  ? <div className="block-drop-zone" />
+                  : !effectiveBlockDragActive && (
+                    <div className="phone-add-row">
+                      <button className="phone-add-btn" type="button" aria-label="Add content block"
+                        onClick={(e) => openAddMenu(e, nextInfoId)}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
+                }
+              </React.Fragment>
+            );
+          }
+          const { block, nextInfoId } = group;
           const tileDragZoneActive = effectiveDraggingTile &&
             !!effectiveBlockInsertPreview &&
             effectiveBlockInsertPreview.insertBeforeInfoId === nextInfoId &&
             block.InfoType !== 'TileGrid';
-          // Block drag: show between all block pairs
           const blockDragZoneActive = effectiveBlockDragActive &&
             !!effectiveBlockDropPreview &&
             effectiveBlockDropPreview.insertBeforeInfoId === nextInfoId;
@@ -873,7 +954,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Description') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div ref={(el) => {
+                <div onClick={onDeselectTile} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
@@ -910,7 +991,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Images') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div ref={(el) => {
+                <div onClick={onDeselectTile} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
@@ -919,6 +1000,45 @@ export function DraggableScreen({
                     interactive={true}
                     isDragging={blockDragId === block.InfoId}
                     onEdit={(infoId) => setImageEditorState({ mode: 'edit', infoId, currentImages: block.Images ?? [] })}
+                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={handleBlockDragStart}
+                  />
+                </div>
+                {(tileDragZoneActive || blockDragZoneActive)
+                  ? <div className="block-drop-zone" />
+                  : !effectiveBlockDragActive && (
+                    <div className="phone-add-row">
+                      <button
+                        className="phone-add-btn"
+                        type="button"
+                        aria-label="Add content block"
+                        onClick={(e) => openAddMenu(e, nextInfoId)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
+                }
+              </React.Fragment>
+            );
+          }
+          if (block.InfoType === 'Cta') {
+            return (
+              <React.Fragment key={block.InfoId}>
+                <div ref={(el) => {
+                  if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
+                  else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
+                }}>
+                  <CtaBlock
+                    block={block}
+                    ctaColors={themeCtaColors}
+                    interactive={true}
+                    isDragging={blockDragId === block.InfoId}
+                    isSelected={selectedCtaId === block.InfoId}
+                    onSelect={onSelectCta}
                     onDelete={(infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={handleBlockDragStart}
                   />

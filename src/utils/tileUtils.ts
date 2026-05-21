@@ -1,4 +1,10 @@
-import type { ThemeColors, ThemeIcon } from '../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor } from '../types';
+
+export function resolveCtaColor(ctaBGColor: string | undefined, ctaColors: ThemeCtaColor[] | undefined): string {
+  if (!ctaBGColor) return 'transparent';
+  if (ctaBGColor.startsWith('#')) return ctaBGColor;
+  return ctaColors?.find(c => c.CtaColorName === ctaBGColor)?.CtaColorCode ?? '#4c80f1';
+}
 
 export function resolveColor(bgColor: string, themeColors: ThemeColors | undefined): string {
   if (!bgColor) return 'transparent';

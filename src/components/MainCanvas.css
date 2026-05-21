@@ -699,6 +699,53 @@
   cursor: default;
 }
 
+.add-block-menu__item-wrap {
+  position: relative;
+}
+
+.add-block-menu__item--expanded {
+  background: #f0f3fa;
+  color: #1a3a6e;
+}
+
+.add-block-menu__chevron {
+  font-size: 15px;
+  color: #b0b8c4;
+  line-height: 1;
+}
+
+.add-block-menu__sub {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #ffffff;
+  border: 1px solid #e2e6ef;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+  padding: 4px 0;
+  min-width: 140px;
+  z-index: 10001;
+}
+
+.add-block-menu__sub-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #1a2340;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.add-block-menu__sub-item:hover {
+  background: #f0f3fa;
+  color: #1a3a6e;
+}
+
 .add-block-menu__arrow {
   font-size: 15px;
   color: #b0b8c4;
@@ -1410,4 +1457,117 @@
 .media-select-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ── Round CTA row grouping ────────────────────────────────────────────────── */
+
+.phone-round-cta-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.phone-round-cta-row > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── CTA block (phone frame) ───────────────────────────────────────────────── */
+.phone-cta-block {
+  position: relative;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-cta-block--interactive {
+  cursor: pointer;
+}
+.phone-cta-block--selected {
+  outline: 2px solid #4c80f1;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.phone-cta-block--dragging {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.phone-cta-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-cta-round-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.phone-cta-round {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-cta-round-label {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #374151;
+  text-align: center;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.phone-cta-fullwidth {
+  width: 100%;
+  min-width: 180px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.phone-cta-label {
+  flex: 1;
+  text-align: left;
+}
+.phone-cta-icon {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+.phone-cta-icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.phone-cta-icon-svg svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+.phone-cta-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: none;
+  gap: 4px;
+}
+.phone-cta-block--interactive:hover .phone-cta-actions {
+  display: flex;
 }

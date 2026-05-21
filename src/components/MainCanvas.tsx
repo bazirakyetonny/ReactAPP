@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import './MainCanvas.css';
-import type { ThemeColors, ThemeIcon, TileDropPreview, BlockInsertPreview } from '../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../types';
 import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
@@ -31,6 +31,8 @@ export interface LinkedFrame {
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onDeselectTile?: () => void;
+  onSelectCta?: (ctaId: string) => void;
 }
 
 interface MainCanvasProps {
@@ -63,6 +65,10 @@ interface MainCanvasProps {
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onDeselectTile?: () => void;
+  onSelectCta?: (ctaId: string) => void;
+  selectedCtaId?: string | null;
+  themeCtaColors?: ThemeCtaColor[];
 }
 
 export function MainCanvas({
@@ -95,6 +101,10 @@ export function MainCanvas({
   onAddImage,
   onEditImage,
   onTileDoubleClick,
+  onDeselectTile,
+  onSelectCta,
+  selectedCtaId,
+  themeCtaColors,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -240,6 +250,10 @@ export function MainCanvas({
             onAddImage={onAddImage}
             onEditImage={onEditImage}
             onTileDoubleClick={onTileDoubleClick}
+            onDeselectTile={onDeselectTile}
+            onSelectCta={onSelectCta}
+            selectedCtaId={selectedCtaId}
+            themeCtaColors={themeCtaColors}
           />
         </div>
 
@@ -296,6 +310,10 @@ export function MainCanvas({
                 onAddImage={frame.onAddImage}
                 onEditImage={frame.onEditImage}
                 onTileDoubleClick={frame.onTileDoubleClick}
+                onDeselectTile={frame.onDeselectTile}
+                onSelectCta={frame.onSelectCta}
+                selectedCtaId={selectedCtaId}
+                themeCtaColors={themeCtaColors}
               />
             </div>
           );

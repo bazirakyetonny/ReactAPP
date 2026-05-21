@@ -271,7 +271,7 @@ export interface Theme {
   ThemeFontFamily: string;
   ThemeFontSize: number;
   ThemeColors: ThemeColors;
-  ThemeCtaColors: ThemeCtaColor;
+  ThemeCtaColors: ThemeCtaColor[];
   ThemeIcons: ThemeIcon[];
   Icons: [];
 }

@@ -3,6 +3,7 @@ import "./App.css";
 import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
 import { TileImageModal } from './components/phone/TileImageModal';
+import { AddCtaModal } from './components/phone/AddCtaModal';
 import type { TileDropPreview } from './components/MainCanvas';
 import { SidebarRight } from './components/SidebarRight';
 import { PageBubbleTree } from './components/tree/PageBubbleTree';
@@ -29,6 +30,7 @@ import {
   applyInsertBlock,
   applyAddImage,
   applyEditImageSelection,
+  applyEditCta,
 } from './utils/contentTransforms';
 
 const TILE_H = 80;
@@ -41,6 +43,7 @@ function App() {
     dataStore.get('CurrentThemeId') ?? themes[0]?.ThemeId ?? ''
   );
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
+  const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
 
   const [navStack, setNavStack] = useState<string[]>([]);
@@ -49,6 +52,11 @@ function App() {
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string; tileWidth: number; tileHeight: number;
     initialOriginalUrl?: string; initialOpacity?: number;
+  } | null>(null);
+  const [pendingCta, setPendingCta] = useState<{
+    blockType: string;
+    insertBeforeInfoId: string | null;
+    frameId: string | null;
   } | null>(null);
 
   type Snapshot = { infoContent: any[]; navContents: Record<string, any[]>; navStack: string[] };
@@ -133,6 +141,11 @@ function App() {
       ].find((t: any) => t.Id === selectedTileId) ?? null
     : null;
 
+  const allBlocks = [...infoContent, ...Object.values(navContents).flat()];
+  const selectedCta = selectedCtaId
+    ? allBlocks.find((b: any) => b.InfoType === 'Cta' && b.InfoId === selectedCtaId) ?? null
+    : null;
+
   const activeNavTileIds = useMemo(() => {
     const ids = new Set<string>();
     for (let i = 0; i < navStack.length; i++) {
@@ -199,14 +212,52 @@ function App() {
   }
 
   function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
+    if (blockType.startsWith('Cta_')) {
+      setPendingCta({ blockType, insertBeforeInfoId, frameId: null });
+      return;
+    }
     pushSnapshot();
+    const ts = Date.now();
     if (blockType === 'TileGrid') {
-      const ts = Date.now();
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
       setSelectedTileId(`tile-${ts}`);
+      setSelectedCtaId(null);
     } else {
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
     }
+  }
+
+  function handleConfirmCta(attrs: { CtaLabel: string; CtaAction: string; CtaConnectedSupplierId?: string; CtaSupplierIsConnected: boolean }) {
+    if (!pendingCta) return;
+    pushSnapshot();
+    const ts = Date.now();
+    const { blockType, insertBeforeInfoId, frameId } = pendingCta;
+    if (frameId === null) {
+      setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts, attrs));
+    } else {
+      setNavContents(prev => ({
+        ...prev,
+        [frameId]: applyAddBlock(prev[frameId] ?? [], blockType, insertBeforeInfoId, ts, attrs),
+      }));
+    }
+    setSelectedCtaId(`cta-${ts}`);
+    setSelectedTileId(null);
+    setPendingCta(null);
+  }
+
+  function handleEditCta(ctaId: string, patch: Record<string, any>) {
+    pushSnapshot();
+    setInfoContent(prev => applyEditCta(prev, ctaId, patch));
+    setNavContents(prev => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditCta(blocks, ctaId, patch);
+      return next;
+    });
+  }
+
+  function handleSelectCta(ctaId: string) {
+    setSelectedCtaId(ctaId);
+    setSelectedTileId(null);
   }
 
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
@@ -486,18 +537,26 @@ function App() {
       },
       onEditTile: handleEditTile,
       onTileDoubleClick: handleTileDoubleClick,
+      onDeselectTile: () => { setSelectedTileId(null); setSelectedCtaId(null); },
+      onSelectCta: handleSelectCta,
       onAddStandaloneTile: () => {
         if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
         update(prev => applyAddStandaloneTile(prev, ts));
         setSelectedTileId(`tile-${ts}`);
+        setSelectedCtaId(null);
       },
       onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
+        if (blockType.startsWith('Cta_')) {
+          setPendingCta({ blockType, insertBeforeInfoId, frameId: pageId });
+          return;
+        }
         pushSnapshot();
+        const ts = Date.now();
         if (blockType === 'TileGrid') {
-          const ts = Date.now();
           update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
           setSelectedTileId(`tile-${ts}`);
+          setSelectedCtaId(null);
         } else {
           update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
         }
@@ -576,7 +635,7 @@ function App() {
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
-          onSelectTile={setSelectedTileId}
+          onSelectTile={(id) => { setSelectedTileId(id); setSelectedCtaId(null); }}
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
           onEditTile={handleEditTile}
@@ -601,16 +660,23 @@ function App() {
           onAddImage={handleAddImage}
           onEditImage={handleEditImage}
           onTileDoubleClick={handleTileDoubleClick}
+          onDeselectTile={() => { setSelectedTileId(null); setSelectedCtaId(null); }}
+          onSelectCta={handleSelectCta}
+          selectedCtaId={selectedCtaId}
+          themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           themeColors={selectedTheme?.ThemeColors}
+          ctaColors={selectedTheme?.ThemeCtaColors ?? []}
           moods={themeMoods}
           selectedTile={selectedTile}
           onEditTile={handleEditTile}
           onOpenTileImage={handleOpenTileImageFromSidebar}
           onBeforeOpacityChange={pushSnapshot}
           pageName={activePageName}
+          selectedCta={selectedCta}
+          onEditCta={handleEditCta}
         />
       </div>
       {tileImageModal && (
@@ -621,6 +687,13 @@ function App() {
           initialOpacity={tileImageModal.initialOpacity}
           onConfirm={handleTileImageConfirm}
           onCancel={() => setTileImageModal(null)}
+        />
+      )}
+      {pendingCta && (
+        <AddCtaModal
+          ctaType={pendingCta.blockType.slice(4)}
+          onConfirm={handleConfirmCta}
+          onCancel={() => setPendingCta(null)}
         />
       )}
     </>

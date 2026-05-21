@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import './SidebarRight.css';
-import type { ThemeIcon, ThemeColors, Mood } from '../types';
+import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from '../types';
+import { SidebarCtaControls } from './SidebarCtaControls';
 
 const COLOR_ORDER: (keyof ThemeColors)[] = [
   'primaryColor', 'secondaryColor', 'accentColor',
@@ -110,15 +111,18 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, pageName }: {
+export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, pageName, selectedCta, onEditCta }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
+  ctaColors?: ThemeCtaColor[];
   moods?: Mood[];
   selectedTile?: any;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onOpenTileImage?: () => void;
   onBeforeOpacityChange?: () => void;
   pageName?: string;
+  selectedCta?: any;
+  onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
 }) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
@@ -156,6 +160,20 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
 
       {/* 1. Page name */}
       <div className="sr-page-name">{(pageName ?? '').toUpperCase()}</div>
+
+      {!selectedTile && !selectedCta && (
+        <div className="sr-empty-state">Select a tile or button to edit its properties</div>
+      )}
+
+      {selectedCta && !selectedTile && (
+        <SidebarCtaControls
+          selectedCta={selectedCta}
+          palette={ctaColors}
+          onEditCta={onEditCta}
+        />
+      )}
+
+      {selectedTile && <>
 
       {/* 2a. Palette header: label + toggle */}
       <div className="sr-palette-header">
@@ -358,6 +376,8 @@ export function SidebarRight({ themeIcons = [], themeColors, moods = [], selecte
           );
         })}
       </div>
+
+      </>}
 
     </aside>
   );

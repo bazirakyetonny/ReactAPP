@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 
 export interface AddBlockMenuProps {
@@ -7,15 +7,24 @@ export interface AddBlockMenuProps {
   onClose: () => void;
 }
 
+const CTA_SUB_ITEMS = [
+  { label: 'Address',  type: 'Cta_Address' },
+  { label: 'Phone',    type: 'Cta_Phone' },
+  { label: 'Email',    type: 'Cta_Email' },
+  { label: 'Form',     type: 'Cta_Form' },
+  { label: 'Weblink',  type: 'Cta_Weblink' },
+] as const;
+
 const ADD_BLOCK_ITEMS = [
-  { label: 'Call To Action', type: 'Cta', arrow: true, disabled: true },
-  { label: 'Description', type: 'Description', disabled: false },
-  { label: 'Image', type: 'Image', disabled: false },
-  { label: 'Tile', type: 'TileGrid', disabled: false },
+  { label: 'Call To Action', type: 'Cta',         sub: true },
+  { label: 'Description',    type: 'Description',  sub: false },
+  { label: 'Image',          type: 'Image',        sub: false },
+  { label: 'Tile',           type: 'TileGrid',     sub: false },
 ] as const;
 
 export function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [ctaHovered, setCtaHovered] = useState(false);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -35,14 +44,39 @@ export function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
   return ReactDOM.createPortal(
     <div ref={ref} className="add-block-menu" style={{ left: pos.x, top: pos.y }}>
       {ADD_BLOCK_ITEMS.map(item => (
-        <button
+        <div
           key={item.type}
-          className={`add-block-menu__item${item.disabled ? ' add-block-menu__item--disabled' : ''}`}
-          onMouseDown={e => { e.stopPropagation(); if (!item.disabled) onSelect(item.type); }}
+          className="add-block-menu__item-wrap"
+          onMouseEnter={item.sub ? () => setCtaHovered(true) : undefined}
+          onMouseLeave={item.sub ? () => setCtaHovered(false) : undefined}
         >
-          <span>{item.label}</span>
-          {'arrow' in item && item.arrow && <span className="add-block-menu__arrow">›</span>}
-        </button>
+          <button
+            className={`add-block-menu__item${item.sub && ctaHovered ? ' add-block-menu__item--expanded' : ''}`}
+            onMouseDown={e => {
+              e.stopPropagation();
+              if (!item.sub) onSelect(item.type);
+            }}
+          >
+            <span>{item.label}</span>
+            {item.sub && (
+              <span className="add-block-menu__chevron">›</span>
+            )}
+          </button>
+
+          {item.sub && ctaHovered && (
+            <div className="add-block-menu__sub">
+              {CTA_SUB_ITEMS.map(sub => (
+                <button
+                  key={sub.type}
+                  className="add-block-menu__sub-item"
+                  onMouseDown={e => { e.stopPropagation(); onSelect(sub.type); }}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       ))}
     </div>,
     document.body
