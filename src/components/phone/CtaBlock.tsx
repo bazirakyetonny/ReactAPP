@@ -30,6 +30,33 @@ function BoltIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true">
+      <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PenIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ImgPlaceholderIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M1 10.5l4-4.5 3 3 2.5-2.5L15 12" stroke="currentColor" strokeWidth="1.1"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="5" cy="6" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 interface CtaBlockProps {
   block: any;
   ctaColors?: ThemeCtaColor[];
@@ -39,18 +66,20 @@ interface CtaBlockProps {
   onSelect?: (infoId: string) => void;
   onDelete?: (infoId: string) => void;
   onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
+  onSelectImage?: (ctaId: string) => void;
 }
 
-export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart }: CtaBlockProps) {
+export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
   const label = attrs.CtaLabel || 'Button';
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
   const color = attrs.CtaColor || '#ffffff';
-  const type = attrs.CtaButtonType || 'Round';
+  const type = attrs.CtaButtonType || 'Image';
+  const imgUrl: string = attrs.CtaButtonImgUrl || '';
+
   const iconSvg = attrs.CtaButtonIcon
     ? (ctaIcons.find(i => i.name === attrs.CtaButtonIcon)?.svg ?? null)
     : null;
-
   const IconEl = iconSvg
     ? <span className="phone-cta-icon-svg" dangerouslySetInnerHTML={{ __html: iconSvg }} />
     : <BoltIcon />;
@@ -79,18 +108,46 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
             )}
           </div>
         )}
-        {(type === 'FullWidth' || type === 'Image') && (
-          <div className="phone-cta-fullwidth" style={{ background: bg, color }}>
-            {IconEl}
+
+        {type === 'FullWidth' && (
+          <div className="phone-cta-fullwidth phone-cta-fullwidth--plain" style={{ background: bg, color }}>
             <span className="phone-cta-label">{label}</span>
           </div>
         )}
+
         {type === 'Icon' && (
-          <div className="phone-cta-icon" style={{ color: bg }}>
-            {IconEl}
+          <div className="phone-cta-fullwidth" style={{ background: bg, color }}>
+            <span className="phone-cta-icon-box">{IconEl}</span>
+            <span className="phone-cta-label">{label}</span>
+            <ChevronIcon />
+          </div>
+        )}
+
+        {type === 'Image' && (
+          <div className="phone-cta-fullwidth" style={{ background: bg, color }}>
+            <span className="phone-cta-img-wrap">
+              {imgUrl
+                ? <img src={imgUrl} className="phone-cta-img" alt="" />
+                : <span className="phone-cta-img-placeholder"><ImgPlaceholderIcon /></span>
+              }
+              {interactive && onSelectImage && (
+                <button
+                  className="phone-cta-img-edit"
+                  type="button"
+                  aria-label="Select image"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); onSelectImage(block.InfoId); }}
+                >
+                  <PenIcon />
+                </button>
+              )}
+            </span>
+            <span className="phone-cta-label">{label}</span>
+            <ChevronIcon />
           </div>
         )}
       </div>
+
       {interactive && (
         <div className="phone-cta-actions">
           <button className="phone-block-action-btn" onMouseDown={e => e.stopPropagation()} type="button" aria-label="Drag">

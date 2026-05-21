@@ -31,7 +31,7 @@ const CONFIG: Record<string, { title: string; actionLabel: string; actionPlaceho
   Email:   { title: 'Add Email',         actionLabel: 'Email Address', actionPlaceholder: 'you@example.com',        validate: validateEmail },
   Weblink: { title: 'Add Web Link',      actionLabel: 'URL',           actionPlaceholder: 'https://example.com',    validate: validateUrl },
   Address: { title: 'Add Address',       actionLabel: 'Address',       actionPlaceholder: 'Street, City, Country',  validate: v => v.trim() ? null : 'Address is required' },
-  Form:    { title: 'Add Form',          actionLabel: 'Form Value',    actionPlaceholder: 'Form identifier or URL', validate: () => null },
+  Form:    { title: 'Add Form',          actionLabel: 'Form',          actionPlaceholder: '',                       validate: v => v.trim() ? null : 'Please select a form' },
 };
 
 const DEFAULT_LABELS: Record<string, string> = {
@@ -58,22 +58,47 @@ function prefill(ctaType: string, supplier: any): { label: string; action: strin
 
 export function AddCtaModal({ ctaType, onConfirm, onCancel }: AddCtaModalProps) {
   const suppliers: any[] = dataStore.get('Suppliers') ?? [];
+  const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const cfg = CONFIG[ctaType] ?? CONFIG.Form;
+  const isForm = ctaType === 'Form';
 
   const [supplierId, setSupplierId] = useState('');
+  const [selectedFormId, setSelectedFormId] = useState('');
   const [label, setLabel] = useState(DEFAULT_LABELS[ctaType] ?? '');
   const [action, setAction] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const forms = supplierId
+    ? allForms.filter(f => f.SupplierId === supplierId)
+    : allForms;
+
+  function handleFormChange(formId: string) {
+    setSelectedFormId(formId);
+    setError(null);
+    const form = forms.find(f => f.FormId?.toString() === formId);
+    if (form) {
+      setAction(form.FormUrl);
+      if (!label || label === DEFAULT_LABELS.Form) setLabel(form.PageName);
+    } else {
+      setAction('');
+    }
+  }
+
   function handleSupplierChange(id: string) {
     setSupplierId(id);
+    setError(null);
+    if (isForm) {
+      setSelectedFormId('');
+      setAction('');
+      setLabel(DEFAULT_LABELS.Form);
+      return;
+    }
     if (id) {
       const s = suppliers.find(s => s.SupplierGenId === id);
       if (s) {
         const { label: pl, action: pa } = prefill(ctaType, s);
         setLabel(pl);
         setAction(pa);
-        setError(null);
       }
     }
   }
@@ -82,6 +107,7 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel }: AddCtaModalProps) 
     setSupplierId('');
     setLabel(DEFAULT_LABELS[ctaType] ?? '');
     setAction('');
+    if (isForm) setSelectedFormId('');
     setError(null);
   }
 
@@ -138,13 +164,28 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel }: AddCtaModalProps) 
           </div>
 
           <label className="acm-label">{cfg.actionLabel}</label>
-          <input
-            className={`acm-input${error ? ' acm-input--error' : ''}`}
-            type="text"
-            placeholder={cfg.actionPlaceholder}
-            value={action}
-            onChange={e => { setAction(e.target.value); setError(null); }}
-          />
+          {isForm ? (
+            <div className="acm-select-wrap">
+              <select
+                className={`acm-select${error ? ' acm-input--error' : ''}`}
+                value={selectedFormId}
+                onChange={e => handleFormChange(e.target.value)}
+              >
+                <option value="">Select a form…</option>
+                {forms.map(f => (
+                  <option key={f.FormId} value={f.FormId?.toString()}>{f.PageName}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <input
+              className={`acm-input${error ? ' acm-input--error' : ''}`}
+              type="text"
+              placeholder={cfg.actionPlaceholder}
+              value={action}
+              onChange={e => { setAction(e.target.value); setError(null); }}
+            />
+          )}
           {error && <span className="acm-error">{error}</span>}
 
           <label className="acm-label">Label</label>

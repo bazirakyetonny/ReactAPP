@@ -42,7 +42,7 @@ type RenderGroup =
   | { type: 'round-row'; blocks: any[]; nextInfoId: string | null };
 
 function isRoundCta(block: any): boolean {
-  return block.InfoType === 'Cta' && (block.CtaAttributes?.CtaButtonType || 'Round') === 'Round';
+  return block.InfoType === 'Cta' && (block.CtaAttributes?.CtaButtonType || 'Image') === 'Round';
 }
 
 function groupInfoContent(infoContent: any[]): RenderGroup[] {
@@ -124,6 +124,7 @@ export interface DraggableScreenProps {
   onSelectCta?: (ctaId: string) => void;
   selectedCtaId?: string | null;
   themeCtaColors?: ThemeCtaColor[];
+  onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
 }
 
 export function DraggableScreen({
@@ -172,6 +173,7 @@ export function DraggableScreen({
   onSelectCta,
   selectedCtaId,
   themeCtaColors,
+  onEditCta,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -188,6 +190,7 @@ export function DraggableScreen({
     | { mode: 'create'; insertBeforeInfoId: string | null }
     | { mode: 'edit'; infoId: string; currentImages: Image[] };
   const [imageEditorState, setImageEditorState] = useState<ImageEditorState | null>(null);
+  const [ctaImageEditId, setCtaImageEditId] = useState<string | null>(null);
 
   function openAddMenu(e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) {
     e.stopPropagation();
@@ -875,6 +878,7 @@ export function DraggableScreen({
                         onSelect={onSelectCta}
                         onDelete={(infoId) => onDeleteBlock?.(infoId)}
                         onDragStart={handleBlockDragStart}
+                        onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
                       />
                     </div>
                   ))}
@@ -1041,6 +1045,7 @@ export function DraggableScreen({
                     onSelect={onSelectCta}
                     onDelete={(infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={handleBlockDragStart}
+                    onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
                   />
                 </div>
                 {(tileDragZoneActive || blockDragZoneActive)
@@ -1101,6 +1106,18 @@ export function DraggableScreen({
             setImageEditorState(null);
           }}
           onCancel={() => setImageEditorState(null)}
+        />
+      )}
+
+      {ctaImageEditId && (
+        <MediaLibraryModal
+          initialImages={[]}
+          singleSelect
+          onSelect={(images) => {
+            if (images[0]) onEditCta?.(ctaImageEditId, { CtaButtonImgUrl: images[0].InfoImageValue });
+            setCtaImageEditId(null);
+          }}
+          onCancel={() => setCtaImageEditId(null)}
         />
       )}
 

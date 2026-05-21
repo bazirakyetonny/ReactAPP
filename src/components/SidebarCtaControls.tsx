@@ -1,6 +1,7 @@
 import './SidebarRight.css';
 import type { ThemeCtaColor } from '../types';
 import { ctaIcons } from '../data/ctaIcons';
+import { dataStore } from '../data/datastore';
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,13 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
   const ctaId = selectedCta?.InfoId;
   const patch = (p: Record<string, any>) => onEditCta?.(ctaId, p);
 
+  const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
+  const supplierId: string = attrs.CtaConnectedSupplierId ?? '';
+  const forms = supplierId
+    ? allForms.filter(f => f.SupplierId === supplierId)
+    : allForms;
+  const selectedFormId = forms.find(f => f.FormUrl === attrs.CtaAction)?.FormId?.toString() ?? '';
+
   return (
     <>
       {/* CtaButtonType — visual design */}
@@ -164,15 +172,32 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
         />
       </div>
 
-      {/* CtaAction — value / phone / email / url etc. */}
+      {/* CtaAction — form dropdown or plain text */}
       <div className="sr-section" style={{ paddingTop: 0 }}>
-        <input
-          className="sr-input"
-          type="text"
-          placeholder={attrs.CtaType === 'Phone' ? 'Phone number' : attrs.CtaType === 'Email' ? 'Email address' : attrs.CtaType === 'Weblink' ? 'URL' : 'Value'}
-          value={attrs.CtaAction ?? ''}
-          onChange={e => patch({ CtaAction: e.target.value })}
-        />
+        {attrs.CtaType === 'Form' ? (
+          <select
+            className="sr-input sr-select"
+            value={selectedFormId}
+            onChange={e => {
+              const form = forms.find(f => f.FormId?.toString() === e.target.value);
+              if (form) patch({ CtaAction: form.FormUrl, CtaLabel: attrs.CtaLabel || form.PageName });
+              else patch({ CtaAction: '' });
+            }}
+          >
+            <option value="">Select a form…</option>
+            {forms.map(f => (
+              <option key={f.FormId} value={f.FormId?.toString()}>{f.PageName}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="sr-input"
+            type="text"
+            placeholder={attrs.CtaType === 'Phone' ? 'Phone number' : attrs.CtaType === 'Email' ? 'Email address' : attrs.CtaType === 'Weblink' ? 'URL' : 'Value'}
+            value={attrs.CtaAction ?? ''}
+            onChange={e => patch({ CtaAction: e.target.value })}
+          />
+        )}
       </div>
 
       {/* CtaColor — light / dark text & icon */}
@@ -195,23 +220,26 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
         </button>
       </div>
 
-      {/* CtaButtonIcon — icon grid */}
-      <div className="sr-icon-grid">
-        {ctaIcons.map(icon => (
-          <button
-            key={icon.name}
-            className={`sr-icon-cell${attrs.CtaButtonIcon === icon.name ? ' sr-icon-cell--active' : ''}`}
-            type="button"
-            title={icon.name}
-            onClick={() => patch({ CtaButtonIcon: icon.name })}
-          >
-            <span
-              className="sr-icon-wrap"
-              dangerouslySetInnerHTML={{ __html: icon.svg }}
-            />
-          </button>
-        ))}
-      </div>
+      {/* CtaButtonIcon — icon grid (Round and Icon types only) */}
+      {(attrs.CtaButtonType === 'Round' || attrs.CtaButtonType === 'Icon') && (
+        <div className="sr-icon-grid">
+          {ctaIcons.map(icon => (
+            <button
+              key={icon.name}
+              className={`sr-icon-cell${attrs.CtaButtonIcon === icon.name ? ' sr-icon-cell--active' : ''}`}
+              type="button"
+              title={icon.name}
+              onClick={() => patch({ CtaButtonIcon: icon.name })}
+            >
+              <span
+                className="sr-icon-wrap"
+                dangerouslySetInnerHTML={{ __html: icon.svg }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
     </>
   );
 }

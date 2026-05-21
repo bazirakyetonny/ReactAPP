@@ -4,6 +4,7 @@ import { NavBar } from './components/NavBar';
 import { MainCanvas } from './components/MainCanvas';
 import { TileImageModal } from './components/phone/TileImageModal';
 import { AddCtaModal } from './components/phone/AddCtaModal';
+
 import type { TileDropPreview } from './components/MainCanvas';
 import { SidebarRight } from './components/SidebarRight';
 import { PageBubbleTree } from './components/tree/PageBubbleTree';
@@ -44,6 +45,7 @@ function App() {
   );
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
+
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
 
   const [navStack, setNavStack] = useState<string[]>([]);
@@ -539,6 +541,7 @@ function App() {
       onTileDoubleClick: handleTileDoubleClick,
       onDeselectTile: () => { setSelectedTileId(null); setSelectedCtaId(null); },
       onSelectCta: handleSelectCta,
+      onEditCta: handleEditCta,
       onAddStandaloneTile: () => {
         if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
@@ -662,6 +665,7 @@ function App() {
           onTileDoubleClick={handleTileDoubleClick}
           onDeselectTile={() => { setSelectedTileId(null); setSelectedCtaId(null); }}
           onSelectCta={handleSelectCta}
+          onEditCta={handleEditCta}
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
         />
@@ -696,6 +700,7 @@ function App() {
           onCancel={() => setPendingCta(null)}
         />
       )}
+
     </>
   );
 }

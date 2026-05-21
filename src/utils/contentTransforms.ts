@@ -86,7 +86,7 @@ export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId
         CtaAction: '',
         CtaColor: '#ffffff',
         CtaBGColor: firstCtaColor,
-        CtaButtonType: 'Round',
+        CtaButtonType: 'Image',
         CtaButtonImgUrl: '',
         CtaButtonIcon: defaultIcon,
         CtaSupplierIsConnected: false,

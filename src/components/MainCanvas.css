@@ -1479,17 +1479,22 @@
 /* ── CTA block (phone frame) ───────────────────────────────────────────────── */
 .phone-cta-block {
   position: relative;
-  padding: 8px 14px;
+  padding: 0px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 .phone-cta-block--interactive {
   cursor: pointer;
 }
-.phone-cta-block--selected {
-  outline: 2px solid #4c80f1;
-  outline-offset: -2px;
+.phone-cta-block--selected .phone-cta-fullwidth {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
+}
+.phone-cta-block--selected .phone-cta-round-wrap {
+  outline: 2px solid #3d5a9e;
+  outline-offset: 4px;
   border-radius: 6px;
 }
 .phone-cta-block--dragging {
@@ -1500,6 +1505,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 .phone-cta-round-wrap {
   display: flex;
@@ -1527,19 +1533,85 @@
 }
 .phone-cta-fullwidth {
   width: 100%;
-  min-width: 180px;
-  height: 40px;
+  height: 75px;
   border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  gap: 10px;
+  padding: 0 12px;
   font-size: 13px;
   font-weight: 500;
+  box-sizing: border-box;
+}
+.phone-cta-fullwidth--plain {
+  height: 40px;
 }
 .phone-cta-label {
   flex: 1;
   text-align: left;
+}
+.phone-cta-fullwidth--plain .phone-cta-label {
+  text-align: center;
+}
+.phone-cta-icon-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.phone-cta-img-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.phone-cta-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+.phone-cta-img-placeholder {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: inherit;
+}
+.phone-cta-img-edit {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #ffffff;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.phone-cta-img-wrap:hover .phone-cta-img-edit {
+  opacity: 1;
+}
+.phone-cta-img-edit:hover {
+  background: rgba(0, 0, 0, 0.88);
 }
 .phone-cta-icon {
   font-size: 22px;

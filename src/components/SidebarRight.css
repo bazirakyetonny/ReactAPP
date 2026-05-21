@@ -364,6 +364,15 @@
   color: #9ca3af;
 }
 
+.sr-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
 /* ── Toolbars ───────────────────────────────────────────────────────────────── */
 
 .sr-toolbar {
@@ -696,6 +705,45 @@
 .sr-style-spacer {
   flex: 1;
 }
+
+.sr-cta-img-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 5px;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+}
+.sr-cta-img-btn {
+  flex: 1;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sr-cta-img-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+.sr-cta-img-clear {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.sr-cta-img-clear:hover { background: #d1d5db; color: #374151; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 
