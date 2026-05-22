@@ -1,11 +1,21 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { NavBar } from './components/NavBar';
-import { MainCanvas } from './components/MainCanvas';
-import type { TileDropPreview } from './components/MainCanvas';
-import { SidebarRight } from './components/SidebarRight';
-import { dataStore } from './data/datastore';
-import type { Theme, Mood } from './types';
+import { NavBar } from "./components/NavBar";
+import { MainCanvas } from "./components/MainCanvas";
+import type { TileDropPreview } from "./components/MainCanvas";
+import { SidebarRight } from "./components/SidebarRight";
+import { dataStore } from "./data/datastore";
+import type { Theme, Mood, CategoryTemplates } from "./types";
+import {
+  getAppVersions,
+  getActiveAppVersion,
+  activateAppVersion,
+  type SDTAppVersion,
+} from "./services/appVersionsApi";
+import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionModal";
+import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
+import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
+import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
 import {
   applyAddColumn,
   applyDeleteTile,
@@ -27,16 +37,31 @@ import {
   applyInsertBlock,
   applyAddImage,
   applyEditImageSelection,
-} from './utils/contentTransforms';
+} from "./utils/contentTransforms";
 
 const TILE_H = 80;
 
 function App() {
-  const themes: Theme[] = dataStore.get('themes') ?? [];
-  const allMoods: Mood[] = dataStore.get('Moods') ?? [];
+  const themes: Theme[] = dataStore.get("themes") ?? [];
+  const allMoods: Mood[] = dataStore.get("Moods") ?? [];
+  const [currentVersion, setCurrentVersion] = useState<any>(
+    () => dataStore.get("Current_Version"),
+  );
+  const templatesCollection: CategoryTemplates[] =
+    dataStore.get("TemplatesCollection") ?? [];
+
+  const [appVersions, setAppVersions] = useState<SDTAppVersion[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [renameVersion, setRenameVersion] = useState<SDTAppVersion | null>(null);
+  const [trashVersion, setTrashVersion] = useState<SDTAppVersion | null>(null);
+  const [duplicateVersion, setDuplicateVersion] = useState<SDTAppVersion | null>(null);
+
+  useEffect(() => {
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }, []);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
-    dataStore.get('CurrentThemeId') ?? themes[0]?.ThemeId ?? ''
+    dataStore.get("CurrentThemeId") ?? themes[0]?.ThemeId ?? "",
   );
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
@@ -44,7 +69,11 @@ function App() {
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
 
-  type Snapshot = { infoContent: any[]; navContents: Record<string, any[]>; navStack: string[] };
+  type Snapshot = {
+    infoContent: any[];
+    navContents: Record<string, any[]>;
+    navStack: string[];
+  };
   const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
   const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
   const isResizingRef = useRef(false);
@@ -55,18 +84,32 @@ function App() {
   const navStackRef = useRef(navStack);
   const undoStackRef = useRef(undoStack);
   const redoStackRef = useRef(redoStack);
-  useLayoutEffect(() => { infoContentRef.current = infoContent; });
-  useLayoutEffect(() => { navContentsRef.current = navContents; });
-  useLayoutEffect(() => { navStackRef.current = navStack; });
-  useLayoutEffect(() => { undoStackRef.current = undoStack; });
-  useLayoutEffect(() => { redoStackRef.current = redoStack; });
+  useLayoutEffect(() => {
+    infoContentRef.current = infoContent;
+  });
+  useLayoutEffect(() => {
+    navContentsRef.current = navContents;
+  });
+  useLayoutEffect(() => {
+    navStackRef.current = navStack;
+  });
+  useLayoutEffect(() => {
+    undoStackRef.current = undoStack;
+  });
+  useLayoutEffect(() => {
+    redoStackRef.current = redoStack;
+  });
 
   function currentSnapshot(): Snapshot {
-    return { infoContent: infoContentRef.current, navContents: navContentsRef.current, navStack: navStackRef.current };
+    return {
+      infoContent: infoContentRef.current,
+      navContents: navContentsRef.current,
+      navStack: navStackRef.current,
+    };
   }
 
   function pushSnapshot() {
-    setUndoStack(prev => [...prev, currentSnapshot()]);
+    setUndoStack((prev) => [...prev, currentSnapshot()]);
     setRedoStack([]);
   }
 
@@ -80,8 +123,8 @@ function App() {
     const stack = undoStackRef.current;
     if (!stack.length) return;
     const snap = stack[stack.length - 1];
-    setUndoStack(s => s.slice(0, -1));
-    setRedoStack(s => [...s, currentSnapshot()]);
+    setUndoStack((s) => s.slice(0, -1));
+    setRedoStack((s) => [...s, currentSnapshot()]);
     restoreSnapshot(snap);
   }
 
@@ -89,46 +132,77 @@ function App() {
     const stack = redoStackRef.current;
     if (!stack.length) return;
     const snap = stack[stack.length - 1];
-    setRedoStack(s => s.slice(0, -1));
-    setUndoStack(s => [...s, currentSnapshot()]);
+    setRedoStack((s) => s.slice(0, -1));
+    setUndoStack((s) => [...s, currentSnapshot()]);
     restoreSnapshot(snap);
+  }
+
+  async function handleVersionSelect(id: string) {
+    if (id === currentVersion?.AppVersionId) return;
+    await activateAppVersion(id);
+    const fetched = await getActiveAppVersion() as any;
+    const fullVersion = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+    dataStore.set("Current_Version", fullVersion);
+    setCurrentVersion(fullVersion);
+    setInfoContent(parseInfoContent());
+    setNavStack([]);
+    setNavContents({});
+    setUndoStack([]);
+    setRedoStack([]);
+    setSelectedTileId(null);
+    getAppVersions().then(setAppVersions).catch(() => {});
   }
 
   const handleUndoRef = useRef(handleUndo);
   const handleRedoRef = useRef(handleRedo);
-  useLayoutEffect(() => { handleUndoRef.current = handleUndo; });
-  useLayoutEffect(() => { handleRedoRef.current = handleRedo; });
+  useLayoutEffect(() => {
+    handleUndoRef.current = handleUndo;
+  });
+  useLayoutEffect(() => {
+    handleRedoRef.current = handleRedo;
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const ctrl = e.ctrlKey || e.metaKey;
-      if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); handleUndoRef.current(); }
-      if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); handleRedoRef.current(); }
+      if (ctrl && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndoRef.current();
+      }
+      if (ctrl && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        e.preventDefault();
+        handleRedoRef.current();
+      }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const selectedTheme = themes.find(t => t.ThemeId === selectedThemeId);
-  const themeMoods = allMoods.filter(m => m.ThemeId === selectedThemeId);
-  const allPages: any[] = dataStore.get('Current_Version')?.Page ?? [];
+  const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
+  const themeMoods = allMoods.filter((m) => m.ThemeId === selectedThemeId);
+  const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
 
   const selectedTile = selectedTileId
-    ? [
-        ...infoContent.flatMap((b: any) => (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? [])),
-        ...Object.values(navContents).flatMap(blocks =>
-          blocks.flatMap((b: any) => (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []))
+    ? ([
+        ...infoContent.flatMap((b: any) =>
+          (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
         ),
-      ].find((t: any) => t.Id === selectedTileId) ?? null
+        ...Object.values(navContents).flatMap((blocks) =>
+          blocks.flatMap((b: any) =>
+            (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
+          ),
+        ),
+      ].find((t: any) => t.Id === selectedTileId) ?? null)
     : null;
 
   const activeNavTileIds = useMemo(() => {
     const ids = new Set<string>();
     for (let i = 0; i < navStack.length; i++) {
       const pageId = navStack[i];
-      const parentContent = i === 0 ? infoContent : (navContents[navStack[i - 1]] ?? []);
+      const parentContent =
+        i === 0 ? infoContent : (navContents[navStack[i - 1]] ?? []);
       for (const block of parentContent) {
-        if (block.InfoType !== 'TileGrid') continue;
+        if (block.InfoType !== "TileGrid") continue;
         for (const col of block.Columns ?? []) {
           for (const tile of col.Tiles ?? []) {
             if (tile.Action?.ObjectId === pageId) ids.add(tile.Id);
@@ -140,119 +214,167 @@ function App() {
   }, [navStack, infoContent, navContents]);
 
   useEffect(() => {
-    const cv = dataStore.get('Current_Version');
+    const cv = dataStore.get("Current_Version");
     if (!cv) return;
-    dataStore.set('Current_Version', {
+    dataStore.set("Current_Version", {
       ...cv,
       Page: (cv.Page ?? []).map((p: any) => {
-        if (p.PageName?.toLowerCase() !== 'home') return p;
+        if (p.PageName?.toLowerCase() !== "home") return p;
         let existing: any = {};
-        try { existing = JSON.parse(p.PageStructure); } catch {}
-        return { ...p, PageStructure: JSON.stringify({ ...existing, InfoContent: infoContent }) };
+        try {
+          existing = JSON.parse(p.PageStructure);
+        } catch {}
+        return {
+          ...p,
+          PageStructure: JSON.stringify({
+            ...existing,
+            InfoContent: infoContent,
+          }),
+        };
       }),
     });
   }, [infoContent]);
 
   useEffect(() => {
     if (Object.keys(navContents).length === 0) return;
-    const cv = dataStore.get('Current_Version');
+    const cv = dataStore.get("Current_Version");
     if (!cv) return;
-    dataStore.set('Current_Version', {
+    dataStore.set("Current_Version", {
       ...cv,
       Page: (cv.Page ?? []).map((p: any) => {
         const content = navContents[p.PageId];
         if (content === undefined) return p;
         let existing: any = {};
-        try { existing = JSON.parse(p.PageStructure); } catch {}
-        return { ...p, PageStructure: JSON.stringify({ ...existing, InfoContent: content }) };
+        try {
+          existing = JSON.parse(p.PageStructure);
+        } catch {}
+        return {
+          ...p,
+          PageStructure: JSON.stringify({ ...existing, InfoContent: content }),
+        };
       }),
     });
   }, [navContents]);
 
   function handleAddColumn(gridId: string, afterColId: string) {
     pushSnapshot();
-    setInfoContent(prev => applyAddColumn(prev, gridId, afterColId));
+    setInfoContent((prev) => applyAddColumn(prev, gridId, afterColId));
   }
 
   function handleDeleteTile(gridId: string, colId: string, tileId: string) {
     if (selectedTileId === tileId) setSelectedTileId(null);
     pushSnapshot();
-    setInfoContent(prev => applyDeleteTile(prev, gridId, colId, tileId));
+    setInfoContent((prev) => applyDeleteTile(prev, gridId, colId, tileId));
   }
 
   function handleAddStandaloneTile() {
     if (!isResizingRef.current) pushSnapshot();
     const ts = Date.now();
-    setInfoContent(prev => applyAddStandaloneTile(prev, ts));
+    setInfoContent((prev) => applyAddStandaloneTile(prev, ts));
     setSelectedTileId(`tile-${ts}`);
   }
 
-  function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
+  function handleAddBlock(
+    blockType: string,
+    insertBeforeInfoId: string | null,
+  ) {
     pushSnapshot();
-    if (blockType === 'TileGrid') {
+    if (blockType === "TileGrid") {
       const ts = Date.now();
-      setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
+      setInfoContent((prev) =>
+        applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
+      );
       setSelectedTileId(`tile-${ts}`);
     } else {
-      setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+      setInfoContent((prev) =>
+        applyAddBlock(prev, blockType, insertBeforeInfoId),
+      );
     }
   }
 
-  function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
+  function handleAddTilesToColumn(
+    gridId: string,
+    colId: string,
+    count: number,
+  ) {
     if (!isResizingRef.current) pushSnapshot();
-    setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+    setInfoContent((prev) => applyAddTilesToColumn(prev, gridId, colId, count));
   }
 
-  function handleAddDescription(html: string, insertBeforeInfoId: string | null) {
+  function handleAddDescription(
+    html: string,
+    insertBeforeInfoId: string | null,
+  ) {
     pushSnapshot();
-    setInfoContent(prev => applyAddDescription(prev, html, insertBeforeInfoId));
+    setInfoContent((prev) =>
+      applyAddDescription(prev, html, insertBeforeInfoId),
+    );
   }
 
   function handleEditDescription(infoId: string, html: string) {
     pushSnapshot();
-    setInfoContent(prev => applyEditDescription(prev, infoId, html));
-    setNavContents(prev => {
+    setInfoContent((prev) => applyEditDescription(prev, infoId, html));
+    setNavContents((prev) => {
       const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditDescription(blocks, infoId, html);
+      for (const [id, blocks] of Object.entries(prev))
+        next[id] = applyEditDescription(blocks, infoId, html);
       return next;
     });
   }
 
   function handleDeleteBlock(infoId: string) {
     pushSnapshot();
-    setInfoContent(prev => applyDeleteBlock(prev, infoId));
+    setInfoContent((prev) => applyDeleteBlock(prev, infoId));
   }
 
-  function handleAddImage(images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) {
+  function handleAddImage(
+    images: { InfoImageId: string; InfoImageValue: string }[],
+    insertBeforeInfoId: string | null,
+  ) {
     pushSnapshot();
-    setInfoContent(prev => applyAddImage(prev, images, insertBeforeInfoId));
+    setInfoContent((prev) => applyAddImage(prev, images, insertBeforeInfoId));
   }
 
-  function handleEditImage(infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) {
+  function handleEditImage(
+    infoId: string,
+    images: { InfoImageId: string; InfoImageValue: string }[],
+  ) {
     pushSnapshot();
-    setInfoContent(prev => applyEditImageSelection(prev, infoId, images));
-    setNavContents(prev => {
+    setInfoContent((prev) => applyEditImageSelection(prev, infoId, images));
+    setNavContents((prev) => {
       const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditImageSelection(blocks, infoId, images);
+      for (const [id, blocks] of Object.entries(prev))
+        next[id] = applyEditImageSelection(blocks, infoId, images);
       return next;
     });
   }
 
   function handleMoveBlock(infoId: string, insertBeforeInfoId: string | null) {
     pushSnapshot();
-    setInfoContent(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId));
+    setInfoContent((prev) => applyMoveBlock(prev, infoId, insertBeforeInfoId));
   }
 
-  function handleCrossFrameBlockDrop(infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) {
+  function handleCrossFrameBlockDrop(
+    infoId: string,
+    fromFrameIdx: number,
+    toFrameIdx: number,
+    insertBeforeInfoId: string | null,
+  ) {
     pushSnapshot();
-    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
+    const srcContent =
+      fromFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent =
+      toFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[toFrameIdx]] ?? []);
     const { content: newSrc, block } = applyExtractBlock(srcContent, infoId);
     if (!block) return;
     const newTgt = applyInsertBlock(tgtContent, block, insertBeforeInfoId);
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents(prev => {
+    setNavContents((prev) => {
       const next = { ...prev };
       if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
       if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
@@ -260,34 +382,88 @@ function App() {
     });
   }
 
-  function handleFreeResizeRelease(gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) {
+  function handleFreeResizeRelease(
+    gridId: string,
+    longTileId: string,
+    snapH: number,
+    zoneCount: number,
+    initialCount: number,
+    oppColId: string,
+    allOppTiles: any[],
+  ) {
     isResizingRef.current = false;
-    setInfoContent(prev => applyFreeResizeRelease(prev, gridId, longTileId, snapH, zoneCount, initialCount, oppColId, allOppTiles));
+    setInfoContent((prev) =>
+      applyFreeResizeRelease(
+        prev,
+        gridId,
+        longTileId,
+        snapH,
+        zoneCount,
+        initialCount,
+        oppColId,
+        allOppTiles,
+      ),
+    );
   }
 
-  function handleTileDrop(fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) {
+  function handleTileDrop(
+    fromGridId: string,
+    fromColId: string,
+    tileId: string,
+    preview: TileDropPreview,
+  ) {
     pushSnapshot();
-    setInfoContent(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview));
+    setInfoContent((prev) =>
+      applyTileDrop(prev, fromGridId, fromColId, tileId, preview),
+    );
   }
 
-  function handleTileDropAsNewBlock(fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) {
+  function handleTileDropAsNewBlock(
+    fromGridId: string,
+    fromColId: string,
+    tileId: string,
+    insertBeforeInfoId: string | null,
+  ) {
     pushSnapshot();
-    setInfoContent(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId));
+    setInfoContent((prev) =>
+      applyTileDropAsNewBlock(
+        prev,
+        fromGridId,
+        fromColId,
+        tileId,
+        insertBeforeInfoId,
+      ),
+    );
   }
 
   function handleCrossFrameTileDrop(
-    fromFrameIdx: number, toFrameIdx: number,
-    fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview,
+    fromFrameIdx: number,
+    toFrameIdx: number,
+    fromGridId: string,
+    fromColId: string,
+    tileId: string,
+    preview: TileDropPreview,
   ) {
     pushSnapshot();
-    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    const srcContent =
+      fromFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent =
+      toFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[toFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(
+      srcContent,
+      fromGridId,
+      fromColId,
+      tileId,
+    );
     if (!tile) return;
     const newTgt = insertTileAtPreview(tgtContent, tile, preview);
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents(prev => {
+    setNavContents((prev) => {
       const next = { ...prev };
       if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
       if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
@@ -296,21 +472,35 @@ function App() {
   }
 
   function handleCrossFrameTileDropToEmpty(
-    fromFrameIdx: number, toFrameIdx: number,
-    fromGridId: string, fromColId: string, tileId: string,
+    fromFrameIdx: number,
+    toFrameIdx: number,
+    fromGridId: string,
+    fromColId: string,
+    tileId: string,
   ) {
     pushSnapshot();
-    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    const srcContent =
+      fromFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[fromFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(
+      srcContent,
+      fromGridId,
+      fromColId,
+      tileId,
+    );
     if (!tile) return;
     const ts = Date.now();
-    const newTgt = [{
-      InfoId: `grid-${ts}`, InfoType: 'TileGrid',
-      Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
-    }];
+    const newTgt = [
+      {
+        InfoId: `grid-${ts}`,
+        InfoType: "TileGrid",
+        Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+      },
+    ];
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents(prev => {
+    setNavContents((prev) => {
       const next = { ...prev };
       if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
       if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
@@ -319,29 +509,55 @@ function App() {
   }
 
   function handleCrossFrameTileDropAsNewBlock(
-    fromFrameIdx: number, toFrameIdx: number,
-    fromGridId: string, fromColId: string, tileId: string,
+    fromFrameIdx: number,
+    toFrameIdx: number,
+    fromGridId: string,
+    fromColId: string,
+    tileId: string,
     insertBeforeInfoId: string | null,
   ) {
     pushSnapshot();
-    const srcContent = fromFrameIdx === -1 ? infoContent : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent = toFrameIdx === -1 ? infoContent : (navContents[navStack[toFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(srcContent, fromGridId, fromColId, tileId);
+    const srcContent =
+      fromFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[fromFrameIdx]] ?? []);
+    const tgtContent =
+      toFrameIdx === -1
+        ? infoContent
+        : (navContents[navStack[toFrameIdx]] ?? []);
+    const { content: newSrc, tile } = extractTileFromContent(
+      srcContent,
+      fromGridId,
+      fromColId,
+      tileId,
+    );
     if (!tile) return;
     const ts = Date.now();
     const newGrid = {
-      InfoId: `grid-new-${ts}`, InfoType: 'TileGrid',
-      Columns: [{ ColId: `col-new-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+      InfoId: `grid-new-${ts}`,
+      InfoType: "TileGrid",
+      Columns: [
+        { ColId: `col-new-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] },
+      ],
     };
-    const newTgt = insertBeforeInfoId === null
-      ? [...tgtContent, newGrid]
-      : (() => {
-          const idx = tgtContent.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
-          return idx === -1 ? [...tgtContent, newGrid] : [...tgtContent.slice(0, idx), newGrid, ...tgtContent.slice(idx)];
-        })();
+    const newTgt =
+      insertBeforeInfoId === null
+        ? [...tgtContent, newGrid]
+        : (() => {
+            const idx = tgtContent.findIndex(
+              (b: any) => b.InfoId === insertBeforeInfoId,
+            );
+            return idx === -1
+              ? [...tgtContent, newGrid]
+              : [
+                  ...tgtContent.slice(0, idx),
+                  newGrid,
+                  ...tgtContent.slice(idx),
+                ];
+          })();
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents(prev => {
+    setNavContents((prev) => {
       const next = { ...prev };
       if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
       if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
@@ -350,48 +566,61 @@ function App() {
   }
 
   function handleEditTile(tileId: string, patch: Record<string, any>) {
-    const isHeightOnly = Object.keys(patch).length === 1 && 'Height' in patch;
+    const isHeightOnly = Object.keys(patch).length === 1 && "Height" in patch;
     if (isHeightOnly) {
-      if (!isResizingRef.current) { pushSnapshot(); isResizingRef.current = true; }
+      if (!isResizingRef.current) {
+        pushSnapshot();
+        isResizingRef.current = true;
+      }
     } else {
       pushSnapshot();
     }
-    setInfoContent(prev => applyEditTile(prev, tileId, patch));
-    setNavContents(prev => {
+    setInfoContent((prev) => applyEditTile(prev, tileId, patch));
+    setNavContents((prev) => {
       const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev)) next[id] = applyEditTile(blocks, tileId, patch);
+      for (const [id, blocks] of Object.entries(prev))
+        next[id] = applyEditTile(blocks, tileId, patch);
       return next;
     });
   }
 
   function handleTileNavigate(pageId: string, parentIndex: number) {
     const insertAt = parentIndex + 1;
-    setNavStack(prev => {
+    setNavStack((prev) => {
       if (prev[insertAt] === pageId) return prev.slice(0, insertAt + 1);
       return [...prev.slice(0, insertAt), pageId];
     });
-    setNavContents(prev => {
+    setNavContents((prev) => {
       if (prev[pageId] !== undefined) return prev;
-      const cv = dataStore.get('Current_Version');
+      const cv = dataStore.get("Current_Version");
       const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
       if (!page?.PageStructure) return { ...prev, [pageId]: [] };
-      try { return { ...prev, [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [] }; }
-      catch { return { ...prev, [pageId]: [] }; }
+      try {
+        return {
+          ...prev,
+          [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [],
+        };
+      } catch {
+        return { ...prev, [pageId]: [] };
+      }
     });
   }
 
   function handleCollapseDescendants(parentIndex: number) {
     const cutAt = parentIndex + 1;
-    setNavStack(prev => prev.length <= cutAt ? prev : prev.slice(0, cutAt));
+    setNavStack((prev) => (prev.length <= cutAt ? prev : prev.slice(0, cutAt)));
   }
 
   function handleCloseFromIndex(stackIndex: number) {
-    setNavStack(prev => prev.slice(0, stackIndex));
+    setNavStack((prev) => prev.slice(0, stackIndex));
   }
 
   function navUpdater(pageId: string) {
     return (transform: (blocks: any[]) => any[]) =>
-      setNavContents(prev => ({ ...prev, [pageId]: transform(prev[pageId] ?? []) }));
+      setNavContents((prev) => ({
+        ...prev,
+        [pageId]: transform(prev[pageId] ?? []),
+      }));
   }
 
   const linkedFrames = navStack.map((pageId, index) => {
@@ -403,69 +632,116 @@ function App() {
       onClose: () => handleCloseFromIndex(index),
       onAddColumn: (gridId: string, afterColId: string) => {
         pushSnapshot();
-        update(prev => applyAddColumn(prev, gridId, afterColId));
+        update((prev) => applyAddColumn(prev, gridId, afterColId));
       },
       onDeleteTile: (gridId: string, colId: string, tileId: string) => {
         if (selectedTileId === tileId) setSelectedTileId(null);
         pushSnapshot();
-        update(prev => applyDeleteTile(prev, gridId, colId, tileId));
+        update((prev) => applyDeleteTile(prev, gridId, colId, tileId));
       },
       onEditTile: handleEditTile,
       onAddStandaloneTile: () => {
         if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
-        update(prev => applyAddStandaloneTile(prev, ts));
+        update((prev) => applyAddStandaloneTile(prev, ts));
         setSelectedTileId(`tile-${ts}`);
       },
       onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
         pushSnapshot();
-        if (blockType === 'TileGrid') {
+        if (blockType === "TileGrid") {
           const ts = Date.now();
-          update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
+          update((prev) =>
+            applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
+          );
           setSelectedTileId(`tile-${ts}`);
         } else {
-          update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
+          update((prev) => applyAddBlock(prev, blockType, insertBeforeInfoId));
         }
       },
       onAddTilesToColumn: (gridId: string, colId: string, count: number) => {
         if (!isResizingRef.current) pushSnapshot();
-        update(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+        update((prev) => applyAddTilesToColumn(prev, gridId, colId, count));
       },
-      onFreeResizeRelease: (gridId: string, longTileId: string, snapH: number, zoneCount: number, initialCount: number, oppColId: string, allOppTiles: any[]) => {
+      onFreeResizeRelease: (
+        gridId: string,
+        longTileId: string,
+        snapH: number,
+        zoneCount: number,
+        initialCount: number,
+        oppColId: string,
+        allOppTiles: any[],
+      ) => {
         isResizingRef.current = false;
-        update(prev => applyFreeResizeRelease(prev, gridId, longTileId, snapH, zoneCount, initialCount, oppColId, allOppTiles));
+        update((prev) =>
+          applyFreeResizeRelease(
+            prev,
+            gridId,
+            longTileId,
+            snapH,
+            zoneCount,
+            initialCount,
+            oppColId,
+            allOppTiles,
+          ),
+        );
       },
-      onTileDrop: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => {
+      onTileDrop: (
+        fromGridId: string,
+        fromColId: string,
+        tileId: string,
+        preview: TileDropPreview,
+      ) => {
         pushSnapshot();
-        update(prev => applyTileDrop(prev, fromGridId, fromColId, tileId, preview));
+        update((prev) =>
+          applyTileDrop(prev, fromGridId, fromColId, tileId, preview),
+        );
       },
-      onTileDropAsNewBlock: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => {
+      onTileDropAsNewBlock: (
+        fromGridId: string,
+        fromColId: string,
+        tileId: string,
+        insertBeforeInfoId: string | null,
+      ) => {
         pushSnapshot();
-        update(prev => applyTileDropAsNewBlock(prev, fromGridId, fromColId, tileId, insertBeforeInfoId));
+        update((prev) =>
+          applyTileDropAsNewBlock(
+            prev,
+            fromGridId,
+            fromColId,
+            tileId,
+            insertBeforeInfoId,
+          ),
+        );
       },
       onAddDescription: (html: string, insertBeforeInfoId: string | null) => {
         pushSnapshot();
-        update(prev => applyAddDescription(prev, html, insertBeforeInfoId));
+        update((prev) => applyAddDescription(prev, html, insertBeforeInfoId));
       },
       onEditDescription: (infoId: string, html: string) => {
         pushSnapshot();
-        update(prev => applyEditDescription(prev, infoId, html));
+        update((prev) => applyEditDescription(prev, infoId, html));
       },
       onDeleteBlock: (infoId: string) => {
         pushSnapshot();
-        update(prev => applyDeleteBlock(prev, infoId));
+        update((prev) => applyDeleteBlock(prev, infoId));
       },
       onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) => {
         pushSnapshot();
-        update(prev => applyMoveBlock(prev, infoId, insertBeforeInfoId));
+        update((prev) => applyMoveBlock(prev, infoId, insertBeforeInfoId));
       },
-      onAddImage: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => {
+      onAddImage: (
+        images: { InfoImageId: string; InfoImageValue: string }[],
+        insertBeforeInfoId: string | null,
+      ) => {
         pushSnapshot();
-        update(prev => applyAddImage(prev, images, insertBeforeInfoId));
+        update((prev) => applyAddImage(prev, images, insertBeforeInfoId));
       },
-      onEditImage: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => {
+      onEditImage: (
+        infoId: string,
+        images: { InfoImageId: string; InfoImageValue: string }[],
+      ) => {
         pushSnapshot();
-        update(prev => applyEditImageSelection(prev, infoId, images));
+        update((prev) => applyEditImageSelection(prev, infoId, images));
       },
     };
   });
@@ -473,6 +749,15 @@ function App() {
   return (
     <>
       <NavBar
+        version={currentVersion}
+        appVersions={appVersions as any}
+        selectedVersionId={currentVersion?.AppVersionId}
+        onVersionSelect={handleVersionSelect}
+        onNewVersion={() => setShowCreateModal(true)}
+        onDuplicateVersion={(id) => setDuplicateVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
+        onRenameVersion={(id) => setRenameVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
+        onUpdateTranslations={(id) => console.log("update translations", id)}
+        onMoveVersionToTrash={(id) => setTrashVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
         themes={themes}
         selectedThemeId={selectedThemeId}
         onThemeChange={setSelectedThemeId}
@@ -481,6 +766,81 @@ function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
       />
+      {showCreateModal && (
+        <CreateAppVersionModal
+          templatesCollection={templatesCollection}
+          themeColors={selectedTheme?.ThemeColors}
+          themeIcons={selectedTheme?.ThemeIcons ?? []}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async (version) => {
+            setShowCreateModal(false);
+            try {
+              await activateAppVersion(version.AppVersionId);
+              const fetched = await getActiveAppVersion() as any;
+              const fullVersion = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+              dataStore.set("Current_Version", fullVersion);
+              setCurrentVersion(fullVersion);
+              setInfoContent(parseInfoContent());
+              setNavStack([]);
+              setNavContents({});
+              setUndoStack([]);
+              setRedoStack([]);
+              setSelectedTileId(null);
+            } catch {
+              // version list still refreshes even if activation fails
+            }
+            getAppVersions().then(setAppVersions).catch(() => {});
+          }}
+        />
+      )}
+      {renameVersion && (
+        <RenameAppVersionModal
+          key={renameVersion.AppVersionId}
+          versionId={renameVersion.AppVersionId}
+          currentName={renameVersion.AppVersionName}
+          currentDescription={renameVersion.AppVersionDescription}
+          onClose={() => setRenameVersion(null)}
+          onRenamed={(newName) => {
+            setAppVersions((prev) =>
+              prev.map((a) =>
+                a.AppVersionId === renameVersion.AppVersionId
+                  ? { ...a, AppVersionName: newName }
+                  : a,
+              ),
+            );
+            if (renameVersion.AppVersionId === currentVersion?.AppVersionId) {
+              const merged = { ...currentVersion, AppVersionName: newName };
+              dataStore.set("Current_Version", merged);
+              setCurrentVersion(merged);
+            }
+            setRenameVersion(null);
+          }}
+        />
+      )}
+      {trashVersion && (
+        <MoveToTrashModal
+          key={trashVersion.AppVersionId}
+          versionId={trashVersion.AppVersionId}
+          versionName={trashVersion.AppVersionName}
+          onClose={() => setTrashVersion(null)}
+          onDeleted={() => {
+            setTrashVersion(null);
+            getAppVersions().then(setAppVersions).catch(() => {});
+          }}
+        />
+      )}
+      {duplicateVersion && (
+        <DuplicateAppVersionModal
+          key={duplicateVersion.AppVersionId}
+          versionId={duplicateVersion.AppVersionId}
+          currentName={duplicateVersion.AppVersionName}
+          onClose={() => setDuplicateVersion(null)}
+          onDuplicated={() => {
+            setDuplicateVersion(null);
+            getAppVersions().then(setAppVersions).catch(() => {});
+          }}
+        />
+      )}
       <div className="app-body">
         <MainCanvas
           themeColors={selectedTheme?.ThemeColors}

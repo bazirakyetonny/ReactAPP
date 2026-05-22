@@ -1,0 +1,117 @@
+/* ── Body ────────────────────────────────────────────────────── */
+.ms2-wrap {
+  padding: 24px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ms2-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin: 0;
+}
+
+.ms2-subheading {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin: -8px 0 0;
+}
+
+/* ── Mood grid ───────────────────────────────────────────────── */
+.ms2-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  transition: opacity 0.15s;
+}
+
+.ms2-grid--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── Mood card ───────────────────────────────────────────────── */
+.ms2-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.ms2-card:hover:not(.ms2-card--active) {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.ms2-card--active {
+  border-color: #1a3a6e;
+  background: #f0f4fb;
+}
+
+/* ── Card header (radio + name) ──────────────────────────────── */
+.ms2-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms2-card input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #1a3a6e;
+  cursor: pointer;
+}
+
+.ms2-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* ── Swatches ────────────────────────────────────────────────── */
+.ms2-swatches {
+  display: flex;
+  gap: 5px;
+}
+
+.ms2-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── No-mood checkbox ────────────────────────────────────────── */
+.ms2-no-mood {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ms2-no-mood input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #1a3a6e;
+  cursor: pointer;
+}
