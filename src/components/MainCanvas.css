@@ -367,7 +367,6 @@
   justify-content: center;
   opacity: 0.9;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 3px 10px rgba(0, 0, 0, 0.18);
-  transform: rotate(1.5deg);
 }
 
 /* Drop slot — shown at the tile insertion point within a column */
@@ -822,7 +821,6 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
   border-radius: 6px;
   overflow: hidden;
-  transform: rotate(1deg);
 }
 .phone-tile-ghost {
   position: fixed;
@@ -832,7 +830,6 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
   border-radius: 8px;
   overflow: hidden;
-  transform: rotate(1deg);
 }
 .phone-tile-ghost .phone-tile {
   width: 100%;

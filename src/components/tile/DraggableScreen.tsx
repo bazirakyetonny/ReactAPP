@@ -1175,6 +1175,8 @@ export function DraggableScreen({
           >
             {block?.InfoType === 'Images' ? (
               <ImageBlock block={block} interactive={false} />
+            ) : block?.InfoType === 'Cta' ? (
+              <CtaBlock block={block} ctaColors={themeCtaColors} interactive={false} />
             ) : block ? (
               <DescriptionBlock block={block} interactive={false} />
             ) : null}
