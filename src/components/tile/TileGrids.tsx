@@ -244,7 +244,7 @@ export function TileGrids({
                           style={isTileDragging ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
                           onClick={interactive && onSelectTile ? () => {
                             onSelectTile(tile.Id);
-                            if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard') && tile.Action?.ObjectId) {
+                            if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard' || tile.Action?.ObjectType === 'Calendar' || tile.Action?.ObjectType === 'MyActivity' || tile.Action?.ObjectType === 'Map') && tile.Action?.ObjectId) {
                               onTileNavigate?.(tile.Action.ObjectId);
                             } else {
                               onCollapseFromParent?.();

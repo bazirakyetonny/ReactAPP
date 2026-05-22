@@ -36,7 +36,7 @@ function extractEdges(pageId: string, content: any[]): GraphEdge[] {
   for (const block of content) {
     for (const col of block.Columns ?? []) {
       for (const tile of col.Tiles ?? []) {
-        if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard') && tile.Action?.ObjectId) {
+        if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard' || tile.Action?.ObjectType === 'Calendar' || tile.Action?.ObjectType === 'MyActivity' || tile.Action?.ObjectType === 'Map') && tile.Action?.ObjectId) {
           edges.push({ source: pageId, target: tile.Action.ObjectId, tileId: tile.Id });
         }
       }

@@ -82,6 +82,90 @@ To link a tile to a BulletinBoard page, set the tile's `Action.ObjectType` to `"
 
 ---
 
+## Calendar Page
+
+A `Calendar` page renders a 24-hour day-view schedule. It includes a blue date navigation bar (prev/next arrows + formatted date label) and a scrollable list of hourly time slots. A current-time indicator (coloured line + dot) marks the active hour. The view auto-scrolls to the current hour on open. Uses `primaryColor` for the header, `backgroundColor`, `borderColor`, `secondaryColor`, and `accentColor`.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "Calendar", "ObjectId": "<CalendarPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "Calendar",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "Calendar",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
+## MyActivity Page
+
+A `MyActivity` page renders a messaging inbox with two tabs — **Messages** and **Requests**. The active tab uses `primaryColor`; the inactive tab is light grey (`#e1e1e1`). The body shows an empty-state illustration and "No messages yet" when there are no items. Uses `primaryColor`, `backgroundColor`, and `secondaryColor`.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "MyActivity", "ObjectId": "<MyActivityPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "My Activity",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "MyActivity",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
+## Map Page
+
+A `Map` page embeds a Google Maps view centred on the user's current location (via `navigator.geolocation`). If geolocation is denied or unavailable, it falls back to Utrecht (52.0907, 5.1214). A spinner is shown while the map loads. The Google Maps Embed API key is read from the `VITE_MAPS_API_KEY` environment variable. Uses `primaryColor` for the spinner accent.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "Map", "ObjectId": "<MapPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "Map",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "Map",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
 ## Page Structure
 
 `PageStructure` is a JSON string. When parsed, it contains an `InfoContent` array — the ordered list of building blocks that compose the page.

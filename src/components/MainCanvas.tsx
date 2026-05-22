@@ -9,6 +9,21 @@ import { DescriptionBlock } from './phone/DescriptionBlock';
 import { ImageBlock } from './phone/ImageBlock';
 import { CtaBlock } from './phone/CtaBlock';
 import { BulletinBoardPage } from './BulletinBoardPage';
+import { CalendarPage } from './CalendarPage';
+import { MyActivityPage } from './MyActivityPage';
+import { MapPage } from './MapPage';
+
+const MODULE_PAGE_TYPES = new Set(['BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
+
+function renderModulePage(pageType: string, themeColors?: ThemeColors) {
+  switch (pageType) {
+    case 'BulletinBoard': return <BulletinBoardPage />;
+    case 'Calendar':      return <CalendarPage themeColors={themeColors} />;
+    case 'MyActivity':    return <MyActivityPage themeColors={themeColors} />;
+    case 'Map':           return <MapPage themeColors={themeColors} />;
+    default:              return null;
+  }
+}
 
 function renderThumbBlocks(blocks: any[], themeColors: ThemeColors | undefined, themeIcons: ThemeIcon[] | undefined, ctaColors: ThemeCtaColor[] | undefined) {
   const out: any[] = [];
@@ -283,8 +298,9 @@ export function MainCanvas({
 
         {/* Linked page frames */}
         {linkedFrames?.map((frame, i) => {
-          const isBulletinBoard = frame.page?.PageType === 'BulletinBoard';
-          const frameTileGrids = isBulletinBoard ? [] : frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          const pageType = frame.page?.PageType ?? '';
+          const isModulePage = MODULE_PAGE_TYPES.has(pageType);
+          const frameTileGrids = isModulePage ? [] : frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
             <div
               key={frame.page?.PageId ?? i}
@@ -293,7 +309,7 @@ export function MainCanvas({
             >
               <PhoneStatusBar />
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
-              {isBulletinBoard ? <BulletinBoardPage /> : <DraggableScreen
+              {isModulePage ? renderModulePage(pageType, themeColors) : <DraggableScreen
                 infoContent={frame.infoContent}
                 tileGrids={frameTileGrids}
                 themeColors={themeColors}
@@ -378,8 +394,8 @@ export function MainCanvas({
               <PhoneStatusBar />
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
               <div className="phone-screen">
-                {frame.page?.PageType === 'BulletinBoard'
-                  ? <BulletinBoardPage />
+                {MODULE_PAGE_TYPES.has(frame.page?.PageType ?? '')
+                  ? renderModulePage(frame.page.PageType, themeColors)
                   : <>
                       <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
                       {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
