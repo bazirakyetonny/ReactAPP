@@ -1,11 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { NavBar } from "./components/NavBar";
-import { MainCanvas } from "./components/MainCanvas";
-import type { TileDropPreview } from "./components/MainCanvas";
-import { SidebarRight } from "./components/SidebarRight";
-import { dataStore } from "./data/datastore";
-import type { Theme, Mood, CategoryTemplates } from "./types";
 import {
   getAppVersions,
   getActiveAppVersion,
@@ -16,6 +10,16 @@ import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionM
 import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
 import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
 import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
+import { NavBar } from "./components/NavBar";
+import { MainCanvas } from "./components/MainCanvas";
+import { TileImageModal } from "./components/phone/TileImageModal";
+import { AddCtaModal } from "./components/phone/AddCtaModal";
+
+import type { TileDropPreview } from "./components/MainCanvas";
+import { SidebarRight } from "./components/SidebarRight";
+import { PageBubbleTree } from "./components/tree/PageBubbleTree";
+import { dataStore } from "./data/datastore";
+import type { Theme, Mood, CategoryTemplates } from "./types";
 import {
   applyAddColumn,
   applyDeleteTile,
@@ -37,6 +41,7 @@ import {
   applyInsertBlock,
   applyAddImage,
   applyEditImageSelection,
+  applyEditCta,
 } from "./utils/contentTransforms";
 
 const TILE_H = 80;
@@ -44,30 +49,50 @@ const TILE_H = 80;
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const allMoods: Mood[] = dataStore.get("Moods") ?? [];
-  const [currentVersion, setCurrentVersion] = useState<any>(
-    () => dataStore.get("Current_Version"),
+  const [currentVersion, setCurrentVersion] = useState<any>(() =>
+    dataStore.get("Current_Version"),
   );
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
 
   const [appVersions, setAppVersions] = useState<SDTAppVersion[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [renameVersion, setRenameVersion] = useState<SDTAppVersion | null>(null);
+  const [renameVersion, setRenameVersion] = useState<SDTAppVersion | null>(
+    null,
+  );
   const [trashVersion, setTrashVersion] = useState<SDTAppVersion | null>(null);
-  const [duplicateVersion, setDuplicateVersion] = useState<SDTAppVersion | null>(null);
+  const [duplicateVersion, setDuplicateVersion] =
+    useState<SDTAppVersion | null>(null);
 
   useEffect(() => {
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }, []);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
     dataStore.get("CurrentThemeId") ?? themes[0]?.ThemeId ?? "",
   );
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
+  const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
+
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
 
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
+  const [treeOpen, setTreeOpen] = useState(false);
+  const [tileImageModal, setTileImageModal] = useState<{
+    tileId: string;
+    tileWidth: number;
+    tileHeight: number;
+    initialOriginalUrl?: string;
+    initialOpacity?: number;
+  } | null>(null);
+  const [pendingCta, setPendingCta] = useState<{
+    blockType: string;
+    insertBeforeInfoId: string | null;
+    frameId: string | null;
+  } | null>(null);
 
   type Snapshot = {
     infoContent: any[];
@@ -140,8 +165,11 @@ function App() {
   async function handleVersionSelect(id: string) {
     if (id === currentVersion?.AppVersionId) return;
     await activateAppVersion(id);
-    const fetched = await getActiveAppVersion() as any;
-    const fullVersion = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+    const fetched = (await getActiveAppVersion()) as any;
+    const fullVersion = {
+      ...fetched,
+      Page: fetched.Page ?? fetched.Pages ?? [],
+    };
     dataStore.set("Current_Version", fullVersion);
     setCurrentVersion(fullVersion);
     setInfoContent(parseInfoContent());
@@ -150,7 +178,9 @@ function App() {
     setUndoStack([]);
     setRedoStack([]);
     setSelectedTileId(null);
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   const handleUndoRef = useRef(handleUndo);
@@ -181,6 +211,10 @@ function App() {
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter((m) => m.ThemeId === selectedThemeId);
   const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
+  const activePageId = navStack[navStack.length - 1];
+  const activePageName = activePageId
+    ? (allPages.find((p) => p.PageId === activePageId)?.PageName ?? "")
+    : "Home";
 
   const selectedTile = selectedTileId
     ? ([
@@ -193,6 +227,13 @@ function App() {
           ),
         ),
       ].find((t: any) => t.Id === selectedTileId) ?? null)
+    : null;
+
+  const allBlocks = [...infoContent, ...Object.values(navContents).flat()];
+  const selectedCta = selectedCtaId
+    ? (allBlocks.find(
+        (b: any) => b.InfoType === "Cta" && b.InfoId === selectedCtaId,
+      ) ?? null)
     : null;
 
   const activeNavTileIds = useMemo(() => {
@@ -278,18 +319,70 @@ function App() {
     blockType: string,
     insertBeforeInfoId: string | null,
   ) {
+    if (blockType.startsWith("Cta_")) {
+      setPendingCta({ blockType, insertBeforeInfoId, frameId: null });
+      return;
+    }
     pushSnapshot();
+    const ts = Date.now();
     if (blockType === "TileGrid") {
-      const ts = Date.now();
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
       );
       setSelectedTileId(`tile-${ts}`);
+      setSelectedCtaId(null);
     } else {
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId),
       );
     }
+  }
+
+  function handleConfirmCta(attrs: {
+    CtaLabel: string;
+    CtaAction: string;
+    CtaConnectedSupplierId?: string;
+    CtaSupplierIsConnected: boolean;
+  }) {
+    if (!pendingCta) return;
+    pushSnapshot();
+    const ts = Date.now();
+    const { blockType, insertBeforeInfoId, frameId } = pendingCta;
+    if (frameId === null) {
+      setInfoContent((prev) =>
+        applyAddBlock(prev, blockType, insertBeforeInfoId, ts, attrs),
+      );
+    } else {
+      setNavContents((prev) => ({
+        ...prev,
+        [frameId]: applyAddBlock(
+          prev[frameId] ?? [],
+          blockType,
+          insertBeforeInfoId,
+          ts,
+          attrs,
+        ),
+      }));
+    }
+    setSelectedCtaId(`cta-${ts}`);
+    setSelectedTileId(null);
+    setPendingCta(null);
+  }
+
+  function handleEditCta(ctaId: string, patch: Record<string, any>) {
+    pushSnapshot();
+    setInfoContent((prev) => applyEditCta(prev, ctaId, patch));
+    setNavContents((prev) => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev))
+        next[id] = applyEditCta(blocks, ctaId, patch);
+      return next;
+    });
+  }
+
+  function handleSelectCta(ctaId: string) {
+    setSelectedCtaId(ctaId);
+    setSelectedTileId(null);
   }
 
   function handleAddTilesToColumn(
@@ -566,13 +659,15 @@ function App() {
   }
 
   function handleEditTile(tileId: string, patch: Record<string, any>) {
-    const isHeightOnly = Object.keys(patch).length === 1 && "Height" in patch;
+    const keys = Object.keys(patch);
+    const isHeightOnly = keys.length === 1 && "Height" in patch;
+    const isOpacityOnly = keys.length === 1 && "Opacity" in patch;
     if (isHeightOnly) {
       if (!isResizingRef.current) {
         pushSnapshot();
         isResizingRef.current = true;
       }
-    } else {
+    } else if (!isOpacityOnly) {
       pushSnapshot();
     }
     setInfoContent((prev) => applyEditTile(prev, tileId, patch));
@@ -582,6 +677,58 @@ function App() {
         next[id] = applyEditTile(blocks, tileId, patch);
       return next;
     });
+  }
+
+  function handleTileDoubleClick(tileId: string, rect: DOMRect) {
+    let tile: any = null;
+    const findTile = (blocks: any[]) => {
+      for (const b of blocks)
+        for (const col of b.Columns ?? []) {
+          const found = (col.Tiles ?? []).find((t: any) => t.Id === tileId);
+          if (found) tile = found;
+        }
+    };
+    findTile(infoContentRef.current);
+    for (const blocks of Object.values(navContentsRef.current))
+      findTile(blocks);
+    setTileImageModal({
+      tileId,
+      tileWidth: rect.width,
+      tileHeight: rect.height,
+      initialOriginalUrl: tile?.OriginalImageUrl,
+      initialOpacity: tile?.Opacity,
+    });
+  }
+
+  function handleTileImageConfirm(result: {
+    bgImageUrl: string;
+    opacity: number;
+    originalImageUrl: string;
+    originalMediaId: string;
+  }) {
+    if (!tileImageModal) return;
+    pushSnapshot();
+    const patch = {
+      BGImageUrl: result.bgImageUrl,
+      OriginalImageUrl: result.originalImageUrl,
+      Opacity: result.opacity,
+      BGColor: null,
+    };
+    setInfoContent((prev) => applyEditTile(prev, tileImageModal.tileId, patch));
+    setNavContents((prev) => {
+      const next: Record<string, any[]> = {};
+      for (const [id, blocks] of Object.entries(prev))
+        next[id] = applyEditTile(blocks, tileImageModal.tileId, patch);
+      return next;
+    });
+    setTileImageModal(null);
+  }
+
+  function handleOpenTileImageFromSidebar() {
+    if (!selectedTileId) return;
+    const el = document.querySelector(`[data-tile-id="${selectedTileId}"]`);
+    if (!el) return;
+    handleTileDoubleClick(selectedTileId, el.getBoundingClientRect());
   }
 
   function handleTileNavigate(pageId: string, parentIndex: number) {
@@ -609,6 +756,44 @@ function App() {
   function handleCollapseDescendants(parentIndex: number) {
     const cutAt = parentIndex + 1;
     setNavStack((prev) => (prev.length <= cutAt ? prev : prev.slice(0, cutAt)));
+  }
+
+  function handleNavigateToPath(pageIds: string[]) {
+    setNavStack(pageIds);
+    setNavContents((prev) => {
+      const next = { ...prev };
+      for (const pageId of pageIds) {
+        if (next[pageId] !== undefined) continue;
+        const cv = dataStore.get("Current_Version");
+        const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
+        if (!page?.PageStructure) {
+          next[pageId] = [];
+          continue;
+        }
+        try {
+          next[pageId] = JSON.parse(page.PageStructure).InfoContent ?? [];
+        } catch {
+          next[pageId] = [];
+        }
+      }
+      return next;
+    });
+    setTreeOpen(false);
+  }
+
+  function handleDeletePage(pageId: string) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+    dataStore.set("Current_Version", {
+      ...cv,
+      Page: (cv.Page ?? []).filter((p: any) => p.PageId !== pageId),
+    });
+    setNavStack((prev) => prev.filter((id) => id !== pageId));
+    setNavContents((prev) => {
+      const n = { ...prev };
+      delete n[pageId];
+      return n;
+    });
   }
 
   function handleCloseFromIndex(stackIndex: number) {
@@ -640,20 +825,33 @@ function App() {
         update((prev) => applyDeleteTile(prev, gridId, colId, tileId));
       },
       onEditTile: handleEditTile,
+      onTileDoubleClick: handleTileDoubleClick,
+      onDeselectTile: () => {
+        setSelectedTileId(null);
+        setSelectedCtaId(null);
+      },
+      onSelectCta: handleSelectCta,
+      onEditCta: handleEditCta,
       onAddStandaloneTile: () => {
         if (!isResizingRef.current) pushSnapshot();
         const ts = Date.now();
         update((prev) => applyAddStandaloneTile(prev, ts));
         setSelectedTileId(`tile-${ts}`);
+        setSelectedCtaId(null);
       },
       onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
+        if (blockType.startsWith("Cta_")) {
+          setPendingCta({ blockType, insertBeforeInfoId, frameId: pageId });
+          return;
+        }
         pushSnapshot();
+        const ts = Date.now();
         if (blockType === "TileGrid") {
-          const ts = Date.now();
           update((prev) =>
             applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
           );
           setSelectedTileId(`tile-${ts}`);
+          setSelectedCtaId(null);
         } else {
           update((prev) => applyAddBlock(prev, blockType, insertBeforeInfoId));
         }
@@ -754,10 +952,22 @@ function App() {
         selectedVersionId={currentVersion?.AppVersionId}
         onVersionSelect={handleVersionSelect}
         onNewVersion={() => setShowCreateModal(true)}
-        onDuplicateVersion={(id) => setDuplicateVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
-        onRenameVersion={(id) => setRenameVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
+        onDuplicateVersion={(id) =>
+          setDuplicateVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
+        onRenameVersion={(id) =>
+          setRenameVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
         onUpdateTranslations={(id) => console.log("update translations", id)}
-        onMoveVersionToTrash={(id) => setTrashVersion(appVersions.find((a) => a.AppVersionId === id) ?? null)}
+        onMoveVersionToTrash={(id) =>
+          setTrashVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
         themes={themes}
         selectedThemeId={selectedThemeId}
         onThemeChange={setSelectedThemeId}
@@ -765,6 +975,7 @@ function App() {
         canRedo={redoStack.length > 0}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        onExpand={() => setTreeOpen((v) => !v)}
       />
       {showCreateModal && (
         <CreateAppVersionModal
@@ -776,8 +987,11 @@ function App() {
             setShowCreateModal(false);
             try {
               await activateAppVersion(version.AppVersionId);
-              const fetched = await getActiveAppVersion() as any;
-              const fullVersion = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+              const fetched = (await getActiveAppVersion()) as any;
+              const fullVersion = {
+                ...fetched,
+                Page: fetched.Page ?? fetched.Pages ?? [],
+              };
               dataStore.set("Current_Version", fullVersion);
               setCurrentVersion(fullVersion);
               setInfoContent(parseInfoContent());
@@ -789,7 +1003,9 @@ function App() {
             } catch {
               // version list still refreshes even if activation fails
             }
-            getAppVersions().then(setAppVersions).catch(() => {});
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
           }}
         />
       )}
@@ -825,7 +1041,9 @@ function App() {
           onClose={() => setTrashVersion(null)}
           onDeleted={() => {
             setTrashVersion(null);
-            getAppVersions().then(setAppVersions).catch(() => {});
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
           }}
         />
       )}
@@ -837,17 +1055,35 @@ function App() {
           onClose={() => setDuplicateVersion(null)}
           onDuplicated={() => {
             setDuplicateVersion(null);
-            getAppVersions().then(setAppVersions).catch(() => {});
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
           }}
         />
       )}
       <div className="app-body">
+        {treeOpen && (
+          <PageBubbleTree
+            allPages={allPages}
+            infoContent={infoContent}
+            navContents={navContents}
+            navStack={navStack}
+            themeColors={selectedTheme?.ThemeColors}
+            themeIcons={selectedTheme?.ThemeIcons ?? []}
+            onClose={() => setTreeOpen(false)}
+            onNavigateToPath={handleNavigateToPath}
+            onDeletePage={handleDeletePage}
+          />
+        )}
         <MainCanvas
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
-          onSelectTile={setSelectedTileId}
+          onSelectTile={(id) => {
+            setSelectedTileId(id);
+            setSelectedCtaId(null);
+          }}
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
           onEditTile={handleEditTile}
@@ -871,15 +1107,47 @@ function App() {
           onCrossFrameBlockDrop={handleCrossFrameBlockDrop}
           onAddImage={handleAddImage}
           onEditImage={handleEditImage}
+          onTileDoubleClick={handleTileDoubleClick}
+          onDeselectTile={() => {
+            setSelectedTileId(null);
+            setSelectedCtaId(null);
+          }}
+          onSelectCta={handleSelectCta}
+          onEditCta={handleEditCta}
+          selectedCtaId={selectedCtaId}
+          themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           themeColors={selectedTheme?.ThemeColors}
+          ctaColors={selectedTheme?.ThemeCtaColors ?? []}
           moods={themeMoods}
           selectedTile={selectedTile}
           onEditTile={handleEditTile}
+          onOpenTileImage={handleOpenTileImageFromSidebar}
+          onBeforeOpacityChange={pushSnapshot}
+          pageName={activePageName}
+          selectedCta={selectedCta}
+          onEditCta={handleEditCta}
         />
       </div>
+      {tileImageModal && (
+        <TileImageModal
+          tileWidth={tileImageModal.tileWidth}
+          tileHeight={tileImageModal.tileHeight}
+          initialOriginalUrl={tileImageModal.initialOriginalUrl}
+          initialOpacity={tileImageModal.initialOpacity}
+          onConfirm={handleTileImageConfirm}
+          onCancel={() => setTileImageModal(null)}
+        />
+      )}
+      {pendingCta && (
+        <AddCtaModal
+          ctaType={pendingCta.blockType.slice(4)}
+          onConfirm={handleConfirmCta}
+          onCancel={() => setPendingCta(null)}
+        />
+      )}
     </>
   );
 }

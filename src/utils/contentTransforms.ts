@@ -60,15 +60,54 @@ export function applyAddStandaloneTile(prev: any[], ts = Date.now()): any[] {
   }];
 }
 
-export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId: string | null, ts = Date.now()): any[] {
-  if (blockType !== 'TileGrid') return prev;
-  const newBlock = {
-    InfoId: `grid-${ts}`, InfoType: 'TileGrid',
-    Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
-  };
+export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId: string | null, ts = Date.now(), extraAttrs?: Record<string, any>): any[] {
+  let newBlock: any;
+  if (blockType === 'TileGrid') {
+    newBlock = {
+      InfoId: `grid-${ts}`, InfoType: 'TileGrid',
+      Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
+    };
+  } else if (blockType.startsWith('Cta_')) {
+    const ctaType = blockType.slice(4);
+    const CTA_ICON_MAP: Record<string, string> = {
+      Phone: 'Phone', Email: 'Email', Form: 'Form', Address: 'Globe', Weblink: 'Link',
+    };
+    const defaultIcon = CTA_ICON_MAP[ctaType] ?? '';
+    const themes: any[] = dataStore.get('themes') ?? [];
+    const currentThemeId: string = dataStore.get('CurrentThemeId') ?? '';
+    const theme = themes.find((t: any) => t.ThemeId === currentThemeId) ?? themes[0];
+    const firstCtaColor: string = (theme?.ThemeCtaColors?.[0]?.CtaColorName) ?? '';
+    newBlock = {
+      InfoId: `cta-${ts}`, InfoType: 'Cta', InfoValue: '',
+      CtaAttributes: {
+        CtaId: `cta-${ts}`,
+        CtaType: ctaType,
+        CtaLabel: '',
+        CtaAction: '',
+        CtaColor: '#ffffff',
+        CtaBGColor: firstCtaColor,
+        CtaButtonType: 'Image',
+        CtaButtonImgUrl: '',
+        CtaButtonIcon: defaultIcon,
+        CtaSupplierIsConnected: false,
+        CtaConnectedSupplierId: '',
+        ...extraAttrs,
+      },
+    };
+  } else {
+    return prev;
+  }
   if (insertBeforeInfoId === null) return [...prev, newBlock];
   const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
   return idx === -1 ? [...prev, newBlock] : [...prev.slice(0, idx), newBlock, ...prev.slice(idx)];
+}
+
+export function applyEditCta(prev: any[], ctaId: string, patch: Record<string, any>): any[] {
+  return prev.map((block: any) =>
+    block.InfoType === 'Cta' && block.InfoId === ctaId
+      ? { ...block, CtaAttributes: { ...block.CtaAttributes, ...patch } }
+      : block
+  );
 }
 
 export function applyEditTile(prev: any[], tileId: string, patch: Record<string, any>): any[] {

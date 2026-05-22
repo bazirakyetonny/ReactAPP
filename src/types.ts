@@ -271,7 +271,7 @@ export interface Theme {
   ThemeFontFamily: string;
   ThemeFontSize: number;
   ThemeColors: ThemeColors;
-  ThemeCtaColors: ThemeCtaColor;
+  ThemeCtaColors: ThemeCtaColor[];
   ThemeIcons: ThemeIcon[];
   Icons: [];
 }
@@ -471,6 +471,7 @@ export interface TileDropPreview {
   insertColAfterColId: string | null;
   isColumnSwap: boolean;
   valid: boolean;
+  slotHeight?: number;
 }
 
 export interface BlockInsertPreview {

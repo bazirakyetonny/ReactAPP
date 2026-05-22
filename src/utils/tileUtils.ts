@@ -1,4 +1,10 @@
-import type { ThemeColors, ThemeIcon } from '../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor } from '../types';
+
+export function resolveCtaColor(ctaBGColor: string | undefined, ctaColors: ThemeCtaColor[] | undefined): string {
+  if (!ctaBGColor) return 'transparent';
+  if (ctaBGColor.startsWith('#')) return ctaBGColor;
+  return ctaColors?.find(c => c.CtaColorName === ctaBGColor)?.CtaColorCode ?? '#4c80f1';
+}
 
 export function resolveColor(bgColor: string, themeColors: ThemeColors | undefined): string {
   if (!bgColor) return 'transparent';
@@ -10,7 +16,7 @@ export function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): 
   if (themeIcons) {
     if (tile.IconCodeName) {
       const match = themeIcons.find((i) => i.IconCodeName === tile.IconCodeName);
-      if (match) return match.IconSVG;
+      if (match?.IconSVG) return match.IconSVG;
     }
     if (tile.Icon) {
       const lower = (tile.Icon as string).toLowerCase();
@@ -19,7 +25,7 @@ export function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): 
           (i.IconCodeName && i.IconCodeName.toLowerCase() === lower) ||
           i.IconName.toLowerCase() === lower,
       );
-      if (match) return match.IconSVG;
+      if (match?.IconSVG) return match.IconSVG;
     }
   }
   return tile.IconSVG ?? null;

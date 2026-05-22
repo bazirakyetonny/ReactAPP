@@ -7,6 +7,7 @@ interface MediaLibraryModalProps {
   initialImages: { InfoImageId: string; InfoImageValue?: string }[];
   onSelect: (images: { InfoImageId: string; InfoImageValue: string }[]) => void;
   onCancel: () => void;
+  singleSelect?: boolean;
 }
 
 function compressImage(
@@ -46,7 +47,7 @@ function compressImage(
   });
 }
 
-export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLibraryModalProps) {
+export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSelect = false }: MediaLibraryModalProps) {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,23 +239,25 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
           onChange={handleFileChange}
         />
 
-        <div className="media-select-all-row">
-          <label className="media-select-all-label">
-            <input
-              ref={selectAllRef}
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleAll}
-            />
-            Select Images
-          </label>
-          {selectedIds.size > 0 && (
-            <div className="media-actions-row">
-              <button className="media-cancel-btn" type="button" onClick={onCancel}>Cancel</button>
-              <button className="media-select-btn" type="button" onClick={handleConfirm}>Save</button>
-            </div>
-          )}
-        </div>
+        {!singleSelect && (
+          <div className="media-select-all-row">
+            <label className="media-select-all-label">
+              <input
+                ref={selectAllRef}
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+              />
+              Select Images
+            </label>
+            {selectedIds.size > 0 && (
+              <div className="media-actions-row">
+                <button className="media-cancel-btn" type="button" onClick={onCancel}>Cancel</button>
+                <button className="media-select-btn" type="button" onClick={handleConfirm}>Save</button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="media-grid">
           {loading && <div className="media-grid-loading">Loading…</div>}
@@ -269,8 +272,15 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
               <div
                 key={item.MediaId}
                 className={`media-item${isSelected ? ' media-item--selected' : ''}`}
-                onClick={() => toggleSelect(item.MediaId)}
+                onClick={() => {
+                  if (singleSelect) {
+                    onSelect([{ InfoImageId: item.MediaId, InfoImageValue: item.MediaUrl }]);
+                  } else {
+                    toggleSelect(item.MediaId);
+                  }
+                }}
               >
+                {!singleSelect && (
                 <input
                   type="checkbox"
                   className="media-item-checkbox"
@@ -278,6 +288,7 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel }: MediaLi
                   onChange={() => toggleSelect(item.MediaId)}
                   onClick={(e) => e.stopPropagation()}
                 />
+                )}
                 <button
                   className="media-item-delete"
                   type="button"

@@ -40,6 +40,7 @@ interface TileGridsProps {
   tileDragId?: string | null;
   tileDropPreview?: TileDropPreview | null;
   tileDragFromGridId?: string | null;
+  tileDragFromColId?: string | null;
   blockInsertPreview?: BlockInsertPreview | null;
   isDraggingTile?: boolean;
   onTileNavigate?: (pageId: string) => void;
@@ -47,18 +48,25 @@ interface TileGridsProps {
   activeNavTileIds?: Set<string>;
   onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
   overrideAddBtnInsertBeforeInfoId?: string | null;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 function getColsForRender(
-  cols: any[],
-  gridId: string,
-  preview: TileDropPreview | null | undefined,
-): Array<any | { _newColSkeleton: true }> {
-  if (!preview || !preview.newColumn || preview.targetGridId !== gridId || !preview.valid) return cols;
+  cols: any[], gridId: string, preview: TileDropPreview | null | undefined, fromColId?: string | null,
+): Array<any | { _newColSkeleton: true } | { _swapColSkeleton: true; slotHeight?: number }> {
+  if (!preview || !preview.valid || preview.targetGridId !== gridId) return cols;
+  if (preview.isColumnSwap && fromColId) {
+    const si = cols.findIndex((c: any) => c.ColId === fromColId);
+    const ti = cols.findIndex((c: any) => c.ColId === preview.targetColId);
+    if (si === -1 || ti === -1) return cols;
+    const r: Array<any | { _swapColSkeleton: true; slotHeight?: number }> = [...cols];
+    [r[si], r[ti]] = [r[ti], r[si]];
+    r[ti] = { _swapColSkeleton: true as const, slotHeight: preview.slotHeight };
+    return r;
+  }
+  if (!preview.newColumn) return cols;
   const result: Array<any | { _newColSkeleton: true }> = [...cols];
-  const afterIdx = preview.insertColAfterColId
-    ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId)
-    : -1;
+  const afterIdx = preview.insertColAfterColId ? cols.findIndex((c: any) => c.ColId === preview.insertColAfterColId) : -1;
   result.splice(afterIdx + 1, 0, { _newColSkeleton: true as const });
   return result;
 }
@@ -67,7 +75,7 @@ function getTilesForRender(
   col: any,
   gridId: string,
   preview: TileDropPreview | null | undefined,
-): Array<{ tile: any; origIndex: number } | { _slot: true }> {
+): Array<{ tile: any; origIndex: number } | { _slot: true; slotHeight?: number }> {
   const tiles: any[] = col.Tiles ?? [];
   const withIdx = tiles.map((tile, i) => ({ tile, origIndex: i }));
   if (
@@ -76,8 +84,8 @@ function getTilesForRender(
   ) {
     return withIdx;
   }
-  const result: Array<{ tile: any; origIndex: number } | { _slot: true }> = [...withIdx];
-  result.splice(preview.insertIndex, 0, { _slot: true as const });
+  const result: Array<{ tile: any; origIndex: number } | { _slot: true; slotHeight?: number }> = [...withIdx];
+  result.splice(preview.insertIndex, 0, { _slot: true as const, slotHeight: preview.slotHeight });
   return result;
 }
 
@@ -101,6 +109,7 @@ export function TileGrids({
   tileDragId,
   tileDropPreview,
   tileDragFromGridId,
+  tileDragFromColId,
   blockInsertPreview,
   isDraggingTile = false,
   onTileNavigate,
@@ -108,6 +117,7 @@ export function TileGrids({
   activeNavTileIds,
   onAddBtnClick,
   overrideAddBtnInsertBeforeInfoId,
+  onTileDoubleClick,
 }: TileGridsProps) {
   return (
     <>
@@ -118,7 +128,7 @@ export function TileGrids({
           !atMax &&
           !(cols.length === 2 && cols.some((c: any) => (c.Tiles ?? []).length > 1));
 
-        const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview);
+        const renderedCols = getColsForRender(cols, grid.InfoId, tileDropPreview, tileDragFromColId);
         const previewResetHeight = !!(
           tileDropPreview?.newColumn &&
           tileDropPreview.valid &&
@@ -140,8 +150,7 @@ export function TileGrids({
           }
         }
 
-        const dropZoneId = overrideAddBtnInsertBeforeInfoId !== undefined
-          ? overrideAddBtnInsertBeforeInfoId
+        const dropZoneId = overrideAddBtnInsertBeforeInfoId !== undefined ? overrideAddBtnInsertBeforeInfoId
           : (gridIdx < tileGrids.length - 1 ? tileGrids[gridIdx + 1].InfoId : null);
         const isAddRowDropActive = isDraggingTile &&
           blockInsertPreview != null &&
@@ -157,21 +166,18 @@ export function TileGrids({
                 if (colOrSkel._newColSkeleton) {
                   return <div key="new-col-skel" className="phone-column phone-column--new-col-preview" />;
                 }
+                if (colOrSkel._swapColSkeleton) {
+                  return (
+                    <div key="swap-col-skel" className="phone-column">
+                      <div className="block-drop-zone block-drop-zone--in-col" style={{ height: colOrSkel.slotHeight ?? TILE_H }} />
+                    </div>
+                  );
+                }
 
                 const col = colOrSkel;
-                const canResize =
-                  (cols.length === 1 && (col.Tiles ?? []).length === 1) ||
-                  (cols.length === 2 && (col.Tiles ?? []).length === 1);
-                const isSplitOpposite = !!(
-                  splitPreview &&
-                  grid.InfoId === splitPreview.gridId &&
-                  col.ColId === splitPreview.oppositeColId
-                );
-                const isFreeResizeOppCol = !!(
-                  freeResizePreview &&
-                  grid.InfoId === freeResizePreview.gridId &&
-                  col.ColId === freeResizePreview.oppColId
-                );
+                const canResize = (col.Tiles ?? []).length === 1 && (cols.length === 1 || cols.length === 2);
+                const isSplitOpposite = !!(splitPreview && grid.InfoId === splitPreview.gridId && col.ColId === splitPreview.oppositeColId);
+                const isFreeResizeOppCol = !!(freeResizePreview && grid.InfoId === freeResizePreview.gridId && col.ColId === freeResizePreview.oppColId);
                 const tilesForRender = getTilesForRender(col, grid.InfoId, tileDropPreview);
 
                 return (
@@ -182,15 +188,13 @@ export function TileGrids({
                   >
                     {tilesForRender.map((item: any) => {
                       if (item._slot) {
-                        return (
-                          <div key="drop-slot" className="block-drop-zone block-drop-zone--in-col" />
-                        );
+                        return <div key="drop-slot" className="block-drop-zone block-drop-zone--in-col"
+                          style={item.slotHeight != null ? { height: item.slotHeight } : undefined} />;
                       }
 
                       const { tile, origIndex: tileIndex } = item;
                       const isPlaceholder = tile._new === true;
-                      const hasNoBg = !tile.BGColor && !tile.BGImageUrl;
-                      const bg = resolveColor(tile.BGColor, themeColors);
+                      const bg = tile.BGImageUrl ? undefined : resolveColor(tile.BGColor, themeColors);
                       const isSelected = interactive && selectedTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
 
@@ -207,10 +211,9 @@ export function TileGrids({
                         ? `${TILE_H}px`
                         : (col.ColId === previewLongColId && previewLongHeight !== null)
                           ? `${previewLongHeight}px`
-                          : derivedLongTileHeight ?? `${tile.Height ?? 80}px`;
+                          : derivedLongTileHeight ?? `${tile.Height || 80}px`;
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
-                      const isSameColReorderSource = isTileDragging;
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
                       const hasText = !!tile.Text;
@@ -219,12 +222,7 @@ export function TileGrids({
                       const showDelText = canEdit && hasIcon && hasText;
 
                       const delBtn = (onClick: (e: React.MouseEvent) => void, label: string) => (
-                        <button
-                          className="phone-tile-element-delete"
-                          type="button"
-                          aria-label={label}
-                          onClick={(e) => { e.stopPropagation(); onClick(e); }}
-                        >
+                        <button className="phone-tile-element-delete" type="button" aria-label={label} onClick={(e) => { e.stopPropagation(); onClick(e); }}>
                           <svg width="6" height="6" viewBox="0 0 6 6" fill="none" aria-hidden="true">
                             <line x1="1" y1="1" x2="5" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                             <line x1="5" y1="1" x2="1" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -235,6 +233,7 @@ export function TileGrids({
                       return (
                         <div
                           key={tile.Id}
+                          data-tile-id={tile.Id}
                           className={[
                             'phone-tile-wrap',
                             isSelected ? 'selected' : '',
@@ -242,7 +241,7 @@ export function TileGrids({
                             isGhost ? 'phone-tile-wrap--ghost' : '',
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
                           ].filter(Boolean).join(' ')}
-                          style={isSameColReorderSource ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
+                          style={isTileDragging ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
                           onClick={interactive && onSelectTile ? () => {
                             onSelectTile(tile.Id);
                             if (tile.Action?.ObjectType === 'Information' && tile.Action?.ObjectId) {
@@ -252,6 +251,7 @@ export function TileGrids({
                             }
                           } : undefined}
                           onDragStart={(e) => e.preventDefault()}
+                          onDoubleClick={interactive && onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(tile.Id, (e.currentTarget as HTMLElement).getBoundingClientRect()); } : undefined}
                           onMouseDown={interactive && onTileDragStart ? (e: React.MouseEvent) => {
                             const target = e.target as HTMLElement;
                             if (
@@ -268,7 +268,7 @@ export function TileGrids({
                           } : undefined}
                         >
                           <div
-                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : hasNoBg ? ' phone-tile--no-bg' : ''}`}
+                            className={`phone-tile${isPlaceholder ? ' phone-tile--placeholder' : !tile.BGColor && !tile.BGImageUrl ? ' phone-tile--no-bg' : ''}`}
                             style={{
                               background: bg,
                               color: tile.Color ?? '#ffffff',
@@ -279,6 +279,10 @@ export function TileGrids({
                               justifyContent: tile.Align === 'left' ? 'flex-start' : 'center',
                             }}
                           >
+                            {tile.BGImageUrl && <>
+                              <div className="phone-tile-bg-img" style={{ backgroundImage: `url("${tile.BGImageUrl}")` }} />
+                              <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(tile.Opacity ?? 0).toFixed(2)})` }} />
+                            </>}
                             {hasIcon && (
                               <div className={`phone-tile-element${showDelIcon ? ' phone-tile-element--deletable' : ''}`}>
                                 <span className="phone-tile-icon" dangerouslySetInnerHTML={{ __html: iconSVG! }} />

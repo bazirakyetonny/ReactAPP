@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect } from 'react';
 import './MainCanvas.css';
-import type { ThemeColors, ThemeIcon, TileDropPreview, BlockInsertPreview } from '../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../types';
 import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
 import { TileGrids } from './tile/TileGrids';
 import { DescriptionBlock } from './phone/DescriptionBlock';
 import { ImageBlock } from './phone/ImageBlock';
+import { CtaBlock } from './phone/CtaBlock';
+
+function renderThumbBlocks(blocks: any[], themeColors: ThemeColors | undefined, themeIcons: ThemeIcon[] | undefined, ctaColors: ThemeCtaColor[] | undefined) {
+  const out: any[] = [];
+  let i = 0;
+  while (i < blocks.length) {
+    const b = blocks[i];
+    if (b.InfoType === 'TileGrid') { out.push(<TileGrids key={b.InfoId} tileGrids={[b]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />); i++; }
+    else if (b.InfoType === 'Description') { out.push(<DescriptionBlock key={b.InfoId} block={b} interactive={false} />); i++; }
+    else if (b.InfoType === 'Images') { out.push(<ImageBlock key={b.InfoId} block={b} interactive={false} />); i++; }
+    else if (b.InfoType === 'Cta' && (b.CtaAttributes?.CtaButtonType || 'Image') === 'Round') {
+      const row: any[] = [];
+      while (i < blocks.length && (blocks[i].CtaAttributes?.CtaButtonType || 'Image') === 'Round' && blocks[i].InfoType === 'Cta' && row.length < 3) row.push(blocks[i++]);
+      out.push(<div key={row[0].InfoId} className="phone-round-cta-row">{row.map(rb => <CtaBlock key={rb.InfoId} block={rb} ctaColors={ctaColors} interactive={false} />)}</div>);
+    } else if (b.InfoType === 'Cta') { out.push(<CtaBlock key={b.InfoId} block={b} ctaColors={ctaColors} interactive={false} />); i++; }
+    else { i++; }
+  }
+  return out;
+}
 
 export type { TileDropPreview, BlockInsertPreview, AllFrameData };
 
@@ -30,6 +49,10 @@ export interface LinkedFrame {
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onDeselectTile?: () => void;
+  onSelectCta?: (ctaId: string) => void;
+  onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
 }
 
 interface MainCanvasProps {
@@ -61,6 +84,12 @@ interface MainCanvasProps {
   onCrossFrameBlockDrop?: (infoId: string, fromFrameIdx: number, toFrameIdx: number, insertBeforeInfoId: string | null) => void;
   onAddImage?: (images: { InfoImageId: string; InfoImageValue: string }[], insertBeforeInfoId: string | null) => void;
   onEditImage?: (infoId: string, images: { InfoImageId: string; InfoImageValue: string }[]) => void;
+  onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onDeselectTile?: () => void;
+  onSelectCta?: (ctaId: string) => void;
+  onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  selectedCtaId?: string | null;
+  themeCtaColors?: ThemeCtaColor[];
 }
 
 export function MainCanvas({
@@ -92,6 +121,12 @@ export function MainCanvas({
   onCrossFrameBlockDrop,
   onAddImage,
   onEditImage,
+  onTileDoubleClick,
+  onDeselectTile,
+  onSelectCta,
+  onEditCta,
+  selectedCtaId,
+  themeCtaColors,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -236,6 +271,12 @@ export function MainCanvas({
             isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === -1}
             onAddImage={onAddImage}
             onEditImage={onEditImage}
+            onTileDoubleClick={onTileDoubleClick}
+            onDeselectTile={onDeselectTile}
+            onSelectCta={onSelectCta}
+            onEditCta={onEditCta}
+            selectedCtaId={selectedCtaId}
+            themeCtaColors={themeCtaColors}
           />
         </div>
 
@@ -291,6 +332,12 @@ export function MainCanvas({
                 isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === i}
                 onAddImage={frame.onAddImage}
                 onEditImage={frame.onEditImage}
+                onTileDoubleClick={frame.onTileDoubleClick}
+                onDeselectTile={frame.onDeselectTile}
+                onSelectCta={frame.onSelectCta}
+                onEditCta={frame.onEditCta}
+                selectedCtaId={selectedCtaId}
+                themeCtaColors={themeCtaColors}
               />
             </div>
           );
@@ -311,15 +358,7 @@ export function MainCanvas({
             <PhoneAppHeader />
             <div className="phone-screen">
               <div className={`phone-add-row${infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
-              {infoContent.map((block: any) => {
-                if (block.InfoType === 'TileGrid')
-                  return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
-                if (block.InfoType === 'Description')
-                  return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
-                if (block.InfoType === 'Images')
-                  return <ImageBlock key={block.InfoId} block={block} interactive={false} />;
-                return null;
-              })}
+              {renderThumbBlocks(infoContent, themeColors, themeIcons, themeCtaColors)}
             </div>
           </div>
         </div>
@@ -338,15 +377,7 @@ export function MainCanvas({
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
               <div className="phone-screen">
                 <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
-                {frame.infoContent.map((block: any) => {
-                  if (block.InfoType === 'TileGrid')
-                    return <TileGrids key={block.InfoId} tileGrids={[block]} themeColors={themeColors} themeIcons={themeIcons} interactive={false} />;
-                  if (block.InfoType === 'Description')
-                    return <DescriptionBlock key={block.InfoId} block={block} interactive={false} />;
-                  if (block.InfoType === 'Images')
-                    return <ImageBlock key={block.InfoId} block={block} interactive={false} />;
-                  return null;
-                })}
+                {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
               </div>
             </div>
           </div>

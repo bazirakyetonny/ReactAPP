@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:8082/Comforta_version21DevelopmentNETPostgreSQL/api';
+const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export interface MediaItem {
   MediaId: string;
@@ -43,6 +43,27 @@ export async function uploadMedia(payload: UploadPayload): Promise<MediaItem> {
   if (data.error?.Status && data.error.Status !== 'OK' && data.error.Status !== '') {
     throw new Error(data.error.Message || 'uploadMedia error');
   }
+  return data;
+}
+
+export interface CroppedUploadPayload {
+  name: string; base64: string; size: number; type: string; originalMediaId: string;
+}
+
+export async function uploadCroppedMedia(payload: CroppedUploadPayload): Promise<MediaItem> {
+  const res = await fetch(`${BASE}/media/upload/cropped`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      MediaName: payload.name, MediaImageData: payload.base64,
+      MediaSize: payload.size, MediaType: payload.type,
+      CroppedOriginalMediaId: payload.originalMediaId,
+    }),
+  });
+  if (!res.ok) throw new Error(`uploadCroppedMedia failed: ${res.status}`);
+  const data = await res.json();
+  if (data.error?.Status && data.error.Status !== 'OK' && data.error.Status !== '')
+    throw new Error(data.error.Message || 'uploadCroppedMedia error');
   return data;
 }
 
