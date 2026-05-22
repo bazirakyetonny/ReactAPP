@@ -1,0 +1,142 @@
+/* ── Overlay ─────────────────────────────────────────────────── */
+.mtv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Modal shell ─────────────────────────────────────────────── */
+.mtv-modal {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.mtv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.mtv-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mtv-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mtv-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+.mtv-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mtv-message {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.mtv-message strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+.mtv-error {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.mtv-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.mtv-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mtv-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.mtv-btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mtv-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #ffffff;
+  background: #dc2626;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mtv-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.mtv-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

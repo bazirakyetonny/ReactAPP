@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: env.VITE_OUT_DIR || "dist",
       emptyOutDir: true,
-      minify: "esbuild",
+      minify: false,
       lib: {
         entry: "src/main.tsx",
         name: "App",
@@ -25,6 +25,11 @@ export default defineConfig(({ mode }) => {
           format: "iife",
           name: "App",
         },
+        treeshake: false,
+      },
+      terserOptions: {
+        compress: false,
+        mangle: false,
       },
     },
   };

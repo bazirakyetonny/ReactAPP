@@ -21,7 +21,6 @@ export function createWidget(
   TemplatesCollection: any[],
   BC_Trn_TemplateCollection: any[],
 ) {
-
   dataStore.set("themes", themes);
   dataStore.set("Suppliers", Suppliers);
   dataStore.set("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
@@ -39,23 +38,23 @@ export function createWidget(
   dataStore.set("TemplatesCollection", TemplatesCollection);
   dataStore.set("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
 
-  console.log("themes", themes);
-  console.log("Suppliers", Suppliers);
-  console.log("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
-  console.log("SDT_DynamicFormsCollection", SDT_DynamicFormsCollection);
-  console.log("BC_Trn_MediaCollection", BC_Trn_MediaCollection);
-  console.log("CurrentThemeId", CurrentThemeId);
-  console.log("Current_Version", Current_Version);
-  console.log("OrganisationLogo", OrganisationLogo);
-  console.log("Current_Language", Current_Language);
-  console.log("HasMultiLingualSupport", HasMultiLingualSupport);
-  console.log("SupportedLanguages", SupportedLanguages);
-  console.log("UserRoles", UserRoles);
-  console.log("ResidentPackages", ResidentPackages);
-  console.log("Moods", Moods);
-  console.log("TemplatesCollection", TemplatesCollection);
-  console.log("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
-  
+  // console.log("themes", themes);
+  // console.log("Suppliers", Suppliers);
+  // console.log("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
+  // console.log("SDT_DynamicFormsCollection", SDT_DynamicFormsCollection);
+  // console.log("BC_Trn_MediaCollection", BC_Trn_MediaCollection);
+  // console.log("CurrentThemeId", CurrentThemeId);
+  // console.log("Current_Version", Current_Version);
+  // console.log("OrganisationLogo", OrganisationLogo);
+  // console.log("Current_Language", Current_Language);
+  // console.log("HasMultiLingualSupport", HasMultiLingualSupport);
+  // console.log("SupportedLanguages", SupportedLanguages);
+  // console.log("UserRoles", UserRoles);
+  // console.log("ResidentPackages", ResidentPackages);
+  // console.log("Moods", Moods);
+  // console.log("TemplatesCollection", TemplatesCollection);
+  // console.log("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
+
   return createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <App />
