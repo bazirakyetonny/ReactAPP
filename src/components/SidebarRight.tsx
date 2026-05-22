@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './SidebarRight.css';
 import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from '../types';
 import { SidebarCtaControls } from './SidebarCtaControls';
@@ -111,7 +111,7 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, pageName, selectedCta, onEditCta }: {
+export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, onBeforeTileTextEdit, pageName, selectedCta, onEditCta, onBeforeCtaEdit }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   ctaColors?: ThemeCtaColor[];
@@ -120,12 +120,19 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onOpenTileImage?: () => void;
   onBeforeOpacityChange?: () => void;
+  onBeforeTileTextEdit?: () => void;
   pageName?: string;
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  onBeforeCtaEdit?: () => void;
 }) {
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
+  const [tileText, setTileText] = useState(selectedTile?.Text ?? '');
+
+  useEffect(() => {
+    setTileText(selectedTile?.Text ?? '');
+  }, [selectedTile?.Id]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -170,6 +177,7 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
           selectedCta={selectedCta}
           palette={ctaColors}
           onEditCta={onEditCta}
+          onBeforeCtaEdit={onBeforeCtaEdit}
         />
       )}
 
@@ -266,9 +274,14 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
           className="sr-input"
           type="text"
           placeholder={selectedTile ? 'Enter title' : 'Select a tile to edit'}
-          value={selectedTile?.Text ?? ''}
+          value={tileText}
           disabled={!selectedTile}
-          onChange={e => selectedTile && onEditTile?.(selectedTile.Id, { Text: e.target.value })}
+          onFocus={() => onBeforeTileTextEdit?.()}
+          onChange={e => setTileText(e.target.value)}
+          onBlur={() => {
+            if (selectedTile && tileText !== (selectedTile.Text ?? ''))
+              onEditTile?.(selectedTile.Id, { Text: tileText });
+          }}
         />
       </div>
 

@@ -137,3 +137,16 @@
 .navbar-publish:hover {
   background: #142d56;
 }
+
+.navbar-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.navbar-save-indicator--saving { color: #9ca3af; }
+.navbar-save-indicator--error  { color: #ef4444; }
+.navbar-save-indicator--saved  { color: #22c55e; }

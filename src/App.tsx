@@ -22,6 +22,7 @@ import { buildLinkedFrames } from './utils/linkedFrames';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useNavigation } from './hooks/useNavigation';
 import { useContentHandlers } from './hooks/useContentHandlers';
+import { useAutoSave } from './hooks/useAutoSave';
 
 function App() {
   const themes: Theme[] = dataStore.get('themes') ?? [];
@@ -152,6 +153,10 @@ function App() {
     return ids;
   }, [navStack, infoContent, navContents]);
 
+  // ── Auto-save ────────────────────────────────────────────────────────────
+
+  const { isSaving, saveError, savedAt } = useAutoSave(infoContent, navContents, currentVersion?.AppVersionId);
+
   // ── Data persistence ─────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -271,6 +276,9 @@ function App() {
         onExpand={() => setTreeOpen(v => !v)}
         invalidLinkCount={invalidLinkCount}
         isCheckingLinks={isCheckingLinks}
+        isSaving={isSaving}
+        saveError={saveError}
+        savedAt={savedAt}
       />
       {showCreateModal && (
         <CreateAppVersionModal
@@ -390,9 +398,11 @@ function App() {
           onEditTile={handleEditTile}
           onOpenTileImage={handleOpenTileImageFromSidebar}
           onBeforeOpacityChange={pushSnapshot}
+          onBeforeTileTextEdit={pushSnapshot}
           pageName={activePageName}
           selectedCta={selectedCta}
           onEditCta={handleEditCta}
+          onBeforeCtaEdit={pushSnapshot}
         />
       </div>
       {tileImageModal && (
