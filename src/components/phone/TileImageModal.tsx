@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { getMedia, uploadMedia, uploadCroppedMedia } from '../../utils/mediaApi';
-import type { MediaItem } from '../../utils/mediaApi';
+import { getMedia, uploadMedia, uploadCroppedMedia } from '../../services/mediaApi';
+import type { MediaItem } from '../../services/mediaApi';
 import './TileImageModal.css';
 
 interface TileImageModalProps {
@@ -127,7 +127,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
         base64,
         size: Math.round(base64.length * 0.75),
         type: 'image/jpeg',
-        originalMediaId: selectedMedia.MediaId,
+        croppedOriginalMediaId: selectedMedia.MediaId,
       });
       onConfirm({ bgImageUrl: result.MediaUrl, opacity: opacity / 100, originalImageUrl: selectedMedia.MediaUrl, originalMediaId: selectedMedia.MediaId });
     } catch (err: any) {
@@ -144,7 +144,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
       try { payload = await compressImage(images[i]); }
       catch { const r = new FileReader(); payload = await new Promise<any>((res, rej) => { r.onload = () => res({ base64: (r.result as string).split(',')[1], type: images[i].type, size: images[i].size, name: images[i].name }); r.onerror = rej; r.readAsDataURL(images[i]); }); }
       try {
-        const item = await uploadMedia(payload);
+        const item = await uploadMedia(payload) as unknown as MediaItem;
         setMediaList(prev => [item, ...prev]);
         setSelectedMedia(item);
         setCropperSize(null);

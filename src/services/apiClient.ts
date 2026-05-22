@@ -11,7 +11,7 @@ export class AuthError extends Error {
 }
 
 export function getBaseUrl(): string {
-  return import.meta.env.VITE_BASE_URL ?? window.location.origin;
+  return import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 }
 
 function checkError(error: SDTError | undefined): void {

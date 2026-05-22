@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { getMedia, uploadMedia, deleteMedia } from '../../utils/mediaApi';
-import type { MediaItem } from '../../utils/mediaApi';
+import { getMedia, uploadMedia, deleteMedia } from '../../services/mediaApi';
+import type { MediaItem } from '../../services/mediaApi';
 
 interface MediaLibraryModalProps {
   initialImages: { InfoImageId: string; InfoImageValue?: string }[];
@@ -124,7 +124,7 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
 
       setUploadProgress({ done: i, total: images.length, phase: 'uploading' });
       try {
-        const newItem = await uploadMedia(payload);
+        const newItem = await uploadMedia(payload) as unknown as MediaItem;
         setMediaList((prev) => [newItem, ...prev]);
       } catch (err: any) {
         console.error('Upload failed:', file.name, err.message);
