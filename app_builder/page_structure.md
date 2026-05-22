@@ -46,6 +46,126 @@ Pages make up the app version. Each page has the following properties:
 
 ---
 
+## BulletinBoard Page
+
+A `BulletinBoard` page renders a fixed empty-state UI — a board illustration, a message listing the content categories users can post, and a disabled floating action button (FAB). It has no editable building blocks.
+
+### Tile Action
+
+To link a tile to a BulletinBoard page, set the tile's `Action.ObjectType` to `"BulletinBoard"` and `Action.ObjectId` to the target page's `PageId`.
+
+```json
+{
+  "Action": {
+    "ObjectType": "BulletinBoard",
+    "ObjectId": "0f90d3e6-98fd-4f0a-8bf5-8a74e7b84f5f"
+  }
+}
+```
+
+### Page object
+
+```json
+{
+  "PageId": "0f90d3e6-98fd-4f0a-8bf5-8a74e7b84f5f",
+  "PageName": "Bulletin Board",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "BulletinBoard",
+  "PageThumbnailUrl": "",
+  "PageGroups": "",
+  "AppVersionId": "1807af56-0adc-42aa-b82f-588a904649dd"
+}
+```
+
+`PageStructure` is empty — the page content is entirely determined by its type and is not user-configurable in the builder.
+
+---
+
+## Calendar Page
+
+A `Calendar` page renders a 24-hour day-view schedule. It includes a blue date navigation bar (prev/next arrows + formatted date label) and a scrollable list of hourly time slots. A current-time indicator (coloured line + dot) marks the active hour. The view auto-scrolls to the current hour on open. Uses `primaryColor` for the header, `backgroundColor`, `borderColor`, `secondaryColor`, and `accentColor`.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "Calendar", "ObjectId": "<CalendarPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "Calendar",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "Calendar",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
+## MyActivity Page
+
+A `MyActivity` page renders a messaging inbox with two tabs — **Messages** and **Requests**. The active tab uses `primaryColor`; the inactive tab is light grey (`#e1e1e1`). The body shows an empty-state illustration and "No messages yet" when there are no items. Uses `primaryColor`, `backgroundColor`, and `secondaryColor`.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "MyActivity", "ObjectId": "<MyActivityPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "My Activity",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "MyActivity",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
+## Map Page
+
+A `Map` page embeds a Google Maps view centred on the user's current location (via `navigator.geolocation`). If geolocation is denied or unavailable, it falls back to Utrecht (52.0907, 5.1214). A spinner is shown while the map loads. The Google Maps Embed API key is read from the `VITE_MAPS_API_KEY` environment variable. Uses `primaryColor` for the spinner accent.
+
+### Tile Action
+
+```json
+{ "Action": { "ObjectType": "Map", "ObjectId": "<MapPageId>" } }
+```
+
+### Page object
+
+```json
+{
+  "PageId": "<uuid>",
+  "PageName": "Map",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "Map",
+  "PageThumbnailUrl": "",
+  "AppVersionId": "<AppVersionId>"
+}
+```
+
+`PageStructure` is empty — the page content is determined by its type.
+
+---
+
 ## Page Structure
 
 `PageStructure` is a JSON string. When parsed, it contains an `InfoContent` array — the ordered list of building blocks that compose the page.
@@ -103,7 +223,7 @@ A grid of tiles arranged in columns.
 
 | Property | Description |
 |---|---|
-| `ObjectType` | Type of target — `Information`, `Calendar`, `Map`, `WebLink`, `DynamicForm`, `MyActivity`, or empty |
+| `ObjectType` | Type of target — `Information`, `BulletinBoard`, `Calendar`, `Map`, `WebLink`, `DynamicForm`, `MyActivity`, or empty |
 | `ObjectId` | ID of the target page or object |
 | `ObjectUrl` | URL for web link targets |
 | `FormId` | Form ID for form-type actions |

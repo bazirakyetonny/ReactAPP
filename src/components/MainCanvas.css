@@ -56,7 +56,7 @@
 .phone-frame {
   width: clamp(192px, 26.4vw, 288px);
   aspect-ratio: 9 / 19.5;
-  background: #0d0d0d;
+  background: #fafafa;
   border-radius: clamp(12px, 1.6vw, 20px);
   border: 5px solid #373737;
   display: flex;

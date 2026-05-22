@@ -21,6 +21,8 @@ interface NavBarProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onExpand?: () => void;
+  invalidLinkCount?: number;
+  isCheckingLinks?: boolean;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -296,6 +298,8 @@ export function NavBar({
   onUndo,
   onRedo,
   onExpand,
+  invalidLinkCount = 0,
+  isCheckingLinks = false,
 }: NavBarProps) {
   return (
     <nav className="navbar" aria-label="App builder toolbar">
@@ -312,8 +316,17 @@ export function NavBar({
           onUpdateTranslations={onUpdateTranslations}
           onMoveToTrash={onMoveVersionToTrash}
         />
-        <button className="navbar-icon-btn" type="button" title="Debug">
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title={invalidLinkCount > 0 ? `${invalidLinkCount} broken link${invalidLinkCount !== 1 ? 's' : ''} detected` : isCheckingLinks ? 'Checking links…' : 'Debug'}
+        >
           <BugIcon />
+          {(invalidLinkCount > 0 || isCheckingLinks) && (
+            <span className={`navbar-bug-badge${isCheckingLinks && invalidLinkCount === 0 ? ' navbar-bug-badge--checking' : ''}`}>
+              {isCheckingLinks && invalidLinkCount === 0 ? '…' : invalidLinkCount > 99 ? '99+' : invalidLinkCount}
+            </span>
+          )}
         </button>
         <button className="navbar-icon-btn" type="button" title="Share">
           <ShareIcon />
