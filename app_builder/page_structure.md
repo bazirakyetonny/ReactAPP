@@ -46,6 +46,42 @@ Pages make up the app version. Each page has the following properties:
 
 ---
 
+## BulletinBoard Page
+
+A `BulletinBoard` page renders a fixed empty-state UI — a board illustration, a message listing the content categories users can post, and a disabled floating action button (FAB). It has no editable building blocks.
+
+### Tile Action
+
+To link a tile to a BulletinBoard page, set the tile's `Action.ObjectType` to `"BulletinBoard"` and `Action.ObjectId` to the target page's `PageId`.
+
+```json
+{
+  "Action": {
+    "ObjectType": "BulletinBoard",
+    "ObjectId": "0f90d3e6-98fd-4f0a-8bf5-8a74e7b84f5f"
+  }
+}
+```
+
+### Page object
+
+```json
+{
+  "PageId": "0f90d3e6-98fd-4f0a-8bf5-8a74e7b84f5f",
+  "PageName": "Bulletin Board",
+  "IsPredefined": false,
+  "PageStructure": "",
+  "PageType": "BulletinBoard",
+  "PageThumbnailUrl": "",
+  "PageGroups": "",
+  "AppVersionId": "1807af56-0adc-42aa-b82f-588a904649dd"
+}
+```
+
+`PageStructure` is empty — the page content is entirely determined by its type and is not user-configurable in the builder.
+
+---
+
 ## Page Structure
 
 `PageStructure` is a JSON string. When parsed, it contains an `InfoContent` array — the ordered list of building blocks that compose the page.
@@ -103,7 +139,7 @@ A grid of tiles arranged in columns.
 
 | Property | Description |
 |---|---|
-| `ObjectType` | Type of target — `Information`, `Calendar`, `Map`, `WebLink`, `DynamicForm`, `MyActivity`, or empty |
+| `ObjectType` | Type of target — `Information`, `BulletinBoard`, `Calendar`, `Map`, `WebLink`, `DynamicForm`, `MyActivity`, or empty |
 | `ObjectId` | ID of the target page or object |
 | `ObjectUrl` | URL for web link targets |
 | `FormId` | Form ID for form-type actions |

@@ -8,6 +8,7 @@ import { TileGrids } from './tile/TileGrids';
 import { DescriptionBlock } from './phone/DescriptionBlock';
 import { ImageBlock } from './phone/ImageBlock';
 import { CtaBlock } from './phone/CtaBlock';
+import { BulletinBoardPage } from './BulletinBoardPage';
 
 function renderThumbBlocks(blocks: any[], themeColors: ThemeColors | undefined, themeIcons: ThemeIcon[] | undefined, ctaColors: ThemeCtaColor[] | undefined) {
   const out: any[] = [];
@@ -282,7 +283,8 @@ export function MainCanvas({
 
         {/* Linked page frames */}
         {linkedFrames?.map((frame, i) => {
-          const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          const isBulletinBoard = frame.page?.PageType === 'BulletinBoard';
+          const frameTileGrids = isBulletinBoard ? [] : frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
             <div
               key={frame.page?.PageId ?? i}
@@ -291,7 +293,7 @@ export function MainCanvas({
             >
               <PhoneStatusBar />
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
-              <DraggableScreen
+              {isBulletinBoard ? <BulletinBoardPage /> : <DraggableScreen
                 infoContent={frame.infoContent}
                 tileGrids={frameTileGrids}
                 themeColors={themeColors}
@@ -338,7 +340,7 @@ export function MainCanvas({
                 onEditCta={frame.onEditCta}
                 selectedCtaId={selectedCtaId}
                 themeCtaColors={themeCtaColors}
-              />
+              />}
             </div>
           );
         })}
@@ -376,8 +378,13 @@ export function MainCanvas({
               <PhoneStatusBar />
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
               <div className="phone-screen">
-                <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
-                {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
+                {frame.page?.PageType === 'BulletinBoard'
+                  ? <BulletinBoardPage />
+                  : <>
+                      <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
+                      {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
+                    </>
+                }
               </div>
             </div>
           </div>
