@@ -4,6 +4,7 @@ import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInser
 import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
+import type { TileMenuAction } from './tile/TileActionMenu';
 import { TileGrids } from './tile/TileGrids';
 import { DescriptionBlock } from './phone/DescriptionBlock';
 import { ImageBlock } from './phone/ImageBlock';
@@ -106,6 +107,7 @@ interface MainCanvasProps {
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   selectedCtaId?: string | null;
   themeCtaColors?: ThemeCtaColor[];
+  onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
 }
 
 export function MainCanvas({
@@ -143,6 +145,7 @@ export function MainCanvas({
   onEditCta,
   selectedCtaId,
   themeCtaColors,
+  onTileMenuAction,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -293,6 +296,7 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
+            onTileMenuAction={onTileMenuAction}
           />
         </div>
 
@@ -356,6 +360,7 @@ export function MainCanvas({
                 onEditCta={frame.onEditCta}
                 selectedCtaId={selectedCtaId}
                 themeCtaColors={themeCtaColors}
+                onTileMenuAction={onTileMenuAction}
               />}
             </div>
           );

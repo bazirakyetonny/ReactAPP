@@ -5,6 +5,8 @@ import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
 import type { SplitPreview, FreeResizePreview } from './TileGrids';
 import { AddBlockMenu } from '../phone/AddBlockMenu';
+import { TileActionMenu } from './TileActionMenu';
+import type { TileMenuAction } from './TileActionMenu';
 import { DescriptionBlock } from '../phone/DescriptionBlock';
 import { QuillEditorModal } from '../phone/QuillEditorModal';
 import { ImageBlock } from '../phone/ImageBlock';
@@ -125,6 +127,7 @@ export interface DraggableScreenProps {
   selectedCtaId?: string | null;
   themeCtaColors?: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
 }
 
 export function DraggableScreen({
@@ -174,9 +177,11 @@ export function DraggableScreen({
   selectedCtaId,
   themeCtaColors,
   onEditCta,
+  onTileMenuAction,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
+  const [tileMenu, setTileMenu] = useState<{ tileId: string; pos: { x: number; y: number } } | null>(null);
   const [blockDragId, setBlockDragId] = useState<string | null>(null);
   const [blockGhostPos, setBlockGhostPos] = useState<{ x: number; y: number } | null>(null);
   const [blockDropPreview, setBlockDropPreview] = useState<{ insertBeforeInfoId: string | null } | null>(null);
@@ -950,6 +955,9 @@ export function DraggableScreen({
                   activeNavTileIds={activeNavTileIds}
                   onAddBtnClick={openAddMenu}
                   onTileDoubleClick={onTileDoubleClick}
+                  onTileOptionsClick={(tileId, rect) =>
+                    setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
+                  }
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
@@ -1078,6 +1086,18 @@ export function DraggableScreen({
           pos={addMenu.pos}
           onSelect={handleMenuSelect}
           onClose={() => setAddMenu(null)}
+        />
+      )}
+
+      {tileMenu && (
+        <TileActionMenu
+          tileId={tileMenu.tileId}
+          pos={tileMenu.pos}
+          onAction={(tileId, action) => {
+            onTileMenuAction?.(tileId, action);
+            setTileMenu(null);
+          }}
+          onClose={() => setTileMenu(null)}
         />
       )}
 

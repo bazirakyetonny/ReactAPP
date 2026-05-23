@@ -49,6 +49,7 @@ interface TileGridsProps {
   onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
   overrideAddBtnInsertBeforeInfoId?: string | null;
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onTileOptionsClick?: (tileId: string, rect: DOMRect) => void;
 }
 
 function getColsForRender(
@@ -118,6 +119,7 @@ export function TileGrids({
   onAddBtnClick,
   overrideAddBtnInsertBeforeInfoId,
   onTileDoubleClick,
+  onTileOptionsClick,
 }: TileGridsProps) {
   return (
     <>
@@ -303,7 +305,10 @@ export function TileGrids({
                                 className="phone-tile-options-btn"
                                 type="button"
                                 aria-label="Tile options"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTileOptionsClick?.(tile.Id, e.currentTarget.getBoundingClientRect());
+                                }}
                               >
                                 <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
                                   <circle cx="1.5" cy="1.5" r="1.5" />

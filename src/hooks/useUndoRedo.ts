@@ -4,20 +4,23 @@ export interface Snapshot {
   infoContent: any[];
   navContents: Record<string, any[]>;
   navStack: string[];
+  themeId: string;
 }
 
 interface Props {
   infoContentRef: React.MutableRefObject<any[]>;
   navContentsRef: React.MutableRefObject<Record<string, any[]>>;
   navStackRef: React.MutableRefObject<string[]>;
+  themeIdRef: React.MutableRefObject<string>;
   setInfoContent: React.Dispatch<React.SetStateAction<any[]>>;
   setNavContents: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
   setNavStack: React.Dispatch<React.SetStateAction<string[]>>;
+  onRestoreTheme: (themeId: string) => void;
 }
 
 export function useUndoRedo({
-  infoContentRef, navContentsRef, navStackRef,
-  setInfoContent, setNavContents, setNavStack,
+  infoContentRef, navContentsRef, navStackRef, themeIdRef,
+  setInfoContent, setNavContents, setNavStack, onRestoreTheme,
 }: Props) {
   const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
   const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
@@ -33,6 +36,7 @@ export function useUndoRedo({
       infoContent: infoContentRef.current,
       navContents: navContentsRef.current,
       navStack: navStackRef.current,
+      themeId: themeIdRef.current,
     };
   }
 
@@ -50,6 +54,7 @@ export function useUndoRedo({
     setInfoContent(s.infoContent);
     setNavContents(s.navContents);
     setNavStack(s.navStack);
+    if (s.themeId !== themeIdRef.current) onRestoreTheme(s.themeId);
   }
 
   function handleUndo() {

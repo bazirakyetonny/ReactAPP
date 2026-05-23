@@ -78,7 +78,6 @@
 
 .phone-status-bar {
   height: 28px;
-  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -103,7 +102,6 @@
 
 .phone-app-header {
   height: 52px;
-  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -137,7 +135,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: #c2c2c2;
   color: #6b7280;
   flex-shrink: 0;
 }

@@ -60,7 +60,7 @@ export function useAutoSave(
       return;
     }
     const prev = prevNavContentsRef.current;
-    const dirtyIds = Object.keys(navContents).filter(id => navContents[id] !== prev[id]);
+    const dirtyIds = Object.keys(navContents).filter(id => prev[id] !== undefined && navContents[id] !== prev[id]);
     prevNavContentsRef.current = navContents;
     if (dirtyIds.length === 0) return;
 

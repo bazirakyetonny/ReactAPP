@@ -1,0 +1,102 @@
+.tam {
+  position: fixed;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #e4e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+  min-width: 160px;
+}
+
+.tam__item-wrap {
+  position: relative;
+}
+
+.tam__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1a2b4a;
+  text-align: left;
+  transition: background 0.1s;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.tam__item:hover,
+.tam__item--expanded {
+  background: #f0f3fa;
+  color: #1a3a6e;
+}
+
+.tam__chevron {
+  font-size: 15px;
+  color: #b0b8c4;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tam__sub {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #ffffff;
+  border: 1px solid #e4e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+  min-width: 160px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 10001;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d9e8 transparent;
+}
+
+.tam__sub::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tam__sub::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tam__sub::-webkit-scrollbar-thumb {
+  background: #d1d9e8;
+  border-radius: 4px;
+}
+
+.tam__sub-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1a2b4a;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+
+.tam__sub-item:hover {
+  background: #f0f3fa;
+  color: #1a3a6e;
+}
+
+.tam__sub-empty {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #9ca3af;
+}

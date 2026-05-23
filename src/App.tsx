@@ -4,6 +4,7 @@ import {
   getAppVersions, getActiveAppVersion, activateAppVersion,
   type SDTAppVersion,
 } from './services/appVersionsApi';
+import { updateAppVersionTheme } from './services/themeApi';
 import { CreateAppVersionModal } from './components/appversion/CreateAppVersionModal';
 import { RenameAppVersionModal } from './components/appversion/RenameAppVersionModal';
 import { MoveToTrashModal } from './components/appversion/MoveToTrashModal';
@@ -16,7 +17,9 @@ import { SidebarRight } from './components/SidebarRight';
 import { PageBubbleTree } from './components/tree/PageBubbleTree';
 import { dataStore } from './data/datastore';
 import type { Theme, Mood, CategoryTemplates } from './types';
-import { parseInfoContent, applyEditTile, applyAddBlock } from './utils/contentTransforms';
+import { parseInfoContent, applyEditTile, applyAddBlock, applyCopyTile } from './utils/contentTransforms';
+import { createInfoPage } from './services/pagesApi';
+import type { TileMenuAction } from './components/tile/TileActionMenu';
 import { extractLinks, checkLink } from './utils/linkChecker';
 import { buildLinkedFrames } from './utils/linkedFrames';
 import { useUndoRedo } from './hooks/useUndoRedo';
@@ -60,7 +63,9 @@ function App() {
   const infoContentRef = useRef(infoContent);
   const navContentsRef = useRef<Record<string, any[]>>({});
   const navStackRef = useRef<string[]>([]);
+  const themeIdRef = useRef(selectedThemeId);
   useLayoutEffect(() => { infoContentRef.current = infoContent; });
+  useLayoutEffect(() => { themeIdRef.current = selectedThemeId; });
 
   const { navStack, setNavStack, navContents, setNavContents, navUpdater,
     handleTileNavigate, handleCollapseDescendants, handleNavigateToPath,
@@ -70,7 +75,15 @@ function App() {
   useLayoutEffect(() => { navStackRef.current = navStack; });
 
   const { undoStack, redoStack, pushSnapshot, clearHistory, handleUndo, handleRedo, isResizingRef } =
-    useUndoRedo({ infoContentRef, navContentsRef, navStackRef, setInfoContent, setNavContents, setNavStack });
+    useUndoRedo({
+      infoContentRef, navContentsRef, navStackRef, themeIdRef,
+      setInfoContent, setNavContents, setNavStack,
+      onRestoreTheme: (themeId) => {
+        setSelectedThemeId(themeId);
+        if (currentVersion?.AppVersionId)
+          updateAppVersionTheme(currentVersion.AppVersionId, themeId).catch(() => {});
+      },
+    });
 
   const { handleAddColumn, handleDeleteTile, handleAddStandaloneTile, handleAddBlock,
     handleEditCta, handleSelectCta, handleAddTilesToColumn,
@@ -93,6 +106,7 @@ function App() {
     const fullVersion = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
     dataStore.set('Current_Version', fullVersion);
     setCurrentVersion(fullVersion);
+    setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? '');
     setInfoContent(parseInfoContent());
     setNavStack([]);
     setNavContents({});
@@ -242,6 +256,58 @@ function App() {
     setPendingCta(null);
   }
 
+  // ── Tile action menu ─────────────────────────────────────────────────────
+
+  async function handleTileMenuAction(tileId: string, action: TileMenuAction) {
+    const cv = dataStore.get('Current_Version');
+    if (!cv) return;
+
+    if (action.type === 'copy-tile') {
+      pushSnapshot();
+      setInfoContent(prev => applyCopyTile(prev, tileId));
+      setNavContents(prev => {
+        const next: Record<string, any[]> = {};
+        for (const [id, blocks] of Object.entries(prev))
+          next[id] = applyCopyTile(blocks, tileId);
+        return next;
+      });
+      return;
+    }
+
+    if (action.type === 'existing-page') {
+      pushSnapshot();
+      handleEditTile(tileId, { Action: { ObjectType: action.objectType, ObjectId: action.pageId, ObjectUrl: '' } });
+      return;
+    }
+
+    if (action.type === 'direct-link') {
+      pushSnapshot();
+      handleEditTile(tileId, { Action: { ObjectType: action.linkType, ObjectId: '', ObjectUrl: action.value } });
+      return;
+    }
+
+    if (action.type === 'form') {
+      pushSnapshot();
+      handleEditTile(tileId, { Action: { ObjectType: 'Form', ObjectId: action.formId, ObjectUrl: '' } });
+      return;
+    }
+
+    if (action.type === 'new-page') {
+      try {
+        const pages = await createInfoPage(cv.AppVersionId, 'New Page');
+        const newPage = pages[0];
+        if (!newPage) return;
+        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        dataStore.set('Current_Version', updated);
+        setCurrentVersion(updated);
+        pushSnapshot();
+        handleEditTile(tileId, { Action: { ObjectType: 'Information', ObjectId: newPage.PageId, ObjectUrl: '' } });
+      } catch {
+        // silently ignore — page creation failed
+      }
+    }
+  }
+
   // ── Linked frames ────────────────────────────────────────────────────────
 
   const linkedFrames = buildLinkedFrames({
@@ -268,7 +334,12 @@ function App() {
         onMoveVersionToTrash={id => setTrashVersion(appVersions.find(a => a.AppVersionId === id) ?? null)}
         themes={themes}
         selectedThemeId={selectedThemeId}
-        onThemeChange={setSelectedThemeId}
+        onThemeChange={(themeId) => {
+          pushSnapshot();
+          setSelectedThemeId(themeId);
+          if (currentVersion?.AppVersionId)
+            updateAppVersionTheme(currentVersion.AppVersionId, themeId).catch(() => {});
+        }}
         canUndo={undoStack.length > 0}
         canRedo={redoStack.length > 0}
         onUndo={handleUndo}
@@ -388,6 +459,7 @@ function App() {
           onEditCta={handleEditCta}
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
+          onTileMenuAction={handleTileMenuAction}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
