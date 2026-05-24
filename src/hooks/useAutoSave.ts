@@ -92,5 +92,17 @@ export function useAutoSave(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navContents]);
 
-  return { isSaving, saveError, savedAt };
+  async function runSave(fn: () => Promise<void>) {
+    setIsSaving(true); setSaveError(false);
+    try {
+      await fn();
+      setSavedAt(Date.now());
+    } catch {
+      setSaveError(true);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return { isSaving, saveError, savedAt, runSave };
 }

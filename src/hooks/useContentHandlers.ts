@@ -22,6 +22,7 @@ interface Props {
   setPendingCta: React.Dispatch<React.SetStateAction<any>>;
   pushSnapshot: () => void;
   isResizingRef: React.MutableRefObject<boolean>;
+  onNewTileCreated?: () => void;
 }
 
 export function useContentHandlers({
@@ -29,6 +30,7 @@ export function useContentHandlers({
   navContents, setNavContents, navStack,
   selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
   pushSnapshot, isResizingRef,
+  onNewTileCreated,
 }: Props) {
 
   // ── Content block handlers ────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export function useContentHandlers({
     const ts = Date.now();
     setInfoContent(prev => applyAddStandaloneTile(prev, ts));
     setSelectedTileId(`tile-${ts}`);
+    onNewTileCreated?.();
   }
 
   function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
@@ -62,6 +65,7 @@ export function useContentHandlers({
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
       setSelectedTileId(`tile-${ts}`);
       setSelectedCtaId(null);
+      onNewTileCreated?.();
     } else {
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
     }
@@ -89,6 +93,7 @@ export function useContentHandlers({
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
     if (!isResizingRef.current) pushSnapshot();
     setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+    onNewTileCreated?.();
   }
 
   function handleAddDescription(html: string, insertBeforeInfoId: string | null) {

@@ -18,7 +18,8 @@ import { PageBubbleTree } from './components/tree/PageBubbleTree';
 import { dataStore } from './data/datastore';
 import type { Theme, Mood, CategoryTemplates } from './types';
 import { parseInfoContent, applyEditTile, applyAddBlock, applyCopyTile } from './utils/contentTransforms';
-import { createInfoPage } from './services/pagesApi';
+import { createInfoPage, updatePageTitle, createLinkPage } from './services/pagesApi';
+import { NEW_PAGE_SENTINEL } from './utils/linkedFrames';
 import type { TileMenuAction } from './components/tile/TileActionMenu';
 import { extractLinks, checkLink } from './utils/linkChecker';
 import { buildLinkedFrames } from './utils/linkedFrames';
@@ -58,30 +59,78 @@ function App() {
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [treeOpen, setTreeOpen] = useState(false);
+  const [liveTileText, setLiveTileText] = useState<{ id: string; text: string } | null>(null);
 
   // Live refs so hooks always read the current values
   const infoContentRef = useRef(infoContent);
   const navContentsRef = useRef<Record<string, any[]>>({});
   const navStackRef = useRef<string[]>([]);
   const themeIdRef = useRef(selectedThemeId);
+  const pagesRef = useRef<any[]>(currentVersion?.Page ?? []);
   useLayoutEffect(() => { infoContentRef.current = infoContent; });
   useLayoutEffect(() => { themeIdRef.current = selectedThemeId; });
+  useLayoutEffect(() => { pagesRef.current = currentVersion?.Page ?? []; });
 
   const { navStack, setNavStack, navContents, setNavContents, navUpdater,
     handleTileNavigate, handleCollapseDescendants, handleNavigateToPath,
     handleDeletePage, handleCloseFromIndex } = useNavigation();
 
+  // pageId → the specific tile ID that was clicked to open that page
+  const [navSourceTiles, setNavSourceTiles] = useState<Record<string, string>>({});
+  // pageId → URL for WebLink pages
+  const [navUrls, setNavUrls] = useState<Record<string, string>>({});
+
+  // Drop stale entries whenever the nav stack shrinks
+  useEffect(() => {
+    const pageSet = new Set(navStack);
+    setNavSourceTiles(prev => {
+      const stale = Object.keys(prev).filter(id => !pageSet.has(id));
+      if (!stale.length) return prev;
+      const next = { ...prev };
+      stale.forEach(id => delete next[id]);
+      return next;
+    });
+    setNavUrls(prev => {
+      const stale = Object.keys(prev).filter(id => !pageSet.has(id));
+      if (!stale.length) return prev;
+      const next = { ...prev };
+      stale.forEach(id => delete next[id]);
+      return next;
+    });
+  }, [navStack]);
+
   useLayoutEffect(() => { navContentsRef.current = navContents; });
   useLayoutEffect(() => { navStackRef.current = navStack; });
 
+  // Ref so onRestorePages (defined before useAutoSave) can reach runSave
+  const runSaveRef = useRef<((fn: () => Promise<void>) => void) | null>(null);
+
   const { undoStack, redoStack, pushSnapshot, clearHistory, handleUndo, handleRedo, isResizingRef } =
     useUndoRedo({
-      infoContentRef, navContentsRef, navStackRef, themeIdRef,
+      infoContentRef, navContentsRef, navStackRef, themeIdRef, pagesRef,
       setInfoContent, setNavContents, setNavStack,
       onRestoreTheme: (themeId) => {
         setSelectedThemeId(themeId);
         if (currentVersion?.AppVersionId)
           updateAppVersionTheme(currentVersion.AppVersionId, themeId).catch(() => {});
+      },
+      onRestorePages: (pages) => {
+        const cv = dataStore.get('Current_Version');
+        if (!cv) return;
+        const currentPages: any[] = cv.Page ?? [];
+        const renamedPages = pages.filter((p: any) => {
+          const cur = currentPages.find((c: any) => c.PageId === p.PageId);
+          return cur && cur.PageName !== p.PageName;
+        });
+        const updated = { ...cv, Page: pages };
+        dataStore.set('Current_Version', updated);
+        setCurrentVersion(updated);
+        if (renamedPages.length > 0) {
+          runSaveRef.current?.(() =>
+            Promise.all(renamedPages.map((p: any) => updatePageTitle(cv.AppVersionId, p.PageId, p.PageName)))
+              .then(() => undefined)
+          );
+        }
       },
     });
 
@@ -95,6 +144,7 @@ function App() {
     infoContent, setInfoContent, navContents, setNavContents, navStack,
     selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
     pushSnapshot, isResizingRef,
+    onNewTileCreated: () => setNavStack([]),
   });
 
   // ── Version switching ────────────────────────────────────────────────────
@@ -110,6 +160,8 @@ function App() {
     setInfoContent(parseInfoContent());
     setNavStack([]);
     setNavContents({});
+    setNavSourceTiles({});
+    setNavUrls({});
     clearHistory();
     setSelectedTileId(null);
     getAppVersions().then(setAppVersions).catch(() => {});
@@ -154,22 +206,18 @@ function App() {
     : null;
 
   const activeNavTileIds = useMemo(() => {
+    const pageSet = new Set(navStack);
     const ids = new Set<string>();
-    for (let i = 0; i < navStack.length; i++) {
-      const parentContent = i === 0 ? infoContent : (navContents[navStack[i - 1]] ?? []);
-      for (const block of parentContent) {
-        if (block.InfoType !== 'TileGrid') continue;
-        for (const col of block.Columns ?? [])
-          for (const tile of col.Tiles ?? [])
-            if (tile.Action?.ObjectId === navStack[i]) ids.add(tile.Id);
-      }
+    for (const [pageId, tileId] of Object.entries(navSourceTiles)) {
+      if (pageSet.has(pageId)) ids.add(tileId);
     }
     return ids;
-  }, [navStack, infoContent, navContents]);
+  }, [navStack, navSourceTiles]);
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, saveError, savedAt } = useAutoSave(infoContent, navContents, currentVersion?.AppVersionId);
+  const { isSaving, saveError, savedAt, runSave } = useAutoSave(infoContent, navContents, currentVersion?.AppVersionId);
+  runSaveRef.current = runSave;
 
   // ── Data persistence ─────────────────────────────────────────────────────
 
@@ -256,6 +304,110 @@ function App() {
     setPendingCta(null);
   }
 
+  // ── Page rename ──────────────────────────────────────────────────────────
+
+  function handleRenamePage(pageId: string, newName: string) {
+    const cv = dataStore.get('Current_Version');
+    if (!cv) return;
+    pushSnapshot();
+    const updated = {
+      ...cv,
+      Page: (cv.Page ?? []).map((p: any) => p.PageId === pageId ? { ...p, PageName: newName } : p),
+    };
+    dataStore.set('Current_Version', updated);
+    setCurrentVersion(updated);
+    runSave(() => updatePageTitle(cv.AppVersionId, pageId, newName));
+  }
+
+  // ── New page frame helpers ────────────────────────────────────────────────
+
+  const pendingNewPageTileRef = useRef<string | null>(null);
+
+  async function handleCommitNewPage(name: string) {
+    const tileId = pendingNewPageTileRef.current;
+    if (!tileId) return;
+    const cv = dataStore.get('Current_Version');
+    if (!cv) return;
+    try {
+      const raw: any = await createInfoPage(cv.AppVersionId, name);
+      const newPage: any = Array.isArray(raw) ? raw[0] : raw;
+      if (!newPage?.PageId) return;
+      pendingNewPageTileRef.current = null;
+      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      dataStore.set('Current_Version', updated);
+      setCurrentVersion(updated);
+      setNavStack(prev => prev.map(id => id === NEW_PAGE_SENTINEL ? newPage.PageId : id));
+      setNavContents((prev: Record<string, any[]>) => {
+        const next: Record<string, any[]> = { ...prev, [newPage.PageId]: prev[NEW_PAGE_SENTINEL] ?? [] };
+        delete next[NEW_PAGE_SENTINEL];
+        return next;
+      });
+      setNavSourceTiles(prev => ({ ...prev, [newPage.PageId]: tileId }));
+      handleEditTile(tileId, { Action: { ObjectType: newPage.PageType, ObjectId: newPage.PageId, ObjectUrl: '', FormId: 0 } });
+    } catch {
+      handleCancelNewPage();
+    }
+  }
+
+  function handleCancelNewPage() {
+    pendingNewPageTileRef.current = null;
+    setNavStack(prev => prev.filter(id => id !== NEW_PAGE_SENTINEL));
+    setNavContents(prev => {
+      const next = { ...prev };
+      delete next[NEW_PAGE_SENTINEL];
+      return next;
+    });
+  }
+
+  // ── Tile select ──────────────────────────────────────────────────────────
+
+  const PAGE_NAV_TYPES = new Set(['Information', 'BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
+
+  function handleSelectTile(id: string) {
+    setSelectedTileId(id);
+    setSelectedCtaId(null);
+
+    // Find the tile and which frame it lives in
+    const frames = [
+      { frameIndex: -1 as number, blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid, i) => ({ frameIndex: i, blocks: navContentsRef.current[pid] ?? [] })),
+    ];
+
+    let tileFrameIndex = -1;
+    let tileAction: any = null;
+
+    outer: for (const { frameIndex, blocks } of frames) {
+      for (const block of blocks) {
+        if (block.InfoType !== 'TileGrid') continue;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Id === id) {
+              tileFrameIndex = frameIndex;
+              tileAction = tile.Action ?? null;
+              break outer;
+            }
+          }
+        }
+      }
+    }
+
+    if (tileAction?.ObjectType === 'WebLink') {
+      const frameKey = tileAction.ObjectId || `weblink-frame-${id}`;
+      // Prefer the canonical URL stored on the page record; fall back to tile Action
+      const page = pagesRef.current.find((p: any) => p.PageId === tileAction.ObjectId);
+      const url = page?.PageLinkStructure?.Url ?? tileAction.ObjectUrl;
+      if (!url) { handleCollapseDescendants(tileFrameIndex); return; }
+      handleTileNavigate(frameKey, tileFrameIndex);
+      setNavSourceTiles(prev => ({ ...prev, [frameKey]: id }));
+      setNavUrls(prev => ({ ...prev, [frameKey]: url }));
+    } else if (tileAction?.ObjectId && PAGE_NAV_TYPES.has(tileAction.ObjectType)) {
+      handleTileNavigate(tileAction.ObjectId, tileFrameIndex);
+      setNavSourceTiles(prev => ({ ...prev, [tileAction.ObjectId]: id }));
+    } else {
+      handleCollapseDescendants(tileFrameIndex);
+    }
+  }
+
   // ── Tile action menu ─────────────────────────────────────────────────────
 
   async function handleTileMenuAction(tileId: string, action: TileMenuAction) {
@@ -275,8 +427,60 @@ function App() {
     }
 
     if (action.type === 'existing-page') {
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some(b => (b.Columns ?? []).some((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === tileId)));
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) { parentIndex = i; break; }
+        }
+      }
+      const objectUrl = action.objectUrl ?? '';
       pushSnapshot();
-      handleEditTile(tileId, { Action: { ObjectType: action.objectType, ObjectId: action.pageId, ObjectUrl: '' } });
+      handleEditTile(tileId, { Action: { ObjectType: action.objectType, ObjectId: action.pageId, ObjectUrl: objectUrl, FormId: 0 } });
+      handleTileNavigate(action.pageId, parentIndex);
+      setNavSourceTiles(prev => ({ ...prev, [action.pageId]: tileId }));
+      if (action.objectType === 'WebLink' && objectUrl)
+        setNavUrls(prev => ({ ...prev, [action.pageId]: objectUrl }));
+      return;
+    }
+
+    if (action.type === 'direct-link' && action.linkType === 'Weblink') {
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some(b => (b.Columns ?? []).some((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === tileId)));
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) { parentIndex = i; break; }
+        }
+      }
+      try {
+        const newPage = await createLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageName: action.label || 'Web Link',
+          url: action.value,
+        });
+        if (!newPage?.PageId) throw new Error('no page');
+        const url = newPage.PageLinkStructure?.Url ?? action.value;
+        pushSnapshot();
+        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        dataStore.set('Current_Version', updated);
+        setCurrentVersion(updated);
+        handleEditTile(tileId, { Action: { ObjectType: newPage.PageType ?? 'WebLink', ObjectId: newPage.PageId, ObjectUrl: url, FormId: 0 } });
+        handleTileNavigate(newPage.PageId, parentIndex);
+        setNavSourceTiles(prev => ({ ...prev, [newPage.PageId]: tileId }));
+        setNavUrls(prev => ({ ...prev, [newPage.PageId]: url }));
+      } catch {
+        // API failed — still open the frame using a synthetic key
+        pushSnapshot();
+        const frameKey = `weblink-frame-${tileId}`;
+        handleEditTile(tileId, { Action: { ObjectType: 'WebLink', ObjectId: '', ObjectUrl: action.value, FormId: 0 } });
+        handleTileNavigate(frameKey, parentIndex);
+        setNavSourceTiles(prev => ({ ...prev, [frameKey]: tileId }));
+        setNavUrls(prev => ({ ...prev, [frameKey]: action.value }));
+      }
       return;
     }
 
@@ -293,29 +497,36 @@ function App() {
     }
 
     if (action.type === 'new-page') {
-      try {
-        const pages = await createInfoPage(cv.AppVersionId, 'New Page');
-        const newPage = pages[0];
-        if (!newPage) return;
-        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
-        dataStore.set('Current_Version', updated);
-        setCurrentVersion(updated);
-        pushSnapshot();
-        handleEditTile(tileId, { Action: { ObjectType: 'Information', ObjectId: newPage.PageId, ObjectUrl: '' } });
-      } catch {
-        // silently ignore — page creation failed
+      // Find which frame index the tile lives in (-1 = home frame)
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some(b => (b.Columns ?? []).some((c: any) => (c.Tiles ?? []).some((t: any) => t.Id === tileId)));
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) { parentIndex = i; break; }
+        }
       }
+
+      pendingNewPageTileRef.current = tileId;
+      setNavStack(prev => {
+        const clean = prev.filter(id => id !== NEW_PAGE_SENTINEL);
+        return [...clean.slice(0, parentIndex + 1), NEW_PAGE_SENTINEL];
+      });
+      setNavContents(prev => ({ ...prev, [NEW_PAGE_SENTINEL]: [] }));
     }
   }
 
   // ── Linked frames ────────────────────────────────────────────────────────
 
   const linkedFrames = buildLinkedFrames({
-    navStack, navContents, allPages,
+    navStack, navContents, navUrls, allPages,
     pushSnapshot, isResizingRef,
     selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
     navUpdater, handleCloseFromIndex,
     handleEditTile, handleSelectCta, handleEditCta, handleTileDoubleClick,
+    onCommitNewPage: handleCommitNewPage,
+    onCancelNewPage: handleCancelNewPage,
   });
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -429,7 +640,7 @@ function App() {
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
-          onSelectTile={id => { setSelectedTileId(id); setSelectedCtaId(null); }}
+          onSelectTile={handleSelectTile}
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
           onEditTile={handleEditTile}
@@ -460,6 +671,8 @@ function App() {
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
           onTileMenuAction={handleTileMenuAction}
+          onRenamePage={handleRenamePage}
+          liveTileText={liveTileText}
         />
         <SidebarRight
           themeIcons={selectedTheme?.ThemeIcons ?? []}
@@ -471,6 +684,8 @@ function App() {
           onOpenTileImage={handleOpenTileImageFromSidebar}
           onBeforeOpacityChange={pushSnapshot}
           onBeforeTileTextEdit={pushSnapshot}
+          onLiveTileText={(id, text) => setLiveTileText({ id, text })}
+          onEndLiveTileText={() => setLiveTileText(null)}
           pageName={activePageName}
           selectedCta={selectedCta}
           onEditCta={handleEditCta}

@@ -37,8 +37,7 @@ export function createWidget(
   dataStore.set("Moods", Moods);
   dataStore.set("TemplatesCollection", TemplatesCollection);
   dataStore.set("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
-
-  // console.log("themes", themes);
+  
   // console.log("Suppliers", Suppliers);
   // console.log("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
   // console.log("SDT_DynamicFormsCollection", SDT_DynamicFormsCollection);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import './SidebarRight.css';
 import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from '../types';
 import { SidebarCtaControls } from './SidebarCtaControls';
@@ -111,7 +111,7 @@ function AlignLeftIcon() {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, onBeforeTileTextEdit, pageName, selectedCta, onEditCta, onBeforeCtaEdit }: {
+export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moods = [], selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange, onBeforeTileTextEdit, onLiveTileText, onEndLiveTileText, pageName, selectedCta, onEditCta, onBeforeCtaEdit }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   ctaColors?: ThemeCtaColor[];
@@ -121,6 +121,8 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
   onOpenTileImage?: () => void;
   onBeforeOpacityChange?: () => void;
   onBeforeTileTextEdit?: () => void;
+  onLiveTileText?: (id: string, text: string) => void;
+  onEndLiveTileText?: () => void;
   pageName?: string;
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
@@ -129,10 +131,11 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
   const palette = themeColors ? COLOR_ORDER.map(k => themeColors[k]).filter(Boolean) : [];
   const [showMoods, setShowMoods] = useState(false);
   const [tileText, setTileText] = useState(selectedTile?.Text ?? '');
+  const isEditingTextRef = useRef(false);
 
   useEffect(() => {
-    setTileText(selectedTile?.Text ?? '');
-  }, [selectedTile?.Id]);
+    if (!isEditingTextRef.current) setTileText(selectedTile?.Text ?? '');
+  }, [selectedTile?.Id, selectedTile?.Text]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -276,11 +279,16 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
           placeholder={selectedTile ? 'Enter title' : 'Select a tile to edit'}
           value={tileText}
           disabled={!selectedTile}
-          onFocus={() => onBeforeTileTextEdit?.()}
-          onChange={e => setTileText(e.target.value)}
+          onFocus={() => { isEditingTextRef.current = true; onBeforeTileTextEdit?.(); }}
+          onChange={e => {
+            setTileText(e.target.value);
+            if (selectedTile) onLiveTileText?.(selectedTile.Id, e.target.value);
+          }}
           onBlur={() => {
+            isEditingTextRef.current = false;
             if (selectedTile && tileText !== (selectedTile.Text ?? ''))
               onEditTile?.(selectedTile.Id, { Text: tileText });
+            onEndLiveTileText?.();
           }}
         />
       </div>
@@ -379,7 +387,7 @@ export function SidebarRight({ themeIcons = [], themeColors, ctaColors = [], moo
               className={`sr-icon-cell${isActive ? ' sr-icon-cell--active' : ''}`}
               type="button"
               title={icon.IconName}
-              onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Icon: null, IconSVG: icon.IconSVG, IconId: icon.IconId, IconCodeName: icon.IconCodeName })}
+              onClick={() => selectedTile && onEditTile?.(selectedTile.Id, { Icon: icon.IconCodeName ?? icon.IconId, IconSVG: icon.IconSVG, IconId: icon.IconId, IconCodeName: icon.IconCodeName ?? icon.IconId })}
             >
               <span
                 className="sr-icon-wrap"

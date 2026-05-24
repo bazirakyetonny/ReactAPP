@@ -6,7 +6,7 @@ import './TileActionMenu.css';
 
 export type TileMenuAction =
   | { type: 'new-page' }
-  | { type: 'existing-page'; pageId: string; objectType: string }
+  | { type: 'existing-page'; pageId: string; objectType: string; objectUrl: string }
   | { type: 'direct-link'; linkType: string; value: string; label: string }
   | { type: 'form'; formId: string; pageName: string }
   | { type: 'copy-tile' };
@@ -19,6 +19,14 @@ interface TileActionMenuProps {
 }
 
 const MODULE_TYPES = new Set(['BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
+
+function pageObjectUrl(p: any): string {
+  if (p.PageLinkStructure?.Url) return p.PageLinkStructure.Url;
+  if (p.PageStructure) {
+    try { const s = JSON.parse(p.PageStructure); if (s.Url) return s.Url; } catch { /* ignore */ }
+  }
+  return '';
+}
 
 const MODULE_LABELS: Record<string, string> = {
   BulletinBoard: 'Bulletin Board',
@@ -112,7 +120,7 @@ export function TileActionMenu({ tileId, pos, onAction, onClose }: TileActionMen
                     className="tam__sub-item"
                     onMouseDown={e => {
                       e.stopPropagation();
-                      act({ type: 'existing-page', pageId: p.PageId, objectType: p.PageType });
+                      act({ type: 'existing-page', pageId: p.PageId, objectType: p.PageType, objectUrl: pageObjectUrl(p) });
                     }}
                   >
                     {p.PageName}
@@ -170,7 +178,7 @@ export function TileActionMenu({ tileId, pos, onAction, onClose }: TileActionMen
                     className="tam__sub-item"
                     onMouseDown={e => {
                       e.stopPropagation();
-                      act({ type: 'existing-page', pageId: p.PageId, objectType: p.PageType });
+                      act({ type: 'existing-page', pageId: p.PageId, objectType: p.PageType, objectUrl: pageObjectUrl(p) });
                     }}
                   >
                     {MODULE_LABELS[p.PageType] ?? p.PageName}

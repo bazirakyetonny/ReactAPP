@@ -128,6 +128,7 @@ export interface DraggableScreenProps {
   themeCtaColors?: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
+  liveTileText?: { id: string; text: string } | null;
 }
 
 export function DraggableScreen({
@@ -178,6 +179,7 @@ export function DraggableScreen({
   themeCtaColors,
   onEditCta,
   onTileMenuAction,
+  liveTileText,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -958,6 +960,7 @@ export function DraggableScreen({
                   onTileOptionsClick={(tileId, rect) =>
                     setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
                   }
+                  liveTileText={liveTileText}
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>

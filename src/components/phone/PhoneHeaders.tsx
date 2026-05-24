@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { dataStore } from '../../data/datastore';
 
 function ProfileIcon() {
@@ -20,6 +21,14 @@ function BackArrowIcon() {
   );
 }
 
+function PencilIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+      <path d="M9 2l2 2L3.5 11.5H1.5v-2L9 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function PhoneAppHeader() {
   const logo: string | undefined = dataStore.get('OrganisationLogo');
   return (
@@ -37,13 +46,90 @@ export function PhoneAppHeader() {
   );
 }
 
-export function PhoneLinkedHeader({ pageName, onBack }: { pageName: string; onBack: () => void }) {
+export function PhoneLinkedHeader({
+  pageName,
+  isNew,
+  onBack,
+  onRename,
+}: {
+  pageName: string;
+  isNew?: boolean;
+  onBack: () => void;
+  onRename?: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(isNew ?? false);
+  const [draft, setDraft] = useState(isNew ? '' : pageName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (!editing && !isNew) setDraft(pageName); }, [pageName, editing, isNew]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  function commit() {
+    const name = draft.trim();
+    if (isNew) {
+      if (name) onRename?.(name);
+      // empty name: stay in edit mode, don't cancel
+    } else {
+      if (name && name !== pageName) onRename?.(name);
+      else setDraft(pageName);
+      setEditing(false);
+    }
+  }
+
   return (
     <div className="phone-app-header phone-linked-header">
-      <button className="phone-back-btn" type="button" aria-label="Go back" onClick={onBack}>
+      <button
+        className="phone-back-btn"
+        type="button"
+        aria-label="Go back"
+        onClick={onBack}
+        onMouseDown={isNew ? e => e.preventDefault() : undefined}
+      >
         <BackArrowIcon />
       </button>
-      <span className="phone-linked-page-name">{pageName.toUpperCase()}</span>
+
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="phone-linked-page-name-input"
+          value={draft}
+          placeholder={isNew ? 'Page name…' : undefined}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={() => {
+            if (isNew) {
+              if (draft.trim()) commit();
+              // empty name: keep edit mode, user must type something
+            } else {
+              commit();
+            }
+          }}
+          onKeyDown={e => {
+            e.stopPropagation();
+            if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            if (e.key === 'Escape') {
+              if (isNew) { onBack(); }
+              else { setDraft(pageName); setEditing(false); }
+            }
+          }}
+        />
+      ) : (
+        <div
+          className={`phone-linked-page-name-wrap${onRename ? ' phone-linked-page-name-wrap--editable' : ''}`}
+          onDoubleClick={() => onRename && setEditing(true)}
+        >
+          <span className="phone-linked-page-name">{draft.toUpperCase()}</span>
+          {onRename && (
+            <button
+              className="phone-linked-edit-btn"
+              type="button"
+              aria-label="Rename page"
+              onClick={() => setEditing(true)}
+            >
+              <PencilIcon />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
