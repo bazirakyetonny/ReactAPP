@@ -13,7 +13,7 @@ dist-ssr
 *.local
 .env
 screenshots
-
+.mcp.json
 
 
 # Editor directories and files
