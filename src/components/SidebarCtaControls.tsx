@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import './SidebarRight.css';
 import type { ThemeCtaColor } from '../types';
 import { ctaIcons } from '../data/ctaIcons';
@@ -97,14 +98,21 @@ const CTA_BUTTON_TYPES = [
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
+export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCtaEdit }: {
   selectedCta: any;
   palette: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  onBeforeCtaEdit?: () => void;
 }) {
   const attrs = selectedCta?.CtaAttributes ?? {};
   const ctaId = selectedCta?.InfoId;
   const patch = (p: Record<string, any>) => onEditCta?.(ctaId, p);
+
+  const [ctaLabel, setCtaLabel] = useState(attrs.CtaLabel ?? '');
+  const [ctaAction, setCtaAction] = useState(attrs.CtaAction ?? '');
+
+  useEffect(() => { setCtaLabel(attrs.CtaLabel ?? ''); }, [ctaId]);
+  useEffect(() => { setCtaAction(attrs.CtaAction ?? ''); }, [ctaId]);
 
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const supplierId: string = attrs.CtaConnectedSupplierId ?? '';
@@ -167,8 +175,10 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
           className="sr-input"
           type="text"
           placeholder="Label"
-          value={attrs.CtaLabel ?? ''}
-          onChange={e => patch({ CtaLabel: e.target.value })}
+          value={ctaLabel}
+          onFocus={() => onBeforeCtaEdit?.()}
+          onChange={e => setCtaLabel(e.target.value)}
+          onBlur={() => { if (ctaLabel !== (attrs.CtaLabel ?? '')) patch({ CtaLabel: ctaLabel }); }}
         />
       </div>
 
@@ -194,8 +204,10 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta }: {
             className="sr-input"
             type="text"
             placeholder={attrs.CtaType === 'Phone' ? 'Phone number' : attrs.CtaType === 'Email' ? 'Email address' : attrs.CtaType === 'Weblink' ? 'URL' : 'Value'}
-            value={attrs.CtaAction ?? ''}
-            onChange={e => patch({ CtaAction: e.target.value })}
+            value={ctaAction}
+            onFocus={() => onBeforeCtaEdit?.()}
+            onChange={e => setCtaAction(e.target.value)}
+            onBlur={() => { if (ctaAction !== (attrs.CtaAction ?? '')) patch({ CtaAction: ctaAction }); }}
           />
         )}
       </div>

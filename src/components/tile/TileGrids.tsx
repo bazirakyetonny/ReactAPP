@@ -49,6 +49,8 @@ interface TileGridsProps {
   onAddBtnClick?: (e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) => void;
   overrideAddBtnInsertBeforeInfoId?: string | null;
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
+  onTileOptionsClick?: (tileId: string, rect: DOMRect) => void;
+  liveTileText?: { id: string; text: string } | null;
 }
 
 function getColsForRender(
@@ -118,6 +120,8 @@ export function TileGrids({
   onAddBtnClick,
   overrideAddBtnInsertBeforeInfoId,
   onTileDoubleClick,
+  onTileOptionsClick,
+  liveTileText,
 }: TileGridsProps) {
   return (
     <>
@@ -216,7 +220,8 @@ export function TileGrids({
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
-                      const hasText = !!tile.Text;
+                      const displayText = liveTileText?.id === tile.Id ? liveTileText.text : tile.Text;
+                      const hasText = !!displayText;
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;
                       const showDelText = canEdit && hasIcon && hasText;
@@ -244,11 +249,12 @@ export function TileGrids({
                           style={isTileDragging ? { height: 0, minHeight: 0, overflow: 'hidden' } : { height }}
                           onClick={interactive && onSelectTile ? () => {
                             onSelectTile(tile.Id);
-                            if (tile.Action?.ObjectType === 'Information' && tile.Action?.ObjectId) {
+                            if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard' || tile.Action?.ObjectType === 'Calendar' || tile.Action?.ObjectType === 'MyActivity' || tile.Action?.ObjectType === 'Map') && tile.Action?.ObjectId) {
                               onTileNavigate?.(tile.Action.ObjectId);
-                            } else {
+                            } else if (tile.Action?.ObjectType !== 'WebLink') {
                               onCollapseFromParent?.();
                             }
+                            // WebLink: handleSelectTile (via onSelectTile) owns the navigation
                           } : undefined}
                           onDragStart={(e) => e.preventDefault()}
                           onDoubleClick={interactive && onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(tile.Id, (e.currentTarget as HTMLElement).getBoundingClientRect()); } : undefined}
@@ -291,7 +297,7 @@ export function TileGrids({
                             )}
                             {hasText && (
                               <div className={`phone-tile-element${showDelText ? ' phone-tile-element--deletable' : ''}`}>
-                                <span className="phone-tile-text">{tile.Text}</span>
+                                <span className="phone-tile-text">{displayText}</span>
                                 {showDelText && delBtn(() => onEditTile?.(tile.Id, { Text: '' }), 'Remove text')}
                               </div>
                             )}
@@ -303,7 +309,10 @@ export function TileGrids({
                                 className="phone-tile-options-btn"
                                 type="button"
                                 aria-label="Tile options"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTileOptionsClick?.(tile.Id, e.currentTarget.getBoundingClientRect());
+                                }}
                               >
                                 <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
                                   <circle cx="1.5" cy="1.5" r="1.5" />

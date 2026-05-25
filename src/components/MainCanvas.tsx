@@ -4,10 +4,27 @@ import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInser
 import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
+import type { TileMenuAction } from './tile/TileActionMenu';
 import { TileGrids } from './tile/TileGrids';
 import { DescriptionBlock } from './phone/DescriptionBlock';
 import { ImageBlock } from './phone/ImageBlock';
 import { CtaBlock } from './phone/CtaBlock';
+import { BulletinBoardPage } from './BulletinBoardPage';
+import { CalendarPage } from './CalendarPage';
+import { MyActivityPage } from './MyActivityPage';
+import { MapPage } from './MapPage';
+
+const MODULE_PAGE_TYPES = new Set(['BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
+
+function renderModulePage(pageType: string, themeColors?: ThemeColors) {
+  switch (pageType) {
+    case 'BulletinBoard': return <BulletinBoardPage />;
+    case 'Calendar':      return <CalendarPage themeColors={themeColors} />;
+    case 'MyActivity':    return <MyActivityPage themeColors={themeColors} />;
+    case 'Map':           return <MapPage themeColors={themeColors} />;
+    default:              return null;
+  }
+}
 
 function renderThumbBlocks(blocks: any[], themeColors: ThemeColors | undefined, themeIcons: ThemeIcon[] | undefined, ctaColors: ThemeCtaColor[] | undefined) {
   const out: any[] = [];
@@ -30,7 +47,12 @@ function renderThumbBlocks(blocks: any[], themeColors: ThemeColors | undefined, 
 export type { TileDropPreview, BlockInsertPreview, AllFrameData };
 
 export interface LinkedFrame {
+  pageId: string;
+  isNew: boolean;
   page: any;
+  webLinkUrl?: string;
+  onCommitName?: (name: string) => void;
+  onCancelNew?: () => void;
   infoContent: any[];
   onClose: () => void;
   onAddColumn?: (gridId: string, afterColId: string) => void;
@@ -90,6 +112,9 @@ interface MainCanvasProps {
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   selectedCtaId?: string | null;
   themeCtaColors?: ThemeCtaColor[];
+  onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
+  onRenamePage?: (pageId: string, newName: string) => void;
+  liveTileText?: { id: string; text: string } | null;
 }
 
 export function MainCanvas({
@@ -127,6 +152,9 @@ export function MainCanvas({
   onEditCta,
   selectedCtaId,
   themeCtaColors,
+  onTileMenuAction,
+  onRenamePage,
+  liveTileText,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -277,21 +305,47 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
+            onTileMenuAction={onTileMenuAction}
+            liveTileText={liveTileText}
           />
         </div>
 
         {/* Linked page frames */}
         {linkedFrames?.map((frame, i) => {
-          const frameTileGrids = frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
+          const pageType = frame.page?.PageType ?? '';
+          const isModulePage = MODULE_PAGE_TYPES.has(pageType);
+          const isWebLink = pageType === 'WebLink' || !!frame.webLinkUrl;
+          const frameTileGrids = (isModulePage || isWebLink) ? [] : frame.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
           return (
             <div
-              key={frame.page?.PageId ?? i}
+              key={frame.pageId ?? i}
               className={`phone-frame phone-frame--linked${activeFrameIndex === i ? ' phone-frame--active' : ' phone-frame--inactive'}`}
               ref={(el) => { if (el) linkedFrameRefs.current.set(i, el); else linkedFrameRefs.current.delete(i); }}
+              onMouseDown={() => setManualActiveIndex(i)}
             >
               <PhoneStatusBar />
-              <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={frame.onClose} />
-              <DraggableScreen
+              <PhoneLinkedHeader
+                pageName={
+                  isWebLink
+                    ? (frame.page?.PageName || (frame.webLinkUrl ? (() => { try { return new URL(frame.webLinkUrl!).hostname; } catch { return 'Web link'; } })() : 'Web link'))
+                    : (frame.page?.PageName ?? '')
+                }
+                isNew={frame.isNew}
+                onBack={frame.isNew ? (frame.onCancelNew ?? frame.onClose) : frame.onClose}
+                onRename={
+                  frame.isNew
+                    ? frame.onCommitName
+                    : (frame.page?.PageId ? (name) => onRenamePage?.(frame.page.PageId, name) : undefined)
+                }
+              />
+              {isWebLink ? (
+                <iframe
+                  className="phone-weblink-frame"
+                  src={frame.webLinkUrl}
+                  title={frame.page?.PageName ?? 'Web link'}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                />
+              ) : isModulePage ? renderModulePage(pageType, themeColors) : <DraggableScreen
                 infoContent={frame.infoContent}
                 tileGrids={frameTileGrids}
                 themeColors={themeColors}
@@ -338,7 +392,9 @@ export function MainCanvas({
                 onEditCta={frame.onEditCta}
                 selectedCtaId={selectedCtaId}
                 themeCtaColors={themeCtaColors}
-              />
+                onTileMenuAction={onTileMenuAction}
+                liveTileText={liveTileText}
+              />}
             </div>
           );
         })}
@@ -376,8 +432,15 @@ export function MainCanvas({
               <PhoneStatusBar />
               <PhoneLinkedHeader pageName={frame.page?.PageName ?? ''} onBack={() => {}} />
               <div className="phone-screen">
-                <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
-                {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
+                {MODULE_PAGE_TYPES.has(frame.page?.PageType ?? '')
+                  ? renderModulePage(frame.page.PageType, themeColors)
+                  : (frame.webLinkUrl)
+                    ? <div className="phone-weblink-thumb-placeholder">🔗</div>
+                    : <>
+                        <div className={`phone-add-row${frame.infoContent.length === 0 ? ' phone-add-row--visible' : ''}`} />
+                        {renderThumbBlocks(frame.infoContent, themeColors, themeIcons, themeCtaColors)}
+                      </>
+                }
               </div>
             </div>
           </div>

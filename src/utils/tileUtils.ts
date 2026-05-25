@@ -14,14 +14,19 @@ export function resolveColor(bgColor: string, themeColors: ThemeColors | undefin
 
 export function resolveIconSVG(tile: any, themeIcons: ThemeIcon[] | undefined): string | null {
   if (themeIcons) {
+    if (tile.IconId) {
+      const match = themeIcons.find((i) => i.IconId === tile.IconId);
+      if (match?.IconSVG) return match.IconSVG;
+    }
     if (tile.IconCodeName) {
-      const match = themeIcons.find((i) => i.IconCodeName === tile.IconCodeName);
+      const match = themeIcons.find((i) => i.IconCodeName && i.IconCodeName === tile.IconCodeName);
       if (match?.IconSVG) return match.IconSVG;
     }
     if (tile.Icon) {
       const lower = (tile.Icon as string).toLowerCase();
       const match = themeIcons.find(
         (i) =>
+          i.IconId === tile.Icon ||
           (i.IconCodeName && i.IconCodeName.toLowerCase() === lower) ||
           i.IconName.toLowerCase() === lower,
       );

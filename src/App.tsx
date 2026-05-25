@@ -6,6 +6,7 @@ import {
   activateAppVersion,
   type SDTAppVersion,
 } from "./services/appVersionsApi";
+import { updateAppVersionTheme } from "./services/themeApi";
 import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionModal";
 import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
 import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
@@ -15,48 +16,40 @@ import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
 import { TileImageModal } from "./components/phone/TileImageModal";
 import { AddCtaModal } from "./components/phone/AddCtaModal";
-
-import type { TileDropPreview } from "./components/MainCanvas";
 import { SidebarRight } from "./components/SidebarRight";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { dataStore } from "./data/datastore";
 import type { Theme, Mood, CategoryTemplates } from "./types";
 import {
-  applyAddColumn,
-  applyDeleteTile,
-  applyAddStandaloneTile,
-  applyAddBlock,
-  applyEditTile,
-  applyAddTilesToColumn,
-  applyFreeResizeRelease,
-  applyTileDrop,
-  applyTileDropAsNewBlock,
-  extractTileFromContent,
-  insertTileAtPreview,
   parseInfoContent,
-  applyAddDescription,
-  applyEditDescription,
-  applyDeleteBlock,
-  applyMoveBlock,
-  applyExtractBlock,
-  applyInsertBlock,
-  applyAddImage,
-  applyEditImageSelection,
-  applyEditCta,
+  applyEditTile,
+  applyAddBlock,
+  applyCopyTile,
 } from "./utils/contentTransforms";
-
-const TILE_H = 80;
+import {
+  createInfoPage,
+  updatePageTitle,
+  createLinkPage,
+} from "./services/pagesApi";
+import { NEW_PAGE_SENTINEL } from "./utils/linkedFrames";
+import type { TileMenuAction } from "./components/tile/TileActionMenu";
+import { extractLinks, checkLink } from "./utils/linkChecker";
+import { buildLinkedFrames } from "./utils/linkedFrames";
+import { useUndoRedo } from "./hooks/useUndoRedo";
+import { useNavigation } from "./hooks/useNavigation";
+import { useContentHandlers } from "./hooks/useContentHandlers";
+import { useAutoSave } from "./hooks/useAutoSave";
 
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const allMoods: Mood[] = dataStore.get("Moods") ?? [];
-  const [currentVersion, setCurrentVersion] = useState<any>(() =>
-    dataStore.get("Current_Version"),
-  );
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
 
+  const [currentVersion, setCurrentVersion] = useState<any>(() =>
+    dataStore.get("Current_Version"),
+  );
   const [appVersions, setAppVersions] = useState<SDTAppVersion[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
@@ -78,12 +71,7 @@ function App() {
   );
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
-
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
-
-  const [navStack, setNavStack] = useState<string[]>([]);
-  const [navContents, setNavContents] = useState<Record<string, any[]>>({});
-  const [treeOpen, setTreeOpen] = useState(false);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
@@ -97,74 +85,165 @@ function App() {
     insertBeforeInfoId: string | null;
     frameId: string | null;
   } | null>(null);
+  const [invalidLinkCount, setInvalidLinkCount] = useState(0);
+  const [isCheckingLinks, setIsCheckingLinks] = useState(false);
+  const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [treeOpen, setTreeOpen] = useState(false);
+  const [liveTileText, setLiveTileText] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
 
-  type Snapshot = {
-    infoContent: any[];
-    navContents: Record<string, any[]>;
-    navStack: string[];
-  };
-  const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
-  const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
-  const isResizingRef = useRef(false);
-
-  // Refs always hold latest values — eliminates stale-closure bugs in undo/redo
+  // Live refs so hooks always read the current values
   const infoContentRef = useRef(infoContent);
-  const navContentsRef = useRef(navContents);
-  const navStackRef = useRef(navStack);
-  const undoStackRef = useRef(undoStack);
-  const redoStackRef = useRef(redoStack);
+  const navContentsRef = useRef<Record<string, any[]>>({});
+  const navStackRef = useRef<string[]>([]);
+  const themeIdRef = useRef(selectedThemeId);
+  const pagesRef = useRef<any[]>(currentVersion?.Page ?? []);
   useLayoutEffect(() => {
     infoContentRef.current = infoContent;
   });
+  useLayoutEffect(() => {
+    themeIdRef.current = selectedThemeId;
+  });
+  useLayoutEffect(() => {
+    pagesRef.current = currentVersion?.Page ?? [];
+  });
+
+  const {
+    navStack,
+    setNavStack,
+    navContents,
+    setNavContents,
+    navUpdater,
+    handleTileNavigate,
+    handleCollapseDescendants,
+    handleNavigateToPath,
+    handleDeletePage,
+    handleCloseFromIndex,
+  } = useNavigation();
+
+  // pageId → the specific tile ID that was clicked to open that page
+  const [navSourceTiles, setNavSourceTiles] = useState<Record<string, string>>(
+    {},
+  );
+  // pageId → URL for WebLink pages
+  const [navUrls, setNavUrls] = useState<Record<string, string>>({});
+
+  // Drop stale entries whenever the nav stack shrinks
+  useEffect(() => {
+    const pageSet = new Set(navStack);
+    setNavSourceTiles((prev) => {
+      const stale = Object.keys(prev).filter((id) => !pageSet.has(id));
+      if (!stale.length) return prev;
+      const next = { ...prev };
+      stale.forEach((id) => delete next[id]);
+      return next;
+    });
+    setNavUrls((prev) => {
+      const stale = Object.keys(prev).filter((id) => !pageSet.has(id));
+      if (!stale.length) return prev;
+      const next = { ...prev };
+      stale.forEach((id) => delete next[id]);
+      return next;
+    });
+  }, [navStack]);
+
   useLayoutEffect(() => {
     navContentsRef.current = navContents;
   });
   useLayoutEffect(() => {
     navStackRef.current = navStack;
   });
-  useLayoutEffect(() => {
-    undoStackRef.current = undoStack;
+
+  // Ref so onRestorePages (defined before useAutoSave) can reach runSave
+  const runSaveRef = useRef<((fn: () => Promise<void>) => void) | null>(null);
+
+  const {
+    undoStack,
+    redoStack,
+    pushSnapshot,
+    clearHistory,
+    handleUndo,
+    handleRedo,
+    isResizingRef,
+  } = useUndoRedo({
+    infoContentRef,
+    navContentsRef,
+    navStackRef,
+    themeIdRef,
+    pagesRef,
+    setInfoContent,
+    setNavContents,
+    setNavStack,
+    onRestoreTheme: (themeId) => {
+      setSelectedThemeId(themeId);
+      if (currentVersion?.AppVersionId)
+        updateAppVersionTheme(currentVersion.AppVersionId, themeId).catch(
+          () => {},
+        );
+    },
+    onRestorePages: (pages) => {
+      const cv = dataStore.get("Current_Version");
+      if (!cv) return;
+      const currentPages: any[] = cv.Page ?? [];
+      const renamedPages = pages.filter((p: any) => {
+        const cur = currentPages.find((c: any) => c.PageId === p.PageId);
+        return cur && cur.PageName !== p.PageName;
+      });
+      const updated = { ...cv, Page: pages };
+      dataStore.set("Current_Version", updated);
+      setCurrentVersion(updated);
+      if (renamedPages.length > 0) {
+        runSaveRef.current?.(() =>
+          Promise.all(
+            renamedPages.map((p: any) =>
+              updatePageTitle(cv.AppVersionId, p.PageId, p.PageName),
+            ),
+          ).then(() => undefined),
+        );
+      }
+    },
   });
-  useLayoutEffect(() => {
-    redoStackRef.current = redoStack;
+
+  const {
+    handleAddColumn,
+    handleDeleteTile,
+    handleAddStandaloneTile,
+    handleAddBlock,
+    handleEditCta,
+    handleSelectCta,
+    handleAddTilesToColumn,
+    handleAddDescription,
+    handleEditDescription,
+    handleDeleteBlock,
+    handleAddImage,
+    handleEditImage,
+    handleMoveBlock,
+    handleCrossFrameBlockDrop,
+    handleEditTile,
+    handleFreeResizeRelease,
+    handleTileDrop,
+    handleTileDropAsNewBlock,
+    handleCrossFrameTileDrop,
+    handleCrossFrameTileDropToEmpty,
+    handleCrossFrameTileDropAsNewBlock,
+  } = useContentHandlers({
+    infoContent,
+    setInfoContent,
+    navContents,
+    setNavContents,
+    navStack,
+    selectedTileId,
+    setSelectedTileId,
+    setSelectedCtaId,
+    setPendingCta,
+    pushSnapshot,
+    isResizingRef,
+    onNewTileCreated: () => setNavStack([]),
   });
 
-  function currentSnapshot(): Snapshot {
-    return {
-      infoContent: infoContentRef.current,
-      navContents: navContentsRef.current,
-      navStack: navStackRef.current,
-    };
-  }
-
-  function pushSnapshot() {
-    setUndoStack((prev) => [...prev, currentSnapshot()]);
-    setRedoStack([]);
-  }
-
-  function restoreSnapshot(snap: Snapshot) {
-    setInfoContent(snap.infoContent);
-    setNavContents(snap.navContents);
-    setNavStack(snap.navStack);
-  }
-
-  function handleUndo() {
-    const stack = undoStackRef.current;
-    if (!stack.length) return;
-    const snap = stack[stack.length - 1];
-    setUndoStack((s) => s.slice(0, -1));
-    setRedoStack((s) => [...s, currentSnapshot()]);
-    restoreSnapshot(snap);
-  }
-
-  function handleRedo() {
-    const stack = redoStackRef.current;
-    if (!stack.length) return;
-    const snap = stack[stack.length - 1];
-    setRedoStack((s) => s.slice(0, -1));
-    setUndoStack((s) => [...s, currentSnapshot()]);
-    restoreSnapshot(snap);
-  }
+  // ── Version switching ────────────────────────────────────────────────────
 
   async function handleVersionSelect(id: string) {
     if (id === currentVersion?.AppVersionId) return;
@@ -176,41 +255,45 @@ function App() {
     };
     dataStore.set("Current_Version", fullVersion);
     setCurrentVersion(fullVersion);
+    setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
     setInfoContent(parseInfoContent());
     setNavStack([]);
     setNavContents({});
-    setUndoStack([]);
-    setRedoStack([]);
+    setNavSourceTiles({});
+    setNavUrls({});
+    clearHistory();
     setSelectedTileId(null);
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});
   }
 
-  const handleUndoRef = useRef(handleUndo);
-  const handleRedoRef = useRef(handleRedo);
-  useLayoutEffect(() => {
-    handleUndoRef.current = handleUndo;
-  });
-  useLayoutEffect(() => {
-    handleRedoRef.current = handleRedo;
-  });
+  // ── Link checker ─────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const ctrl = e.ctrlKey || e.metaKey;
-      if (ctrl && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        handleUndoRef.current();
+    const token = { cancelled: false };
+    if (linkCheckTimerRef.current) clearTimeout(linkCheckTimerRef.current);
+    linkCheckTimerRef.current = setTimeout(async () => {
+      const blocks = [...infoContent, ...Object.values(navContents).flat()];
+      const links = extractLinks(blocks);
+      if (links.length === 0) {
+        setInvalidLinkCount(0);
+        setIsCheckingLinks(false);
+        return;
       }
-      if (ctrl && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
-        e.preventDefault();
-        handleRedoRef.current();
-      }
+      setIsCheckingLinks(true);
+      const results = await Promise.all(links.map(checkLink));
+      if (token.cancelled) return;
+      setInvalidLinkCount(results.filter((r: boolean) => !r).length);
+      setIsCheckingLinks(false);
+    }, 3000);
+    return () => {
+      if (linkCheckTimerRef.current) clearTimeout(linkCheckTimerRef.current);
+      token.cancelled = true;
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [infoContent, navContents]);
+
+  // ── Derived state ────────────────────────────────────────────────────────
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter((m) => m.ThemeId === selectedThemeId);
@@ -230,17 +313,18 @@ function App() {
     }
   })();
 
+  const allTiles = [
+    ...infoContent.flatMap((b: any) =>
+      (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
+    ),
+    ...Object.values(navContents).flatMap((blocks) =>
+      blocks.flatMap((b: any) =>
+        (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
+      ),
+    ),
+  ];
   const selectedTile = selectedTileId
-    ? ([
-        ...infoContent.flatMap((b: any) =>
-          (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
-        ),
-        ...Object.values(navContents).flatMap((blocks) =>
-          blocks.flatMap((b: any) =>
-            (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
-          ),
-        ),
-      ].find((t: any) => t.Id === selectedTileId) ?? null)
+    ? (allTiles.find((t: any) => t.Id === selectedTileId) ?? null)
     : null;
 
   const allBlocks = [...infoContent, ...Object.values(navContents).flat()];
@@ -251,22 +335,24 @@ function App() {
     : null;
 
   const activeNavTileIds = useMemo(() => {
+    const pageSet = new Set(navStack);
     const ids = new Set<string>();
-    for (let i = 0; i < navStack.length; i++) {
-      const pageId = navStack[i];
-      const parentContent =
-        i === 0 ? infoContent : (navContents[navStack[i - 1]] ?? []);
-      for (const block of parentContent) {
-        if (block.InfoType !== "TileGrid") continue;
-        for (const col of block.Columns ?? []) {
-          for (const tile of col.Tiles ?? []) {
-            if (tile.Action?.ObjectId === pageId) ids.add(tile.Id);
-          }
-        }
-      }
+    for (const [pageId, tileId] of Object.entries(navSourceTiles)) {
+      if (pageSet.has(pageId)) ids.add(tileId);
     }
     return ids;
-  }, [navStack, infoContent, navContents]);
+  }, [navStack, navSourceTiles]);
+
+  // ── Auto-save ────────────────────────────────────────────────────────────
+
+  const { isSaving, saveError, savedAt, runSave } = useAutoSave(
+    infoContent,
+    navContents,
+    currentVersion?.AppVersionId,
+  );
+  runSaveRef.current = runSave;
+
+  // ── Data persistence ─────────────────────────────────────────────────────
 
   useEffect(() => {
     const cv = dataStore.get("Current_Version");
@@ -311,400 +397,19 @@ function App() {
     });
   }, [navContents]);
 
-  function handleAddColumn(gridId: string, afterColId: string) {
-    pushSnapshot();
-    setInfoContent((prev) => applyAddColumn(prev, gridId, afterColId));
-  }
-
-  function handleDeleteTile(gridId: string, colId: string, tileId: string) {
-    if (selectedTileId === tileId) setSelectedTileId(null);
-    pushSnapshot();
-    setInfoContent((prev) => applyDeleteTile(prev, gridId, colId, tileId));
-  }
-
-  function handleAddStandaloneTile() {
-    if (!isResizingRef.current) pushSnapshot();
-    const ts = Date.now();
-    setInfoContent((prev) => applyAddStandaloneTile(prev, ts));
-    setSelectedTileId(`tile-${ts}`);
-  }
-
-  function handleAddBlock(
-    blockType: string,
-    insertBeforeInfoId: string | null,
-  ) {
-    if (blockType.startsWith("Cta_")) {
-      setPendingCta({ blockType, insertBeforeInfoId, frameId: null });
-      return;
-    }
-    pushSnapshot();
-    const ts = Date.now();
-    if (blockType === "TileGrid") {
-      setInfoContent((prev) =>
-        applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
-      );
-      setSelectedTileId(`tile-${ts}`);
-      setSelectedCtaId(null);
-    } else {
-      setInfoContent((prev) =>
-        applyAddBlock(prev, blockType, insertBeforeInfoId),
-      );
-    }
-  }
-
-  function handleConfirmCta(attrs: {
-    CtaLabel: string;
-    CtaAction: string;
-    CtaConnectedSupplierId?: string;
-    CtaSupplierIsConnected: boolean;
-  }) {
-    if (!pendingCta) return;
-    pushSnapshot();
-    const ts = Date.now();
-    const { blockType, insertBeforeInfoId, frameId } = pendingCta;
-    if (frameId === null) {
-      setInfoContent((prev) =>
-        applyAddBlock(prev, blockType, insertBeforeInfoId, ts, attrs),
-      );
-    } else {
-      setNavContents((prev) => ({
-        ...prev,
-        [frameId]: applyAddBlock(
-          prev[frameId] ?? [],
-          blockType,
-          insertBeforeInfoId,
-          ts,
-          attrs,
-        ),
-      }));
-    }
-    setSelectedCtaId(`cta-${ts}`);
-    setSelectedTileId(null);
-    setPendingCta(null);
-  }
-
-  function handleEditCta(ctaId: string, patch: Record<string, any>) {
-    pushSnapshot();
-    setInfoContent((prev) => applyEditCta(prev, ctaId, patch));
-    setNavContents((prev) => {
-      const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev))
-        next[id] = applyEditCta(blocks, ctaId, patch);
-      return next;
-    });
-  }
-
-  function handleSelectCta(ctaId: string) {
-    setSelectedCtaId(ctaId);
-    setSelectedTileId(null);
-  }
-
-  function handleAddTilesToColumn(
-    gridId: string,
-    colId: string,
-    count: number,
-  ) {
-    if (!isResizingRef.current) pushSnapshot();
-    setInfoContent((prev) => applyAddTilesToColumn(prev, gridId, colId, count));
-  }
-
-  function handleAddDescription(
-    html: string,
-    insertBeforeInfoId: string | null,
-  ) {
-    pushSnapshot();
-    setInfoContent((prev) =>
-      applyAddDescription(prev, html, insertBeforeInfoId),
-    );
-  }
-
-  function handleEditDescription(infoId: string, html: string) {
-    pushSnapshot();
-    setInfoContent((prev) => applyEditDescription(prev, infoId, html));
-    setNavContents((prev) => {
-      const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev))
-        next[id] = applyEditDescription(blocks, infoId, html);
-      return next;
-    });
-  }
-
-  function handleDeleteBlock(infoId: string) {
-    pushSnapshot();
-    setInfoContent((prev) => applyDeleteBlock(prev, infoId));
-  }
-
-  function handleAddImage(
-    images: { InfoImageId: string; InfoImageValue: string }[],
-    insertBeforeInfoId: string | null,
-  ) {
-    pushSnapshot();
-    setInfoContent((prev) => applyAddImage(prev, images, insertBeforeInfoId));
-  }
-
-  function handleEditImage(
-    infoId: string,
-    images: { InfoImageId: string; InfoImageValue: string }[],
-  ) {
-    pushSnapshot();
-    setInfoContent((prev) => applyEditImageSelection(prev, infoId, images));
-    setNavContents((prev) => {
-      const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev))
-        next[id] = applyEditImageSelection(blocks, infoId, images);
-      return next;
-    });
-  }
-
-  function handleMoveBlock(infoId: string, insertBeforeInfoId: string | null) {
-    pushSnapshot();
-    setInfoContent((prev) => applyMoveBlock(prev, infoId, insertBeforeInfoId));
-  }
-
-  function handleCrossFrameBlockDrop(
-    infoId: string,
-    fromFrameIdx: number,
-    toFrameIdx: number,
-    insertBeforeInfoId: string | null,
-  ) {
-    pushSnapshot();
-    const srcContent =
-      fromFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent =
-      toFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[toFrameIdx]] ?? []);
-    const { content: newSrc, block } = applyExtractBlock(srcContent, infoId);
-    if (!block) return;
-    const newTgt = applyInsertBlock(tgtContent, block, insertBeforeInfoId);
-    if (fromFrameIdx === -1) setInfoContent(newSrc);
-    if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents((prev) => {
-      const next = { ...prev };
-      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
-      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
-      return next;
-    });
-  }
-
-  function handleFreeResizeRelease(
-    gridId: string,
-    longTileId: string,
-    snapH: number,
-    zoneCount: number,
-    initialCount: number,
-    oppColId: string,
-    allOppTiles: any[],
-  ) {
-    isResizingRef.current = false;
-    setInfoContent((prev) =>
-      applyFreeResizeRelease(
-        prev,
-        gridId,
-        longTileId,
-        snapH,
-        zoneCount,
-        initialCount,
-        oppColId,
-        allOppTiles,
-      ),
-    );
-  }
-
-  function handleTileDrop(
-    fromGridId: string,
-    fromColId: string,
-    tileId: string,
-    preview: TileDropPreview,
-  ) {
-    pushSnapshot();
-    setInfoContent((prev) =>
-      applyTileDrop(prev, fromGridId, fromColId, tileId, preview),
-    );
-  }
-
-  function handleTileDropAsNewBlock(
-    fromGridId: string,
-    fromColId: string,
-    tileId: string,
-    insertBeforeInfoId: string | null,
-  ) {
-    pushSnapshot();
-    setInfoContent((prev) =>
-      applyTileDropAsNewBlock(
-        prev,
-        fromGridId,
-        fromColId,
-        tileId,
-        insertBeforeInfoId,
-      ),
-    );
-  }
-
-  function handleCrossFrameTileDrop(
-    fromFrameIdx: number,
-    toFrameIdx: number,
-    fromGridId: string,
-    fromColId: string,
-    tileId: string,
-    preview: TileDropPreview,
-  ) {
-    pushSnapshot();
-    const srcContent =
-      fromFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent =
-      toFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[toFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(
-      srcContent,
-      fromGridId,
-      fromColId,
-      tileId,
-    );
-    if (!tile) return;
-    const newTgt = insertTileAtPreview(tgtContent, tile, preview);
-    if (fromFrameIdx === -1) setInfoContent(newSrc);
-    if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents((prev) => {
-      const next = { ...prev };
-      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
-      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
-      return next;
-    });
-  }
-
-  function handleCrossFrameTileDropToEmpty(
-    fromFrameIdx: number,
-    toFrameIdx: number,
-    fromGridId: string,
-    fromColId: string,
-    tileId: string,
-  ) {
-    pushSnapshot();
-    const srcContent =
-      fromFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[fromFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(
-      srcContent,
-      fromGridId,
-      fromColId,
-      tileId,
-    );
-    if (!tile) return;
-    const ts = Date.now();
-    const newTgt = [
-      {
-        InfoId: `grid-${ts}`,
-        InfoType: "TileGrid",
-        Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
-      },
-    ];
-    if (fromFrameIdx === -1) setInfoContent(newSrc);
-    if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents((prev) => {
-      const next = { ...prev };
-      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
-      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
-      return next;
-    });
-  }
-
-  function handleCrossFrameTileDropAsNewBlock(
-    fromFrameIdx: number,
-    toFrameIdx: number,
-    fromGridId: string,
-    fromColId: string,
-    tileId: string,
-    insertBeforeInfoId: string | null,
-  ) {
-    pushSnapshot();
-    const srcContent =
-      fromFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[fromFrameIdx]] ?? []);
-    const tgtContent =
-      toFrameIdx === -1
-        ? infoContent
-        : (navContents[navStack[toFrameIdx]] ?? []);
-    const { content: newSrc, tile } = extractTileFromContent(
-      srcContent,
-      fromGridId,
-      fromColId,
-      tileId,
-    );
-    if (!tile) return;
-    const ts = Date.now();
-    const newGrid = {
-      InfoId: `grid-new-${ts}`,
-      InfoType: "TileGrid",
-      Columns: [
-        { ColId: `col-new-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] },
-      ],
-    };
-    const newTgt =
-      insertBeforeInfoId === null
-        ? [...tgtContent, newGrid]
-        : (() => {
-            const idx = tgtContent.findIndex(
-              (b: any) => b.InfoId === insertBeforeInfoId,
-            );
-            return idx === -1
-              ? [...tgtContent, newGrid]
-              : [
-                  ...tgtContent.slice(0, idx),
-                  newGrid,
-                  ...tgtContent.slice(idx),
-                ];
-          })();
-    if (fromFrameIdx === -1) setInfoContent(newSrc);
-    if (toFrameIdx === -1) setInfoContent(newTgt);
-    setNavContents((prev) => {
-      const next = { ...prev };
-      if (fromFrameIdx !== -1) next[navStack[fromFrameIdx]] = newSrc;
-      if (toFrameIdx !== -1) next[navStack[toFrameIdx]] = newTgt;
-      return next;
-    });
-  }
-
-  function handleEditTile(tileId: string, patch: Record<string, any>) {
-    const keys = Object.keys(patch);
-    const isHeightOnly = keys.length === 1 && "Height" in patch;
-    const isOpacityOnly = keys.length === 1 && "Opacity" in patch;
-    if (isHeightOnly) {
-      if (!isResizingRef.current) {
-        pushSnapshot();
-        isResizingRef.current = true;
-      }
-    } else if (!isOpacityOnly) {
-      pushSnapshot();
-    }
-    setInfoContent((prev) => applyEditTile(prev, tileId, patch));
-    setNavContents((prev) => {
-      const next: Record<string, any[]> = {};
-      for (const [id, blocks] of Object.entries(prev))
-        next[id] = applyEditTile(blocks, tileId, patch);
-      return next;
-    });
-  }
+  // ── Tile image modal ─────────────────────────────────────────────────────
 
   function handleTileDoubleClick(tileId: string, rect: DOMRect) {
     let tile: any = null;
-    const findTile = (blocks: any[]) => {
-      for (const b of blocks)
-        for (const col of b.Columns ?? []) {
+    const find = (blocks: any[]) =>
+      blocks.forEach((b) =>
+        (b.Columns ?? []).forEach((col: any) => {
           const found = (col.Tiles ?? []).find((t: any) => t.Id === tileId);
           if (found) tile = found;
-        }
-    };
-    findTile(infoContentRef.current);
-    for (const blocks of Object.values(navContentsRef.current))
-      findTile(blocks);
+        }),
+      );
+    find(infoContentRef.current);
+    Object.values(navContentsRef.current).forEach(find);
     setTileImageModal({
       tileId,
       tileWidth: rect.width,
@@ -741,222 +446,358 @@ function App() {
   function handleOpenTileImageFromSidebar() {
     if (!selectedTileId) return;
     const el = document.querySelector(`[data-tile-id="${selectedTileId}"]`);
-    if (!el) return;
-    handleTileDoubleClick(selectedTileId, el.getBoundingClientRect());
+    if (el) handleTileDoubleClick(selectedTileId, el.getBoundingClientRect());
   }
 
-  function handleTileNavigate(pageId: string, parentIndex: number) {
-    const insertAt = parentIndex + 1;
-    setNavStack((prev) => {
-      if (prev[insertAt] === pageId) return prev.slice(0, insertAt + 1);
-      return [...prev.slice(0, insertAt), pageId];
-    });
-    setNavContents((prev) => {
-      if (prev[pageId] !== undefined) return prev;
-      const cv = dataStore.get("Current_Version");
-      const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
-      if (!page?.PageStructure) return { ...prev, [pageId]: [] };
-      try {
-        return {
-          ...prev,
-          [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [],
-        };
-      } catch {
-        return { ...prev, [pageId]: [] };
-      }
-    });
-  }
-
-  function handleCollapseDescendants(parentIndex: number) {
-    const cutAt = parentIndex + 1;
-    setNavStack((prev) => (prev.length <= cutAt ? prev : prev.slice(0, cutAt)));
-  }
-
-  function handleNavigateToPath(pageIds: string[]) {
-    setNavStack(pageIds);
-    setNavContents((prev) => {
-      const next = { ...prev };
-      for (const pageId of pageIds) {
-        if (next[pageId] !== undefined) continue;
-        const cv = dataStore.get("Current_Version");
-        const page = (cv?.Page ?? []).find((p: any) => p.PageId === pageId);
-        if (!page?.PageStructure) {
-          next[pageId] = [];
-          continue;
-        }
-        try {
-          next[pageId] = JSON.parse(page.PageStructure).InfoContent ?? [];
-        } catch {
-          next[pageId] = [];
-        }
-      }
-      return next;
-    });
-    setTreeOpen(false);
-  }
-
-  function handleDeletePage(pageId: string) {
-    const cv = dataStore.get("Current_Version");
-    if (!cv) return;
-    dataStore.set("Current_Version", {
-      ...cv,
-      Page: (cv.Page ?? []).filter((p: any) => p.PageId !== pageId),
-    });
-    setNavStack((prev) => prev.filter((id) => id !== pageId));
-    setNavContents((prev) => {
-      const n = { ...prev };
-      delete n[pageId];
-      return n;
-    });
-  }
-
-  function handleCloseFromIndex(stackIndex: number) {
-    setNavStack((prev) => prev.slice(0, stackIndex));
-  }
-
-  function navUpdater(pageId: string) {
-    return (transform: (blocks: any[]) => any[]) =>
+  function handleConfirmCta(attrs: {
+    CtaLabel: string;
+    CtaAction: string;
+    CtaConnectedSupplierId?: string;
+    CtaSupplierIsConnected: boolean;
+  }) {
+    if (!pendingCta) return;
+    pushSnapshot();
+    const ts = Date.now();
+    const { blockType, insertBeforeInfoId, frameId } = pendingCta;
+    if (frameId === null) {
+      setInfoContent((prev) =>
+        applyAddBlock(prev, blockType, insertBeforeInfoId, ts, attrs),
+      );
+    } else {
       setNavContents((prev) => ({
         ...prev,
-        [pageId]: transform(prev[pageId] ?? []),
+        [frameId]: applyAddBlock(
+          prev[frameId] ?? [],
+          blockType,
+          insertBeforeInfoId,
+          ts,
+          attrs,
+        ),
       }));
+    }
+    setSelectedCtaId(`cta-${ts}`);
+    setSelectedTileId(null);
+    setPendingCta(null);
   }
 
-  const linkedFrames = navStack.map((pageId, index) => {
-    const page = allPages.find((p: any) => p.PageId === pageId);
-    const update = navUpdater(pageId);
-    return {
-      page,
-      infoContent: navContents[pageId] ?? [],
-      onClose: () => handleCloseFromIndex(index),
-      onAddColumn: (gridId: string, afterColId: string) => {
-        pushSnapshot();
-        update((prev) => applyAddColumn(prev, gridId, afterColId));
-      },
-      onDeleteTile: (gridId: string, colId: string, tileId: string) => {
-        if (selectedTileId === tileId) setSelectedTileId(null);
-        pushSnapshot();
-        update((prev) => applyDeleteTile(prev, gridId, colId, tileId));
-      },
-      onEditTile: handleEditTile,
-      onTileDoubleClick: handleTileDoubleClick,
-      onDeselectTile: () => {
-        setSelectedTileId(null);
-        setSelectedCtaId(null);
-      },
-      onSelectCta: handleSelectCta,
-      onEditCta: handleEditCta,
-      onAddStandaloneTile: () => {
-        if (!isResizingRef.current) pushSnapshot();
-        const ts = Date.now();
-        update((prev) => applyAddStandaloneTile(prev, ts));
-        setSelectedTileId(`tile-${ts}`);
-        setSelectedCtaId(null);
-      },
-      onAddBlock: (blockType: string, insertBeforeInfoId: string | null) => {
-        if (blockType.startsWith("Cta_")) {
-          setPendingCta({ blockType, insertBeforeInfoId, frameId: pageId });
-          return;
-        }
-        pushSnapshot();
-        const ts = Date.now();
-        if (blockType === "TileGrid") {
-          update((prev) =>
-            applyAddBlock(prev, blockType, insertBeforeInfoId, ts),
-          );
-          setSelectedTileId(`tile-${ts}`);
-          setSelectedCtaId(null);
-        } else {
-          update((prev) => applyAddBlock(prev, blockType, insertBeforeInfoId));
-        }
-      },
-      onAddTilesToColumn: (gridId: string, colId: string, count: number) => {
-        if (!isResizingRef.current) pushSnapshot();
-        update((prev) => applyAddTilesToColumn(prev, gridId, colId, count));
-      },
-      onFreeResizeRelease: (
-        gridId: string,
-        longTileId: string,
-        snapH: number,
-        zoneCount: number,
-        initialCount: number,
-        oppColId: string,
-        allOppTiles: any[],
-      ) => {
-        isResizingRef.current = false;
-        update((prev) =>
-          applyFreeResizeRelease(
-            prev,
-            gridId,
-            longTileId,
-            snapH,
-            zoneCount,
-            initialCount,
-            oppColId,
-            allOppTiles,
-          ),
-        );
-      },
-      onTileDrop: (
-        fromGridId: string,
-        fromColId: string,
-        tileId: string,
-        preview: TileDropPreview,
-      ) => {
-        pushSnapshot();
-        update((prev) =>
-          applyTileDrop(prev, fromGridId, fromColId, tileId, preview),
-        );
-      },
-      onTileDropAsNewBlock: (
-        fromGridId: string,
-        fromColId: string,
-        tileId: string,
-        insertBeforeInfoId: string | null,
-      ) => {
-        pushSnapshot();
-        update((prev) =>
-          applyTileDropAsNewBlock(
-            prev,
-            fromGridId,
-            fromColId,
-            tileId,
-            insertBeforeInfoId,
-          ),
-        );
-      },
-      onAddDescription: (html: string, insertBeforeInfoId: string | null) => {
-        pushSnapshot();
-        update((prev) => applyAddDescription(prev, html, insertBeforeInfoId));
-      },
-      onEditDescription: (infoId: string, html: string) => {
-        pushSnapshot();
-        update((prev) => applyEditDescription(prev, infoId, html));
-      },
-      onDeleteBlock: (infoId: string) => {
-        pushSnapshot();
-        update((prev) => applyDeleteBlock(prev, infoId));
-      },
-      onMoveBlock: (infoId: string, insertBeforeInfoId: string | null) => {
-        pushSnapshot();
-        update((prev) => applyMoveBlock(prev, infoId, insertBeforeInfoId));
-      },
-      onAddImage: (
-        images: { InfoImageId: string; InfoImageValue: string }[],
-        insertBeforeInfoId: string | null,
-      ) => {
-        pushSnapshot();
-        update((prev) => applyAddImage(prev, images, insertBeforeInfoId));
-      },
-      onEditImage: (
-        infoId: string,
-        images: { InfoImageId: string; InfoImageValue: string }[],
-      ) => {
-        pushSnapshot();
-        update((prev) => applyEditImageSelection(prev, infoId, images));
-      },
+  // ── Page rename ──────────────────────────────────────────────────────────
+
+  function handleRenamePage(pageId: string, newName: string) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+    pushSnapshot();
+    const updated = {
+      ...cv,
+      Page: (cv.Page ?? []).map((p: any) =>
+        p.PageId === pageId ? { ...p, PageName: newName } : p,
+      ),
     };
+    dataStore.set("Current_Version", updated);
+    setCurrentVersion(updated);
+    runSave(() => updatePageTitle(cv.AppVersionId, pageId, newName));
+  }
+
+  // ── New page frame helpers ────────────────────────────────────────────────
+
+  const pendingNewPageTileRef = useRef<string | null>(null);
+
+  async function handleCommitNewPage(name: string) {
+    const tileId = pendingNewPageTileRef.current;
+    if (!tileId) return;
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+    try {
+      const raw: any = await createInfoPage(cv.AppVersionId, name);
+      const newPage: any = Array.isArray(raw) ? raw[0] : raw;
+      if (!newPage?.PageId) return;
+      pendingNewPageTileRef.current = null;
+      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      dataStore.set("Current_Version", updated);
+      setCurrentVersion(updated);
+      setNavStack((prev) =>
+        prev.map((id) => (id === NEW_PAGE_SENTINEL ? newPage.PageId : id)),
+      );
+      setNavContents((prev: Record<string, any[]>) => {
+        const next: Record<string, any[]> = {
+          ...prev,
+          [newPage.PageId]: prev[NEW_PAGE_SENTINEL] ?? [],
+        };
+        delete next[NEW_PAGE_SENTINEL];
+        return next;
+      });
+      setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+      handleEditTile(tileId, {
+        Action: {
+          ObjectType: newPage.PageType,
+          ObjectId: newPage.PageId,
+          ObjectUrl: "",
+          FormId: 0,
+        },
+      });
+    } catch {
+      handleCancelNewPage();
+    }
+  }
+
+  function handleCancelNewPage() {
+    pendingNewPageTileRef.current = null;
+    setNavStack((prev) => prev.filter((id) => id !== NEW_PAGE_SENTINEL));
+    setNavContents((prev) => {
+      const next = { ...prev };
+      delete next[NEW_PAGE_SENTINEL];
+      return next;
+    });
+  }
+
+  // ── Tile select ──────────────────────────────────────────────────────────
+
+  const PAGE_NAV_TYPES = new Set([
+    "Information",
+    "BulletinBoard",
+    "Calendar",
+    "MyActivity",
+    "Map",
+  ]);
+
+  function handleSelectTile(id: string) {
+    setSelectedTileId(id);
+    setSelectedCtaId(null);
+
+    // Find the tile and which frame it lives in
+    const frames = [
+      { frameIndex: -1 as number, blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid, i) => ({
+        frameIndex: i,
+        blocks: navContentsRef.current[pid] ?? [],
+      })),
+    ];
+
+    let tileFrameIndex = -1;
+    let tileAction: any = null;
+
+    outer: for (const { frameIndex, blocks } of frames) {
+      for (const block of blocks) {
+        if (block.InfoType !== "TileGrid") continue;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Id === id) {
+              tileFrameIndex = frameIndex;
+              tileAction = tile.Action ?? null;
+              break outer;
+            }
+          }
+        }
+      }
+    }
+
+    if (tileAction?.ObjectType === "WebLink") {
+      const frameKey = tileAction.ObjectId || `weblink-frame-${id}`;
+      // Prefer the canonical URL stored on the page record; fall back to tile Action
+      const page = pagesRef.current.find(
+        (p: any) => p.PageId === tileAction.ObjectId,
+      );
+      const url = page?.PageLinkStructure?.Url ?? tileAction.ObjectUrl;
+      if (!url) {
+        handleCollapseDescendants(tileFrameIndex);
+        return;
+      }
+      handleTileNavigate(frameKey, tileFrameIndex);
+      setNavSourceTiles((prev) => ({ ...prev, [frameKey]: id }));
+      setNavUrls((prev) => ({ ...prev, [frameKey]: url }));
+    } else if (
+      tileAction?.ObjectId &&
+      PAGE_NAV_TYPES.has(tileAction.ObjectType)
+    ) {
+      handleTileNavigate(tileAction.ObjectId, tileFrameIndex);
+      setNavSourceTiles((prev) => ({ ...prev, [tileAction.ObjectId]: id }));
+    } else {
+      handleCollapseDescendants(tileFrameIndex);
+    }
+  }
+
+  // ── Tile action menu ─────────────────────────────────────────────────────
+
+  async function handleTileMenuAction(tileId: string, action: TileMenuAction) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+
+    if (action.type === "copy-tile") {
+      pushSnapshot();
+      setInfoContent((prev) => applyCopyTile(prev, tileId));
+      setNavContents((prev) => {
+        const next: Record<string, any[]> = {};
+        for (const [id, blocks] of Object.entries(prev))
+          next[id] = applyCopyTile(blocks, tileId);
+        return next;
+      });
+      return;
+    }
+
+    if (action.type === "existing-page") {
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some((b) =>
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
+          ),
+        );
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
+            parentIndex = i;
+            break;
+          }
+        }
+      }
+      const objectUrl = action.objectUrl ?? "";
+      pushSnapshot();
+      handleEditTile(tileId, {
+        Action: {
+          ObjectType: action.objectType,
+          ObjectId: action.pageId,
+          ObjectUrl: objectUrl,
+          FormId: 0,
+        },
+      });
+      handleTileNavigate(action.pageId, parentIndex);
+      setNavSourceTiles((prev) => ({ ...prev, [action.pageId]: tileId }));
+      if (action.objectType === "WebLink" && objectUrl)
+        setNavUrls((prev) => ({ ...prev, [action.pageId]: objectUrl }));
+      return;
+    }
+
+    if (action.type === "direct-link" && action.linkType === "Weblink") {
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some((b) =>
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
+          ),
+        );
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
+            parentIndex = i;
+            break;
+          }
+        }
+      }
+      try {
+        const newPage = await createLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageName: action.label || "Web Link",
+          url: action.value,
+        });
+        if (!newPage?.PageId) throw new Error("no page");
+        const url = newPage.PageLinkStructure?.Url ?? action.value;
+        pushSnapshot();
+        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        dataStore.set("Current_Version", updated);
+        setCurrentVersion(updated);
+        handleEditTile(tileId, {
+          Action: {
+            ObjectType: newPage.PageType ?? "WebLink",
+            ObjectId: newPage.PageId,
+            ObjectUrl: url,
+            FormId: 0,
+          },
+        });
+        handleTileNavigate(newPage.PageId, parentIndex);
+        setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+        setNavUrls((prev) => ({ ...prev, [newPage.PageId]: url }));
+      } catch {
+        // API failed — still open the frame using a synthetic key
+        pushSnapshot();
+        const frameKey = `weblink-frame-${tileId}`;
+        handleEditTile(tileId, {
+          Action: {
+            ObjectType: "WebLink",
+            ObjectId: "",
+            ObjectUrl: action.value,
+            FormId: 0,
+          },
+        });
+        handleTileNavigate(frameKey, parentIndex);
+        setNavSourceTiles((prev) => ({ ...prev, [frameKey]: tileId }));
+        setNavUrls((prev) => ({ ...prev, [frameKey]: action.value }));
+      }
+      return;
+    }
+
+    if (action.type === "direct-link") {
+      pushSnapshot();
+      handleEditTile(tileId, {
+        Action: {
+          ObjectType: action.linkType,
+          ObjectId: "",
+          ObjectUrl: action.value,
+        },
+      });
+      return;
+    }
+
+    if (action.type === "form") {
+      pushSnapshot();
+      handleEditTile(tileId, {
+        Action: { ObjectType: "Form", ObjectId: action.formId, ObjectUrl: "" },
+      });
+      return;
+    }
+
+    if (action.type === "new-page") {
+      // Find which frame index the tile lives in (-1 = home frame)
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some((b) =>
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
+          ),
+        );
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
+            parentIndex = i;
+            break;
+          }
+        }
+      }
+
+      pendingNewPageTileRef.current = tileId;
+      setNavStack((prev) => {
+        const clean = prev.filter((id) => id !== NEW_PAGE_SENTINEL);
+        return [...clean.slice(0, parentIndex + 1), NEW_PAGE_SENTINEL];
+      });
+      setNavContents((prev) => ({ ...prev, [NEW_PAGE_SENTINEL]: [] }));
+    }
+  }
+
+  // ── Linked frames ────────────────────────────────────────────────────────
+
+  const linkedFrames = buildLinkedFrames({
+    navStack,
+    navContents,
+    navUrls,
+    allPages,
+    pushSnapshot,
+    isResizingRef,
+    selectedTileId,
+    setSelectedTileId,
+    setSelectedCtaId,
+    setPendingCta,
+    navUpdater,
+    handleCloseFromIndex,
+    handleEditTile,
+    handleSelectCta,
+    handleEditCta,
+    handleTileDoubleClick,
+    onCommitNewPage: handleCommitNewPage,
+    onCancelNewPage: handleCancelNewPage,
   });
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -985,12 +826,24 @@ function App() {
         }
         themes={themes}
         selectedThemeId={selectedThemeId}
-        onThemeChange={setSelectedThemeId}
+        onThemeChange={(themeId) => {
+          pushSnapshot();
+          setSelectedThemeId(themeId);
+          if (currentVersion?.AppVersionId)
+            updateAppVersionTheme(currentVersion.AppVersionId, themeId).catch(
+              () => {},
+            );
+        }}
         canUndo={undoStack.length > 0}
         canRedo={redoStack.length > 0}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
+        invalidLinkCount={invalidLinkCount}
+        isCheckingLinks={isCheckingLinks}
+        isSaving={isSaving}
+        saveError={saveError}
+        savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
       />
@@ -1005,21 +858,29 @@ function App() {
             try {
               await activateAppVersion(version.AppVersionId);
               const fetched = (await getActiveAppVersion()) as any;
-              const fullVersion = {
+              const full = {
                 ...fetched,
                 Page: fetched.Page ?? fetched.Pages ?? [],
               };
-              dataStore.set("Current_Version", fullVersion);
-              setCurrentVersion(fullVersion);
+              dataStore.set("Current_Version", full);
+              setCurrentVersion(full);
               setInfoContent(parseInfoContent());
               setNavStack([]);
               setNavContents({});
-              setUndoStack([]);
-              setRedoStack([]);
+              clearHistory();
               setSelectedTileId(null);
-            } catch {
-              // version list still refreshes even if activation fails
-            }
+            } catch {}
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {showCreateTemplateModal && (
+        <CreateAppVersionTemplateModal
+          onClose={() => setShowCreateTemplateModal(false)}
+          onCreated={() => {
+            setShowCreateTemplateModal(false);
             getAppVersions()
               .then(setAppVersions)
               .catch(() => {});
@@ -1099,7 +960,10 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             onClose={() => setTreeOpen(false)}
-            onNavigateToPath={handleNavigateToPath}
+            onNavigateToPath={(pageIds) => {
+              handleNavigateToPath(pageIds);
+              setTreeOpen(false);
+            }}
             onDeletePage={handleDeletePage}
           />
         )}
@@ -1108,10 +972,7 @@ function App() {
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
-          onSelectTile={(id) => {
-            setSelectedTileId(id);
-            setSelectedCtaId(null);
-          }}
+          onSelectTile={handleSelectTile}
           onAddColumn={handleAddColumn}
           onDeleteTile={handleDeleteTile}
           onEditTile={handleEditTile}
@@ -1144,6 +1005,9 @@ function App() {
           onEditCta={handleEditCta}
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
+          onTileMenuAction={handleTileMenuAction}
+          onRenamePage={handleRenamePage}
+          liveTileText={liveTileText}
         />
         {isTranslationOpen ? (
           <TranslationSideBar

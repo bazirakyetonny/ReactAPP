@@ -360,9 +360,13 @@ export function SidebarRight({
   onEditTile,
   onOpenTileImage,
   onBeforeOpacityChange,
+  onBeforeTileTextEdit,
+  onLiveTileText,
+  onEndLiveTileText,
   pageName,
   selectedCta,
   onEditCta,
+  onBeforeCtaEdit,
 }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
@@ -372,14 +376,24 @@ export function SidebarRight({
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onOpenTileImage?: () => void;
   onBeforeOpacityChange?: () => void;
+  onBeforeTileTextEdit?: () => void;
+  onLiveTileText?: (id: string, text: string) => void;
+  onEndLiveTileText?: () => void;
   pageName?: string;
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  onBeforeCtaEdit?: () => void;
 }) {
   const palette = themeColors
     ? COLOR_ORDER.map((k) => themeColors[k]).filter(Boolean)
     : [];
   const [showMoods, setShowMoods] = useState(false);
+  const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
+  const isEditingTextRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditingTextRef.current) setTileText(selectedTile?.Text ?? "");
+  }, [selectedTile?.Id, selectedTile?.Text]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -434,6 +448,7 @@ export function SidebarRight({
           selectedCta={selectedCta}
           palette={ctaColors}
           onEditCta={onEditCta}
+          onBeforeCtaEdit={onBeforeCtaEdit}
         />
       )}
 
@@ -567,12 +582,23 @@ export function SidebarRight({
               placeholder={
                 selectedTile ? "Enter title" : "Select a tile to edit"
               }
-              value={selectedTile?.Text ?? ""}
+              value={tileText}
               disabled={!selectedTile}
-              onChange={(e) =>
-                selectedTile &&
-                onEditTile?.(selectedTile.Id, { Text: e.target.value })
-              }
+              onFocus={() => {
+                isEditingTextRef.current = true;
+                onBeforeTileTextEdit?.();
+              }}
+              onChange={(e) => {
+                setTileText(e.target.value);
+                if (selectedTile)
+                  onLiveTileText?.(selectedTile.Id, e.target.value);
+              }}
+              onBlur={() => {
+                isEditingTextRef.current = false;
+                if (selectedTile && tileText !== (selectedTile.Text ?? ""))
+                  onEditTile?.(selectedTile.Id, { Text: tileText });
+                onEndLiveTileText?.();
+              }}
             />
           </div>
 

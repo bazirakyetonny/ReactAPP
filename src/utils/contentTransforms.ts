@@ -103,6 +103,7 @@ export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId
 }
 
 export function applyEditCta(prev: any[], ctaId: string, patch: Record<string, any>): any[] {
+  if (!prev.some((b: any) => b.InfoType === 'Cta' && b.InfoId === ctaId)) return prev;
   return prev.map((block: any) =>
     block.InfoType === 'Cta' && block.InfoId === ctaId
       ? { ...block, CtaAttributes: { ...block.CtaAttributes, ...patch } }
@@ -111,6 +112,11 @@ export function applyEditCta(prev: any[], ctaId: string, patch: Record<string, a
 }
 
 export function applyEditTile(prev: any[], tileId: string, patch: Record<string, any>): any[] {
+  const hasTile = prev.some((b: any) =>
+    b.InfoType === 'TileGrid' &&
+    (b.Columns ?? []).some((col: any) => (col.Tiles ?? []).some((t: any) => t.Id === tileId))
+  );
+  if (!hasTile) return prev;
   return prev.map((block: any) => {
     if (block.InfoType !== 'TileGrid') return block;
     return { ...block, Columns: (block.Columns ?? []).map((col: any) => ({
@@ -506,4 +512,20 @@ export function applyEditImageSelection(
   return prev.map((b: any) =>
     b.InfoId === infoId && b.InfoType === 'Images' ? { ...b, Images: images } : b
   );
+}
+
+export function applyCopyTile(prev: any[], tileId: string, ts = Date.now()): any[] {
+  return prev.map((block: any) => {
+    if (block.InfoType !== 'TileGrid') return block;
+    let changed = false;
+    const newCols = (block.Columns ?? []).map((col: any) => {
+      const tiles: any[] = col.Tiles ?? [];
+      const idx = tiles.findIndex((t: any) => t.Id === tileId);
+      if (idx === -1) return col;
+      changed = true;
+      const copy = { ...tiles[idx], Id: `tile-${ts}`, Action: undefined };
+      return { ...col, Tiles: [...tiles.slice(0, idx + 1), copy, ...tiles.slice(idx + 1)] };
+    });
+    return changed ? { ...block, Columns: newCols } : block;
+  });
 }

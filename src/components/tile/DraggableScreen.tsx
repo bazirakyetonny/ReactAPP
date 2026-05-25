@@ -5,6 +5,8 @@ import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
 import type { SplitPreview, FreeResizePreview } from './TileGrids';
 import { AddBlockMenu } from '../phone/AddBlockMenu';
+import { TileActionMenu } from './TileActionMenu';
+import type { TileMenuAction } from './TileActionMenu';
 import { DescriptionBlock } from '../phone/DescriptionBlock';
 import { QuillEditorModal } from '../phone/QuillEditorModal';
 import { ImageBlock } from '../phone/ImageBlock';
@@ -125,6 +127,8 @@ export interface DraggableScreenProps {
   selectedCtaId?: string | null;
   themeCtaColors?: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
+  onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
+  liveTileText?: { id: string; text: string } | null;
 }
 
 export function DraggableScreen({
@@ -174,9 +178,12 @@ export function DraggableScreen({
   selectedCtaId,
   themeCtaColors,
   onEditCta,
+  onTileMenuAction,
+  liveTileText,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
+  const [tileMenu, setTileMenu] = useState<{ tileId: string; pos: { x: number; y: number } } | null>(null);
   const [blockDragId, setBlockDragId] = useState<string | null>(null);
   const [blockGhostPos, setBlockGhostPos] = useState<{ x: number; y: number } | null>(null);
   const [blockDropPreview, setBlockDropPreview] = useState<{ insertBeforeInfoId: string | null } | null>(null);
@@ -950,6 +957,10 @@ export function DraggableScreen({
                   activeNavTileIds={activeNavTileIds}
                   onAddBtnClick={openAddMenu}
                   onTileDoubleClick={onTileDoubleClick}
+                  onTileOptionsClick={(tileId, rect) =>
+                    setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
+                  }
+                  liveTileText={liveTileText}
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
@@ -1081,6 +1092,18 @@ export function DraggableScreen({
         />
       )}
 
+      {tileMenu && (
+        <TileActionMenu
+          tileId={tileMenu.tileId}
+          pos={tileMenu.pos}
+          onAction={(tileId, action) => {
+            onTileMenuAction?.(tileId, action);
+            setTileMenu(null);
+          }}
+          onClose={() => setTileMenu(null)}
+        />
+      )}
+
       {editorState && (
         <QuillEditorModal
           initialHtml={editorState.mode === 'edit' ? editorState.currentHtml : ''}
@@ -1175,6 +1198,8 @@ export function DraggableScreen({
           >
             {block?.InfoType === 'Images' ? (
               <ImageBlock block={block} interactive={false} />
+            ) : block?.InfoType === 'Cta' ? (
+              <CtaBlock block={block} ctaColors={themeCtaColors} interactive={false} />
             ) : block ? (
               <DescriptionBlock block={block} interactive={false} />
             ) : null}
