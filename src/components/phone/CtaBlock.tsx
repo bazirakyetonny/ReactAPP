@@ -67,15 +67,32 @@ interface CtaBlockProps {
   onDelete?: (infoId: string) => void;
   onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
   onSelectImage?: (ctaId: string) => void;
+  /** Translation sidebar: show label as an editable input */
+  editableLabel?: boolean;
+  /** Translation sidebar: fire when label span is clicked (to enter edit mode) */
+  onLabelClick?: () => void;
+  /** Translation sidebar: fire on input blur with the new value */
+  onLabelBlur?: (value: string) => void;
 }
 
-export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage }: CtaBlockProps) {
+export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
   const label = attrs.CtaLabel || 'Button';
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
   const color = attrs.CtaColor || '#ffffff';
   const type = attrs.CtaButtonType || 'Image';
   const imgUrl: string = attrs.CtaButtonImgUrl || '';
+
+  const LabelEl = editableLabel
+    ? <input
+        className="phone-cta-label-input"
+        defaultValue={attrs.CtaLabel ?? ''}
+        autoFocus
+        onBlur={(e) => onLabelBlur?.(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        onClick={(e) => e.stopPropagation()}
+      />
+    : null;
 
   const iconSvg = attrs.CtaButtonIcon
     ? (ctaIcons.find(i => i.name === attrs.CtaButtonIcon)?.svg ?? null)
@@ -103,22 +120,22 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
             <div className="phone-cta-round" style={{ background: bg, color }}>
               {IconEl}
             </div>
-            {label && (
-              <span className="phone-cta-round-label">{label.toUpperCase()}</span>
+            {(label || editableLabel) && (
+              LabelEl ?? <span className="phone-cta-round-label ts-editable-text" onClick={onLabelClick}>{label.toUpperCase()}</span>
             )}
           </div>
         )}
 
         {type === 'FullWidth' && (
           <div className="phone-cta-fullwidth phone-cta-fullwidth--plain" style={{ background: bg, color }}>
-            <span className="phone-cta-label">{label}</span>
+            {LabelEl ?? <span className="phone-cta-label ts-editable-text" onClick={onLabelClick}>{label}</span>}
           </div>
         )}
 
         {type === 'Icon' && (
           <div className="phone-cta-fullwidth" style={{ background: bg, color }}>
             <span className="phone-cta-icon-box">{IconEl}</span>
-            <span className="phone-cta-label">{label}</span>
+            {LabelEl ?? <span className="phone-cta-label ts-editable-text" onClick={onLabelClick}>{label}</span>}
             <ChevronIcon />
           </div>
         )}
@@ -142,7 +159,7 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
                 </button>
               )}
             </span>
-            <span className="phone-cta-label">{label}</span>
+            {LabelEl ?? <span className="phone-cta-label ts-editable-text" onClick={onLabelClick}>{label}</span>}
             <ChevronIcon />
           </div>
         )}

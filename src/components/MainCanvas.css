@@ -1620,6 +1620,20 @@
   flex: 1;
   text-align: left;
 }
+
+.phone-cta-label-input {
+  all: unset;
+  flex: 1;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  cursor: text;
+}
+
 .phone-cta-fullwidth--plain .phone-cta-label {
   text-align: center;
 }
