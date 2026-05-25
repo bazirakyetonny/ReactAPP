@@ -137,9 +137,9 @@ export function TranslationSideBar({
 
       if (block.InfoType === "TileGrid") {
         out.push(
-          <div key={block.InfoId} className="phone-tile-grid">
+          <div key={block.InfoId} className="phone-tilegrid">
             {(block.Columns ?? []).map((col: any, ci: number) => (
-              <div key={col.ColId} className="phone-tile-col">
+              <div key={col.ColId} className="phone-column">
                 {(col.Tiles ?? []).map((tile: any, ti: number) => {
                   const tileKey = `tile-${bi}-${ci}-${ti}`;
                   const bg = resolveColor(tile.BGColor ?? "", themeColors);
