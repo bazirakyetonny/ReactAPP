@@ -1,0 +1,223 @@
+/* ── Overlay ─────────────────────────────────────────────────── */
+.catm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Modal shell ─────────────────────────────────────────────── */
+.catm-modal {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 620px;
+  max-width: 96vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.catm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.catm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.catm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.catm-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── Step heading ────────────────────────────────────────────── */
+.catm-step-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  margin: 0;
+}
+
+.catm-step-subheading {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin: -8px 0 0;
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+.catm-body {
+  padding: 24px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.catm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.catm-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.catm-required {
+  color: #dc2626;
+}
+
+.catm-optional {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.catm-input,
+.catm-textarea {
+  font-family: inherit;
+  font-size: 13px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.catm-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.catm-input:focus,
+.catm-textarea:focus {
+  outline: none;
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
+}
+
+.catm-char-count {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+}
+
+.catm-select {
+  font-family: inherit;
+  font-size: 13px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 10px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.catm-select:focus {
+  outline: none;
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
+}
+
+.catm-error {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.catm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.catm-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.catm-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.catm-btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.catm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #ffffff;
+  background: #1a3a6e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.catm-btn-primary:hover:not(:disabled) {
+  background: #142d56;
+}
+
+.catm-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

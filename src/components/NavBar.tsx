@@ -8,6 +8,7 @@ interface NavBarProps {
   selectedVersionId?: string;
   onVersionSelect?: (id: string) => void;
   onNewVersion?: () => void;
+  onNewTemplate?: () => void;
   onDuplicateVersion?: (id: string) => void;
   onRenameVersion?: (id: string) => void;
   onUpdateTranslations?: (id: string) => void;
@@ -21,6 +22,8 @@ interface NavBarProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onExpand?: () => void;
+  isTranslationOpen?: boolean;
+  onTranslationToggle?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -163,7 +166,7 @@ function TrashIcon() {
   );
 }
 
-function GlobeIcon() {
+function GlobeIcon({ active }: { active?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -175,8 +178,8 @@ function GlobeIcon() {
         id="translate_icon"
         d="M9.732.343C9.674.351,9.461.374,9.258.4a10.052,10.052,0,0,0-3.278.958A10.434,10.434,0,0,0,.515,7.6a9.212,9.212,0,0,0-.494,3.277A8.065,8.065,0,0,0,.1,12.32a10.564,10.564,0,0,0,8.614,8.9,7.856,7.856,0,0,0,1.62.107,8.32,8.32,0,0,0,1.648-.058,10.547,10.547,0,0,0,8.958-8.947,8.066,8.066,0,0,0,.08-1.439,8.842,8.842,0,0,0-.3-2.6A10.553,10.553,0,0,0,15.956,1.83,10.7,10.7,0,0,0,11.929.407a20.39,20.39,0,0,0-2.2-.065M8.5,2.371a14.959,14.959,0,0,0-2.6,7.415l-.024.324H1.509v-.092A9.47,9.47,0,0,1,1.864,8.2,9.074,9.074,0,0,1,8.522,2l.273-.065s-.125.193-.29.432m4.559-.225A9.083,9.083,0,0,1,19.178,8.2a9.681,9.681,0,0,1,.355,1.852c0,.06-.115.063-2.188.063H15.158l-.024-.324a14.966,14.966,0,0,0-2.6-7.416l-.292-.425.269.061c.148.033.4.1.55.14m-2.285.32a13.525,13.525,0,0,1,2.489,5,13.6,13.6,0,0,1,.393,2.376l.023.272H7.359l.023-.272a13.475,13.475,0,0,1,2.882-7.372,1.715,1.715,0,0,1,.257-.284,1.715,1.715,0,0,1,.257.284m-4.87,9.441a14.976,14.976,0,0,0,2.576,7.372,2.988,2.988,0,0,1,.269.434,3.292,3.292,0,0,1-.8-.187,9.072,9.072,0,0,1-2.9-1.464,11.451,11.451,0,0,1-1.531-1.48,9.084,9.084,0,0,1-2-4.762L1.5,11.583H5.884l.024.324m7.753-.07A13.534,13.534,0,0,1,12.6,16.167a13.889,13.889,0,0,1-1.989,3.257l-.09.1-.09-.1a15.1,15.1,0,0,1-.917-1.253,13.419,13.419,0,0,1-1.989-5.149c-.072-.448-.16-1.212-.16-1.394a30.734,30.734,0,0,1,3.16-.044h3.159l-.023.255M19.52,11.8a9.079,9.079,0,0,1-1.768,4.482,12.022,12.022,0,0,1-1.763,1.779,9.14,9.14,0,0,1-2.9,1.463,3.292,3.292,0,0,1-.8.187,2.988,2.988,0,0,1,.269-.434,15.033,15.033,0,0,0,2.576-7.372l.024-.324h4.384l-.023.219"
         transform="translate(-0.021 -0.332)"
-        fill="#7c8791"
-        fill-rule="evenodd"
+        fill={active ? "#2563eb" : "#7c8791"}
+        fillRule="evenodd"
       ></path>
     </svg>
   );
@@ -283,6 +286,7 @@ export function NavBar({
   selectedVersionId,
   onVersionSelect,
   onNewVersion,
+  onNewTemplate,
   onDuplicateVersion,
   onRenameVersion,
   onUpdateTranslations,
@@ -296,6 +300,8 @@ export function NavBar({
   onUndo,
   onRedo,
   onExpand,
+  isTranslationOpen = false,
+  onTranslationToggle,
 }: NavBarProps) {
   return (
     <nav className="navbar" aria-label="App builder toolbar">
@@ -307,6 +313,7 @@ export function NavBar({
           selectedVersionId={selectedVersionId}
           onVersionSelect={onVersionSelect}
           onNewVersion={onNewVersion}
+          onNewTemplate={onNewTemplate}
           onDuplicate={onDuplicateVersion}
           onRename={onRenameVersion}
           onUpdateTranslations={onUpdateTranslations}
@@ -352,8 +359,13 @@ export function NavBar({
           <TrashIcon />
         </button>
         <div className="navbar-separator" role="separator" />
-        <button className="navbar-icon-btn" type="button" title="Preview">
-          <GlobeIcon />
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title="Translation"
+          onClick={onTranslationToggle}
+        >
+          <GlobeIcon active={isTranslationOpen} />
         </button>
         <button className="navbar-icon-btn" type="button" title="Path">
           <PathIcon />

@@ -8,6 +8,7 @@ interface AppVersionDropDownProps {
   selectedVersionId?: string;
   onVersionSelect?: (id: string) => void;
   onNewVersion?: () => void;
+  onNewTemplate?: () => void;
   onDuplicate?: (id: string) => void;
   onRename?: (id: string) => void;
   onUpdateTranslations?: (id: string) => void;
@@ -106,6 +107,7 @@ export function AppVersionDropDown({
   selectedVersionId,
   onVersionSelect,
   onNewVersion,
+  onNewTemplate,
   onDuplicate,
   onRename,
   onUpdateTranslations,
@@ -148,6 +150,18 @@ export function AppVersionDropDown({
           >
             <PlusIcon />
             New Version
+          </button>
+
+          <button
+            className="vd-item vd-new"
+            type="button"
+            onClick={() => {
+              onNewTemplate?.();
+              setOpen(false);
+            }}
+          >
+            <PlusIcon />
+            New Template
           </button>
 
           <div className="vd-sep" role="separator" />

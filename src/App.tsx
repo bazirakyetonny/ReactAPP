@@ -10,6 +10,7 @@ import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionM
 import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
 import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
 import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
+import { CreateAppVersionTemplateModal } from "./components/appversion/CreateAppVersionTemplateModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
 import { TileImageModal } from "./components/phone/TileImageModal";
@@ -17,6 +18,7 @@ import { AddCtaModal } from "./components/phone/AddCtaModal";
 
 import type { TileDropPreview } from "./components/MainCanvas";
 import { SidebarRight } from "./components/SidebarRight";
+import { TranslationSideBar } from "./components/translation/TranslationSideBar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { dataStore } from "./data/datastore";
 import type { Theme, Mood, CategoryTemplates } from "./types";
@@ -57,6 +59,7 @@ function App() {
 
   const [appVersions, setAppVersions] = useState<SDTAppVersion[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [renameVersion, setRenameVersion] = useState<SDTAppVersion | null>(
     null,
   );
@@ -81,6 +84,7 @@ function App() {
   const [navStack, setNavStack] = useState<string[]>([]);
   const [navContents, setNavContents] = useState<Record<string, any[]>>({});
   const [treeOpen, setTreeOpen] = useState(false);
+  const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
     tileWidth: number;
@@ -211,10 +215,20 @@ function App() {
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
   const themeMoods = allMoods.filter((m) => m.ThemeId === selectedThemeId);
   const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
-  const activePageId = navStack[navStack.length - 1];
-  const activePageName = activePageId
-    ? (allPages.find((p) => p.PageId === activePageId)?.PageName ?? "")
-    : "Home";
+  let activePageId = navStack[navStack.length - 1];
+  let activePage = allPages.find((p) => p.PageId === activePageId);
+  if (!activePage) {
+    activePage = allPages.find((p) => p.PageName.toLowerCase() === "home");
+    activePageId = activePage?.PageId;
+  }
+  const activePageName = activePage?.PageName ?? "Home";
+  const appVersionMultiLanguages: string[] = (() => {
+    try {
+      return JSON.parse(currentVersion?.AppVersionMultiLanguages ?? "[]");
+    } catch {
+      return [];
+    }
+  })();
 
   const selectedTile = selectedTileId
     ? ([
@@ -952,6 +966,7 @@ function App() {
         selectedVersionId={currentVersion?.AppVersionId}
         onVersionSelect={handleVersionSelect}
         onNewVersion={() => setShowCreateModal(true)}
+        onNewTemplate={() => setShowCreateTemplateModal(true)}
         onDuplicateVersion={(id) =>
           setDuplicateVersion(
             appVersions.find((a) => a.AppVersionId === id) ?? null,
@@ -976,6 +991,8 @@ function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
+        isTranslationOpen={isTranslationOpen}
+        onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
       />
       {showCreateModal && (
         <CreateAppVersionModal
@@ -1003,6 +1020,17 @@ function App() {
             } catch {
               // version list still refreshes even if activation fails
             }
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {showCreateTemplateModal && (
+        <CreateAppVersionTemplateModal
+          onClose={() => setShowCreateTemplateModal(false)}
+          onCreated={() => {
+            setShowCreateTemplateModal(false);
             getAppVersions()
               .then(setAppVersions)
               .catch(() => {});
@@ -1117,19 +1145,33 @@ function App() {
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
         />
-        <SidebarRight
-          themeIcons={selectedTheme?.ThemeIcons ?? []}
-          themeColors={selectedTheme?.ThemeColors}
-          ctaColors={selectedTheme?.ThemeCtaColors ?? []}
-          moods={themeMoods}
-          selectedTile={selectedTile}
-          onEditTile={handleEditTile}
-          onOpenTileImage={handleOpenTileImageFromSidebar}
-          onBeforeOpacityChange={pushSnapshot}
-          pageName={activePageName}
-          selectedCta={selectedCta}
-          onEditCta={handleEditCta}
-        />
+        {isTranslationOpen ? (
+          <TranslationSideBar
+            appVersionId={currentVersion?.AppVersionId ?? ""}
+            appVersionLanguage={currentVersion?.AppVersionLanguage ?? ""}
+            appVersionMultiLanguages={appVersionMultiLanguages}
+            activePageId={activePageId}
+            pageName={activePageName}
+            isLinkedPage={!!activePageId}
+            themeColors={selectedTheme?.ThemeColors}
+            themeIcons={selectedTheme?.ThemeIcons ?? []}
+            ctaColors={selectedTheme?.ThemeCtaColors ?? []}
+          />
+        ) : (
+          <SidebarRight
+            themeIcons={selectedTheme?.ThemeIcons ?? []}
+            themeColors={selectedTheme?.ThemeColors}
+            ctaColors={selectedTheme?.ThemeCtaColors ?? []}
+            moods={themeMoods}
+            selectedTile={selectedTile}
+            onEditTile={handleEditTile}
+            onOpenTileImage={handleOpenTileImageFromSidebar}
+            onBeforeOpacityChange={pushSnapshot}
+            pageName={activePageName}
+            selectedCta={selectedCta}
+            onEditCta={handleEditCta}
+          />
+        )}
       </div>
       {tileImageModal && (
         <TileImageModal

@@ -7,6 +7,7 @@ interface AppVersionMoodSelection2Props {
   onMoodChange: (moodId: string) => void;
   noMood: boolean;
   onNoMoodChange: (val: boolean) => void;
+  hideNoMood?: boolean;
 }
 
 export function AppVersionMoodSelection2({
@@ -14,13 +15,17 @@ export function AppVersionMoodSelection2({
   onMoodChange,
   noMood,
   onNoMoodChange,
+  hideNoMood = false,
 }: AppVersionMoodSelection2Props) {
   const moods: Mood[] = dataStore.get("Moods") ?? [];
   const themes: Theme[] = dataStore.get("themes") ?? [];
 
   return (
     <div className="ms2-wrap">
-      <p className="ms2-heading">Choose Color Mood <span style={{ fontWeight: 400, fontSize: 14 }}>(OPTIONAL)</span></p>
+      <p className="ms2-heading">
+        Choose Color Mood{" "}
+        {!hideNoMood && <span style={{ fontWeight: 400, fontSize: 14 }}>(OPTIONAL)</span>}
+      </p>
       <p className="ms2-subheading">Select a color mood that fits your app vision</p>
 
       <div className={`ms2-grid${noMood ? " ms2-grid--disabled" : ""}`}>
@@ -62,14 +67,16 @@ export function AppVersionMoodSelection2({
         })}
       </div>
 
-      <label className="ms2-no-mood">
-        <input
-          type="checkbox"
-          checked={noMood}
-          onChange={(e) => onNoMoodChange(e.target.checked)}
-        />
-        Do not use color moods
-      </label>
+      {!hideNoMood && (
+        <label className="ms2-no-mood">
+          <input
+            type="checkbox"
+            checked={noMood}
+            onChange={(e) => onNoMoodChange(e.target.checked)}
+          />
+          Do not use color moods
+        </label>
+      )}
     </div>
   );
 }
