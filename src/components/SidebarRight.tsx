@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import "./SidebarRight.css";
 import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from "../types";
 import { SidebarCtaControls } from "./SidebarCtaControls";
