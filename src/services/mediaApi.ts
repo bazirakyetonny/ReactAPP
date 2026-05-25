@@ -51,13 +51,17 @@ export interface UploadCroppedPayload extends UploadPayload {
 }
 
 export function uploadCroppedMedia(payload: UploadCroppedPayload): Promise<TrnMedia> {
-  return apiPost<{ BC_Trn_Media: TrnMedia }>(`/api/media/upload/cropped`, {
+  return apiPost<any>(`/api/media/upload/cropped`, {
     MediaName: payload.name,
     MediaImageData: payload.base64,
     MediaSize: payload.size,
     MediaType: payload.type,
     CroppedOriginalMediaId: payload.croppedOriginalMediaId,
-  }).then((d) => d.BC_Trn_Media);
+  }).then((d) => {
+    const media: TrnMedia = d?.BC_Trn_Media ?? d?.Media ?? d;
+    if (!media?.MediaUrl) throw new Error('Upload failed: no MediaUrl in response');
+    return media;
+  });
 }
 
 export function uploadLogo(logoUrl: string): Promise<void> {

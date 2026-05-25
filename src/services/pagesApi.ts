@@ -52,11 +52,11 @@ export function createMenuPage(appVersionId: string, pageName: string): Promise<
   }).then((d) => d.MenuPage ?? []);
 }
 
-export function createInfoPage(appVersionId: string, pageName: string): Promise<SDTPage[]> {
-  return apiPost<{ MenuPage: SDTPage[] }>('/api/toolbox/v2/create-info-page', {
+export function createInfoPage(appVersionId: string, pageName: string): Promise<any> {
+  return apiPost<any>('/api/toolbox/v2/create-info-page', {
     appVersionId,
     pageName,
-  }).then((d) => d.MenuPage ?? []);
+  }).then((d) => d.MenuPage ?? d);
 }
 
 export interface CreateLinkPagePayload {
@@ -67,14 +67,17 @@ export interface CreateLinkPagePayload {
   WWPFormReferenceName?: string;
 }
 
-export function createLinkPage(payload: CreateLinkPagePayload): Promise<SDTPage[]> {
-  return apiPost<{ MenuPage: SDTPage[] }>('/api/toolbox/v2/create-link-page', {
+export function createLinkPage(payload: CreateLinkPagePayload): Promise<any> {
+  return apiPost<any>('/api/toolbox/v2/create-link-page', {
     appVersionId: payload.appVersionId,
     pageName: payload.pageName,
     url: payload.url,
     WWPFormId: payload.WWPFormId ?? 0,
     WWPFormReferenceName: payload.WWPFormReferenceName ?? '',
-  }).then((d) => d.MenuPage ?? []);
+  }).then((d) => {
+    if (d?.MenuPage) return Array.isArray(d.MenuPage) ? d.MenuPage[0] : d.MenuPage;
+    return d;
+  });
 }
 
 export function createServicePage(appVersionId: string, productServiceId: string): Promise<SDTPage[]> {

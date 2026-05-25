@@ -22,6 +22,7 @@ interface Props {
   setPendingCta: React.Dispatch<React.SetStateAction<any>>;
   pushSnapshot: () => void;
   isResizingRef: React.MutableRefObject<boolean>;
+  onNewTileCreated?: () => void;
 }
 
 export function useContentHandlers({
@@ -29,6 +30,7 @@ export function useContentHandlers({
   navContents, setNavContents, navStack,
   selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
   pushSnapshot, isResizingRef,
+  onNewTileCreated,
 }: Props) {
 
   // ── Content block handlers ────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export function useContentHandlers({
     const ts = Date.now();
     setInfoContent(prev => applyAddStandaloneTile(prev, ts));
     setSelectedTileId(`tile-${ts}`);
+    onNewTileCreated?.();
   }
 
   function handleAddBlock(blockType: string, insertBeforeInfoId: string | null) {
@@ -62,13 +65,17 @@ export function useContentHandlers({
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId, ts));
       setSelectedTileId(`tile-${ts}`);
       setSelectedCtaId(null);
+      onNewTileCreated?.();
     } else {
       setInfoContent(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
     }
   }
 
   function handleEditCta(ctaId: string, patch: Record<string, any>) {
-    pushSnapshot();
+    const keys = Object.keys(patch);
+    const isLabelOnly = keys.length === 1 && 'CtaLabel' in patch;
+    const isActionOnly = keys.length === 1 && 'CtaAction' in patch;
+    if (!isLabelOnly && !isActionOnly) pushSnapshot();
     setInfoContent(prev => applyEditCta(prev, ctaId, patch));
     setNavContents(prev => {
       const next: Record<string, any[]> = {};
@@ -86,6 +93,7 @@ export function useContentHandlers({
   function handleAddTilesToColumn(gridId: string, colId: string, count: number) {
     if (!isResizingRef.current) pushSnapshot();
     setInfoContent(prev => applyAddTilesToColumn(prev, gridId, colId, count));
+    onNewTileCreated?.();
   }
 
   function handleAddDescription(html: string, insertBeforeInfoId: string | null) {
@@ -153,9 +161,10 @@ export function useContentHandlers({
     const keys = Object.keys(patch);
     const isHeightOnly = keys.length === 1 && 'Height' in patch;
     const isOpacityOnly = keys.length === 1 && 'Opacity' in patch;
+    const isTextOnly = keys.length === 1 && 'Text' in patch;
     if (isHeightOnly) {
       if (!isResizingRef.current) { pushSnapshot(); isResizingRef.current = true; }
-    } else if (!isOpacityOnly) {
+    } else if (!isOpacityOnly && !isTextOnly) {
       pushSnapshot();
     }
     setInfoContent(prev => applyEditTile(prev, tileId, patch));

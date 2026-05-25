@@ -256,7 +256,7 @@ export interface ThemeIcon {
   IconName: string;
   IconCategory: string;
   IconSVG: string;
-  IconCodeName: string;
+  IconCodeName?: string;
 }
 
 export interface ThemeCtaColor {

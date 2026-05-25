@@ -4,20 +4,26 @@ export interface Snapshot {
   infoContent: any[];
   navContents: Record<string, any[]>;
   navStack: string[];
+  themeId: string;
+  pages: any[];
 }
 
 interface Props {
   infoContentRef: React.MutableRefObject<any[]>;
   navContentsRef: React.MutableRefObject<Record<string, any[]>>;
   navStackRef: React.MutableRefObject<string[]>;
+  themeIdRef: React.MutableRefObject<string>;
+  pagesRef: React.MutableRefObject<any[]>;
   setInfoContent: React.Dispatch<React.SetStateAction<any[]>>;
   setNavContents: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
   setNavStack: React.Dispatch<React.SetStateAction<string[]>>;
+  onRestoreTheme: (themeId: string) => void;
+  onRestorePages: (pages: any[]) => void;
 }
 
 export function useUndoRedo({
-  infoContentRef, navContentsRef, navStackRef,
-  setInfoContent, setNavContents, setNavStack,
+  infoContentRef, navContentsRef, navStackRef, themeIdRef, pagesRef,
+  setInfoContent, setNavContents, setNavStack, onRestoreTheme, onRestorePages,
 }: Props) {
   const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
   const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
@@ -33,6 +39,8 @@ export function useUndoRedo({
       infoContent: infoContentRef.current,
       navContents: navContentsRef.current,
       navStack: navStackRef.current,
+      themeId: themeIdRef.current,
+      pages: pagesRef.current,
     };
   }
 
@@ -50,6 +58,8 @@ export function useUndoRedo({
     setInfoContent(s.infoContent);
     setNavContents(s.navContents);
     setNavStack(s.navStack);
+    if (s.themeId !== themeIdRef.current) onRestoreTheme(s.themeId);
+    onRestorePages(s.pages);
   }
 
   function handleUndo() {

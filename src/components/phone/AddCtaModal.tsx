@@ -14,6 +14,7 @@ interface AddCtaModalProps {
   ctaType: string;
   onConfirm: (attrs: CtaConfirmAttrs) => void;
   onCancel: () => void;
+  hideSupplier?: boolean;
 }
 
 function validatePhone(v: string): string | null {
@@ -56,7 +57,7 @@ function prefill(ctaType: string, supplier: any): { label: string; action: strin
   }
 }
 
-export function AddCtaModal({ ctaType, onConfirm, onCancel }: AddCtaModalProps) {
+export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false }: AddCtaModalProps) {
   const suppliers: any[] = dataStore.get('Suppliers') ?? [];
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const cfg = CONFIG[ctaType] ?? CONFIG.Form;
@@ -135,33 +136,37 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel }: AddCtaModalProps) 
         </div>
 
         <div className="acm-body">
-          <label className="acm-label">
-            Connect Supplier <span className="acm-optional">(optional)</span>
-          </label>
-          <div className="acm-select-wrap">
-            <select
-              className="acm-select"
-              value={supplierId}
-              onChange={e => handleSupplierChange(e.target.value)}
-            >
-              <option value="">Select supplier to connect...</option>
-              {suppliers.map(s => (
-                <option key={s.SupplierGenId} value={s.SupplierGenId}>
-                  {s.SupplierGenCompanyName || s.SupplierGenContactName}
-                </option>
-              ))}
-            </select>
-            {supplierId && (
-              <button
-                className="acm-select-clear"
-                type="button"
-                title="Clear supplier"
-                onClick={handleClearSupplier}
-              >
-                ×
-              </button>
-            )}
-          </div>
+          {!hideSupplier && (
+            <>
+              <label className="acm-label">
+                Connect Supplier <span className="acm-optional">(optional)</span>
+              </label>
+              <div className="acm-select-wrap">
+                <select
+                  className="acm-select"
+                  value={supplierId}
+                  onChange={e => handleSupplierChange(e.target.value)}
+                >
+                  <option value="">Select supplier to connect...</option>
+                  {suppliers.map(s => (
+                    <option key={s.SupplierGenId} value={s.SupplierGenId}>
+                      {s.SupplierGenCompanyName || s.SupplierGenContactName}
+                    </option>
+                  ))}
+                </select>
+                {supplierId && (
+                  <button
+                    className="acm-select-clear"
+                    type="button"
+                    title="Clear supplier"
+                    onClick={handleClearSupplier}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
           <label className="acm-label">{cfg.actionLabel}</label>
           {isForm ? (

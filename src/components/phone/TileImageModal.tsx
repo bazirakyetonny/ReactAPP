@@ -62,7 +62,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
       setMediaList(list);
       if (initialOriginalUrl) {
         const match = list.find(m => m.MediaUrl === initialOriginalUrl);
-        setSelectedMedia(match ?? { MediaId: '', MediaName: '', MediaUrl: initialOriginalUrl });
+        setSelectedMedia(match ?? { MediaId: '', MediaName: '', MediaUrl: initialOriginalUrl, MediaImage: '', MediaSize: 0, MediaType: '', IsCropped: false });
       }
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -129,6 +129,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
         type: 'image/jpeg',
         croppedOriginalMediaId: selectedMedia.MediaId,
       });
+      if (!result?.MediaUrl) throw new Error('Upload failed: no URL returned');
       onConfirm({ bgImageUrl: result.MediaUrl, opacity: opacity / 100, originalImageUrl: selectedMedia.MediaUrl, originalMediaId: selectedMedia.MediaId });
     } catch (err: any) {
       setSaveError(err.message ?? 'Failed to save');

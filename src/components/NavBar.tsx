@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import "./NavBar.css";
 import type { AppVersion, Theme } from "../types";
 import { AppVersionDropDown } from "./appversion/AppVersionDropDown";
@@ -23,6 +24,9 @@ interface NavBarProps {
   onExpand?: () => void;
   invalidLinkCount?: number;
   isCheckingLinks?: boolean;
+  isSaving?: boolean;
+  saveError?: boolean;
+  savedAt?: number | null;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -245,6 +249,18 @@ function ExpandIcon() {
   );
 }
 
+function CloudIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="15" viewBox="0 0 22 15" fill="none">
+      <path
+        d="M17.2 5.9C17.1 3.3 14.9 1.2 12.3 1.2C10.2 1.2 8.4 2.5 7.6 4.4C7.2 4.2 6.7 4.1 6.2 4.1C4.2 4.1 2.6 5.7 2.6 7.8C2.6 9.9 4.2 11.5 6.2 11.5H17.3C19.1 11.5 20.6 10 20.6 8.2C20.6 6.5 19.2 5.1 17.5 5.1C17.4 5.4 17.3 5.6 17.2 5.9Z"
+        stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+
 function UploadIcon() {
   return (
     <svg
@@ -300,7 +316,18 @@ export function NavBar({
   onExpand,
   invalidLinkCount = 0,
   isCheckingLinks = false,
+  isSaving = false,
+  saveError = false,
+  savedAt = null,
 }: NavBarProps) {
+  const [savedVisible, setSavedVisible] = useState(false);
+  useEffect(() => {
+    if (!savedAt) return;
+    setSavedVisible(true);
+    const t = setTimeout(() => setSavedVisible(false), 2000);
+    return () => clearTimeout(t);
+  }, [savedAt]);
+
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -334,6 +361,12 @@ export function NavBar({
         <button className="navbar-icon-btn" type="button" title="Select frame">
           <FrameIcon />
         </button>
+        {(isSaving || saveError || savedVisible) && (
+          <div className={`navbar-save-indicator${isSaving ? ' navbar-save-indicator--saving' : saveError ? ' navbar-save-indicator--error' : ' navbar-save-indicator--saved'}`}>
+            <CloudIcon />
+            <span>{isSaving ? 'Saving…' : saveError ? 'Save failed' : 'Saved'}</span>
+          </div>
+        )}
       </div>
 
       <div className="navbar-spacer" />
