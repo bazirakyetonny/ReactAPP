@@ -251,10 +251,10 @@ export function TileGrids({
                             onSelectTile(tile.Id);
                             if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard' || tile.Action?.ObjectType === 'Calendar' || tile.Action?.ObjectType === 'MyActivity' || tile.Action?.ObjectType === 'Map') && tile.Action?.ObjectId) {
                               onTileNavigate?.(tile.Action.ObjectId);
-                            } else if (tile.Action?.ObjectType !== 'WebLink') {
+                            } else if (tile.Action?.ObjectType !== 'WebLink' && tile.Action?.ObjectType !== 'DynamicForm') {
                               onCollapseFromParent?.();
                             }
-                            // WebLink: handleSelectTile (via onSelectTile) owns the navigation
+                            // WebLink / DynamicForm: handleSelectTile (via onSelectTile) owns the navigation
                           } : undefined}
                           onDragStart={(e) => e.preventDefault()}
                           onDoubleClick={interactive && onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(tile.Id, (e.currentTarget as HTMLElement).getBoundingClientRect()); } : undefined}
