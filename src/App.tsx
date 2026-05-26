@@ -13,12 +13,14 @@ import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
 import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
 import { UpdateTranslationsModal } from "./components/appversion/UpdateTranslationsModal";
 import { CreateAppVersionTemplateModal } from "./components/appversion/CreateAppVersionTemplateModal";
+import { PublishModal } from "./components/appversion/PublishModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
 import { TileImageModal } from "./components/phone/TileImageModal";
 import { AddCtaModal } from "./components/phone/AddCtaModal";
 import { SidebarRight } from "./components/SidebarRight";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
+import { VersionHistorySidebar } from "./components/appversion/VersionHistorySidebar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { dataStore } from "./data/datastore";
 import type { Theme, Mood, CategoryTemplates } from "./types";
@@ -78,6 +80,7 @@ function App() {
   const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [translationPageId, setTranslationPageId] = useState<string | null>(null);
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
@@ -95,6 +98,7 @@ function App() {
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -927,9 +931,12 @@ function App() {
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
+        isHistoryOpen={isHistoryOpen}
+        onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
         analysisIssueCount={analysisIssues.length}
         isAnalyzing={isAnalyzing}
         onAnalysisOpen={() => setAnalysisOpen(true)}
+        onPublish={() => setShowPublishModal(true)}
       />
       {analysisOpen && (
         <AnalysisPanel
@@ -937,6 +944,20 @@ function App() {
           isAnalyzing={isAnalyzing}
           onClose={() => setAnalysisOpen(false)}
           onRerun={rerunAnalysis}
+        />
+      )}
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
         />
       )}
       {showCreateModal && (
@@ -1118,7 +1139,13 @@ function App() {
           liveTileText={liveTileText}
           onActiveFrameChange={handleActiveFrameChange}
         />
-        {isTranslationOpen ? (
+        {isHistoryOpen ? (
+          <VersionHistorySidebar
+            appVersionId={currentVersion?.AppVersionId}
+            onClose={() => setIsHistoryOpen(false)}
+            onRestored={() => setIsHistoryOpen(false)}
+          />
+        ) : isTranslationOpen ? (
           <TranslationSideBar
             appVersionId={currentVersion?.AppVersionId ?? ""}
             appVersionLanguage={currentVersion?.AppVersionLanguage ?? ""}
@@ -1135,6 +1162,7 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
             moods={themeMoods}
+            moodId={currentVersion?.MoodId}
             selectedTile={selectedTile}
             onEditTile={handleEditTile}
             onOpenTileImage={handleOpenTileImageFromSidebar}

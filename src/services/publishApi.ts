@@ -1,5 +1,12 @@
 import { apiPost } from './apiClient';
 
+export function publishVersion(appVersionId: string, notify: boolean): Promise<void> {
+  return apiPost<unknown>('/api/toolbox/v2/publish-appversion', {
+    AppVersionId: appVersionId,
+    Notify: notify,
+  }).then(() => undefined);
+}
+
 export interface SDTPageUrl {
   PageId: string;
   Url: string;

@@ -37,7 +37,7 @@ export function createWidget(
   dataStore.set("Moods", Moods);
   dataStore.set("TemplatesCollection", TemplatesCollection);
   dataStore.set("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
-  
+
   // console.log("Suppliers", Suppliers);
   // console.log("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
   // console.log("SDT_DynamicFormsCollection", SDT_DynamicFormsCollection);
@@ -50,7 +50,8 @@ export function createWidget(
   // console.log("SupportedLanguages", SupportedLanguages);
   // console.log("UserRoles", UserRoles);
   // console.log("ResidentPackages", ResidentPackages);
-  // console.log("Moods", Moods);
+  console.log("Moods", Moods);
+  console.log("Themes", themes);
   // console.log("TemplatesCollection", TemplatesCollection);
   // console.log("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
 

@@ -33,6 +33,8 @@ interface NavBarProps {
   analysisIssueCount?: number;
   isAnalyzing?: boolean;
   onAnalysisOpen?: () => void;
+  isHistoryOpen?: boolean;
+  onHistoryToggle?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -135,7 +137,7 @@ function RedoIcon() {
   );
 }
 
-function HistoryIcon() {
+function HistoryIcon({ active }: { active?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -148,7 +150,7 @@ function HistoryIcon() {
         data-name="Group 4626-converted"
         d="M1.046.033a1.038,1.038,0,0,0-.636.6C.38.738.369,1.545.369,3.629V6.481l.092.185a.9.9,0,0,0,.468.443A15.23,15.23,0,0,0,4,7.166c3.276-.011,3.009.012,3.293-.281A.936.936,0,0,0,6.99,5.4,6.933,6.933,0,0,0,5.21,5.317L3.575,5.3l.619-.608A8.83,8.83,0,0,1,6.811,2.815,8.95,8.95,0,0,1,10.9,1.882a8.081,8.081,0,0,1,3.731.845A8.763,8.763,0,0,1,18.2,5.918a8.994,8.994,0,0,1,1.13,2.773,9.35,9.35,0,0,1,0,3.64,8.7,8.7,0,0,1-3.667,5.377,10.6,10.6,0,0,1-1.852.939,8.735,8.735,0,0,1-4.9.287A8.63,8.63,0,0,1,5.651,17.4a11.708,11.708,0,0,1-1.664-1.664,8.568,8.568,0,0,1-1.746-4.871c-.027-.6-.078-.784-.272-.983A.844.844,0,0,0,1.3,9.6a.877.877,0,0,0-.836.507,1.006,1.006,0,0,0-.092.578,10.1,10.1,0,0,0,.55,3.186,10.129,10.129,0,0,0,2.533,4.063A9.815,9.815,0,0,0,6.2,19.916a9.98,9.98,0,0,0,2.641.907A8.655,8.655,0,0,0,10.933,21a8.833,8.833,0,0,0,2.39-.269,10.52,10.52,0,0,0,7.8-7.847,8.76,8.76,0,0,0,.249-2.373,7.88,7.88,0,0,0-.081-1.481A10.247,10.247,0,0,0,20.3,5.871,10.488,10.488,0,0,0,12.9.2,8.922,8.922,0,0,0,10.844.021,10.8,10.8,0,0,0,6.053,1.107,10.807,10.807,0,0,0,2.859,3.385l-.632.622-.01-1.673C2.207.693,2.206.657,2.129.515A.985.985,0,0,0,1.046.033m9.649,4.252a.92.92,0,0,0-.669.533c-.073.159-.075.208-.084,2.959-.012,3.177-.021,3.056.259,3.353a13.129,13.129,0,0,0,2.4,1.288c2.132,1.064,2.262,1.123,2.478,1.137a.745.745,0,0,0,.413-.066.984.984,0,0,0,.523-.581.756.756,0,0,0-.005-.555c-.122-.379-.117-.375-2.244-1.441L11.828,9.94l-.01-2.481c-.011-2.432-.012-2.484-.085-2.642a.96.96,0,0,0-1.038-.533"
         transform="translate(-0.369 -0.001)"
-        fill="#7c8791"
+        fill={active ? "#2563eb" : "#7c8791"}
         fill-rule="evenodd"
       ></path>
     </svg>
@@ -347,6 +349,8 @@ export function NavBar({
   analysisIssueCount = 0,
   isAnalyzing = false,
   onAnalysisOpen,
+  isHistoryOpen = false,
+  onHistoryToggle,
 }: NavBarProps) {
   const [savedVisible, setSavedVisible] = useState(false);
   useEffect(() => {
@@ -459,8 +463,13 @@ export function NavBar({
         >
           <RedoIcon />
         </button>
-        <button className="navbar-icon-btn" type="button" title="History">
-          <HistoryIcon />
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title="History"
+          onClick={onHistoryToggle}
+        >
+          <HistoryIcon active={isHistoryOpen} />
         </button>
         <button className="navbar-icon-btn" type="button" title="Delete">
           <TrashIcon />

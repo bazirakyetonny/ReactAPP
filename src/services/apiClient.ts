@@ -1,4 +1,5 @@
 export interface SDTError {
+  Status: string;
   Message: string;
   Type: string;
 }
@@ -16,7 +17,11 @@ export function getBaseUrl(): string {
 
 function checkError(error: SDTError | undefined): void {
   if (!error) return;
-  if (error.Message === "Not Authenticated") throw new AuthError();
+  if (error.Message === "Not Authenticated") {
+    window.location.reload();
+    // Throw after scheduling the reload so the caller's promise chain stops immediately.
+    throw new AuthError();
+  }
   if (error.Message) throw new Error(error.Message);
 }
 

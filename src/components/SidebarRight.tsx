@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import "./SidebarRight.css";
 import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from "../types";
 import { SidebarCtaControls } from "./SidebarCtaControls";
+import { ColorPalette } from "./sidebar_right/ColorPalette";
 
 const COLOR_ORDER: (keyof ThemeColors)[] = [
   "primaryColor",
@@ -17,69 +18,6 @@ const COLOR_ORDER: (keyof ThemeColors)[] = [
 ];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
-
-function MoodToggleIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 13 13"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        cx="6.5"
-        cy="6.5"
-        r="5.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <circle
-        cx="6.5"
-        cy="6.5"
-        r="2.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <line
-        x1="6.5"
-        y1="1"
-        x2="6.5"
-        y2="4"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="6.5"
-        y1="9"
-        x2="6.5"
-        y2="12"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="1"
-        y1="6.5"
-        x2="4"
-        y2="6.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="9"
-        y1="6.5"
-        x2="12"
-        y2="6.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 function AddImageIcon() {
   return (
@@ -209,8 +147,8 @@ function ChevronDownSmIcon() {
 function SquareOutlineIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="24"
+      height="24"
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden="true"
@@ -231,8 +169,8 @@ function SquareOutlineIcon() {
 function SquareFilledIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="24"
+      height="24"
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden="true"
@@ -245,47 +183,17 @@ function SquareFilledIcon() {
 function AlignCenterIcon() {
   return (
     <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      width="12.7"
+      height="14.626"
+      viewBox="0 0 12.7 14.626"
     >
-      <line
-        x1="1"
-        y1="3"
-        x2="13"
-        y2="3"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="3"
-        y1="6"
-        x2="11"
-        y2="6"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="1"
-        y1="9"
-        x2="13"
-        y2="9"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="3"
-        y1="12"
-        x2="11"
-        y2="12"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
+      <path
+        id="Group_2344-converted"
+        data-name="Group 2344-converted"
+        d="M5.863,1.868V3.736L5.031,2.9,4.2,2.073l-.336.341-.336.342,1.411,1.41L6.35,5.577,7.758,4.17,9.165,2.762l-.333-.333L8.5,2.1l-.831.817-.83.817V0H5.863V1.868M0,7.313v.794H12.7V6.519H0v.794m4.937,3.149-1.4,1.4.333.333.334.333.83-.816.831-.817v3.729h.974V10.89l.832.832.831.832.336-.342.336-.341L7.766,10.465c-.773-.773-1.41-1.406-1.416-1.406s-.642.631-1.413,1.4"
+        fill-rule="evenodd"
+        fill="#696969"
       />
     </svg>
   );
@@ -358,6 +266,7 @@ export function SidebarRight({
   selectedCta,
   onEditCta,
   onBeforeCtaEdit,
+  moodId,
 }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
@@ -374,11 +283,11 @@ export function SidebarRight({
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
+  moodId?: string;
 }) {
   const palette = themeColors
     ? COLOR_ORDER.map((k) => themeColors[k]).filter(Boolean)
     : [];
-  const [showMoods, setShowMoods] = useState(false);
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
 
@@ -445,77 +354,14 @@ export function SidebarRight({
 
       {selectedTile && (
         <>
-          {/* 2a. Palette header: label + toggle */}
-          <div className="sr-palette-header">
-            <span className="sr-palette-label">
-              {showMoods ? "Moods" : "Theme Colors"}
-            </span>
-            <button
-              className={`sr-icon-btn${showMoods ? " sr-icon-btn-active" : ""}`}
-              type="button"
-              title={showMoods ? "Show theme colors" : "Show moods"}
-              onClick={() => setShowMoods((v) => !v)}
-            >
-              <MoodToggleIcon />
-            </button>
-          </div>
-
-          {/* 2b. Color chips / mood chips */}
-          <div className="sr-palette-row">
-            <div className="sr-palette">
-              {showMoods ? (
-                moods.length === 0 ? (
-                  <span className="sr-zoom-label">No moods</span>
-                ) : (
-                  moods.map((mood) => (
-                    <div
-                      key={mood.MoodId}
-                      className="sr-mood-chip"
-                      title={mood.MoodName}
-                    >
-                      {mood.MoodColors.slice(0, 4).map((mc) => (
-                        <button
-                          key={mc.MoodColorId}
-                          className={`sr-mood-dot${activeBgHex === mc.ColorCode ? " sr-mood-dot--active" : ""}`}
-                          style={{ background: mc.ColorCode }}
-                          type="button"
-                          aria-label={`Apply colour ${mc.ColorCode}`}
-                          onClick={() =>
-                            selectedTile &&
-                            onEditTile?.(selectedTile.Id, {
-                              BGColor: mc.ColorCode,
-                              BGImageUrl: null,
-                              OriginalImageUrl: null,
-                              Opacity: null,
-                            })
-                          }
-                        />
-                      ))}
-                    </div>
-                  ))
-                )
-              ) : (
-                palette.map((c) => (
-                  <button
-                    key={c}
-                    className={`sr-palette-chip${activeBgHex === c ? " sr-palette-chip--active" : ""}`}
-                    style={{ background: c }}
-                    type="button"
-                    aria-label={c}
-                    onClick={() =>
-                      selectedTile &&
-                      onEditTile?.(selectedTile.Id, {
-                        BGColor: c,
-                        BGImageUrl: null,
-                        OriginalImageUrl: null,
-                        Opacity: null,
-                      })
-                    }
-                  />
-                ))
-              )}
-            </div>
-          </div>
+          <ColorPalette
+            palette={palette}
+            moods={moods}
+            selectedTile={selectedTile}
+            activeBgHex={activeBgHex}
+            onEditTile={onEditTile}
+            moodId={moodId}
+          />
 
           {/* 2b. Image tools */}
           <div className="sr-image-tools">
@@ -564,7 +410,6 @@ export function SidebarRight({
               </>
             )}
           </div>
-
           {/* 2c. Text input — bound to selected tile */}
           <div className="sr-section">
             <input
@@ -592,7 +437,6 @@ export function SidebarRight({
               }}
             />
           </div>
-
           {/* 3. Format toolbar */}
           <div className="sr-toolbar">
             {/* Text colour group: Light + Dark */}
@@ -624,31 +468,34 @@ export function SidebarRight({
                 <SquareFilledIcon />
               </button>
             </div>
-            <button
-              className={`sr-tool-btn${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
-              type="button"
-              title="Center align"
-              disabled={!selectedTile}
-              onClick={() =>
-                selectedTile &&
-                onEditTile?.(selectedTile.Id, { Align: "center" })
-              }
-            >
-              <AlignCenterIcon />
-            </button>
-            <button
-              className={`sr-tool-btn${selectedTile?.Align === "left" ? " sr-tool-btn-active" : ""}`}
-              type="button"
-              title="Left align"
-              disabled={!selectedTile}
-              onClick={() =>
-                selectedTile && onEditTile?.(selectedTile.Id, { Align: "left" })
-              }
-            >
-              <AlignLeftIcon />
-            </button>
+            {/* Alignment group: Center + Left */}
+            <div className="sr-text-color-group">
+              <button
+                className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Align === "left" ? " sr-tool-btn-active" : ""}`}
+                type="button"
+                title="Left align"
+                disabled={!selectedTile}
+                onClick={() =>
+                  selectedTile &&
+                  onEditTile?.(selectedTile.Id, { Align: "left" })
+                }
+              >
+                <AlignLeftIcon />
+              </button>
+              <button
+                className={`sr-tool-btn sr-tool-btn--in-group${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
+                type="button"
+                title="Center align"
+                disabled={!selectedTile}
+                onClick={() =>
+                  selectedTile &&
+                  onEditTile?.(selectedTile.Id, { Align: "center" })
+                }
+              >
+                <AlignCenterIcon />
+              </button>
+            </div>
           </div>
-
           {/* 4. Category / search unified field */}
           <div className="sr-category-row">
             <div className="sr-category-wrap">
