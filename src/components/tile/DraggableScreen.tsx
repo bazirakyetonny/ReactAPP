@@ -512,8 +512,7 @@ export function DraggableScreen({
       if (!frameEl) continue;
       const rect = frameEl.getBoundingClientRect();
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        const hasGrids = fc.some((b: any) => b.InfoType === 'TileGrid');
-        return { preview: null, targetFrameIdx: frameIndex, emptyFrameDrop: !hasGrids };
+        return { preview: null, targetFrameIdx: frameIndex, emptyFrameDrop: fc.length === 0 };
       }
     }
     return { preview: null, targetFrameIdx: srcIdx };
@@ -575,12 +574,12 @@ export function DraggableScreen({
     if (!drag || !drag.hasMoved) return null;
     const frameData = extraFramesContentRef.current.find(f => f.frameIndex === targetFrameIdx);
     if (!frameData) return null;
-    const grids = frameData.infoContent.filter((b: any) => b.InfoType === 'TileGrid');
-    if (grids.length === 0) return null;
+    const allBlocks = frameData.infoContent;
+    if (allBlocks.length === 0) return null;
     const entries: Array<{ id: string; rect: DOMRect }> = [];
-    for (const g of grids) {
-      const rect = gridRectsSnapshot.current.get(g.InfoId);
-      if (rect) entries.push({ id: g.InfoId, rect });
+    for (const b of allBlocks) {
+      const rect = blockWrapperRectsSnapshot.current.get(b.InfoId);
+      if (rect) entries.push({ id: b.InfoId, rect });
     }
     if (entries.length === 0) return null;
     const { left, right } = entries[0].rect;
@@ -641,6 +640,7 @@ export function DraggableScreen({
         if (extraData) {
           for (const [colId, { el }] of extraData.colEls) colRectsSnapshot.current.set(colId, el.getBoundingClientRect());
           for (const [gridId, { el }] of extraData.gridEls) gridRectsSnapshot.current.set(gridId, el.getBoundingClientRect());
+          for (const [blockId, { el }] of extraData.blockWrapperEls) blockWrapperRectsSnapshot.current.set(blockId, el.getBoundingClientRect());
           const gfMap = new Map<string, number>();
           for (const b of infoContentRef.current) { if (b.InfoType === 'TileGrid') gfMap.set(b.InfoId, sourceFrameIndexRef.current); }
           for (const { frameIndex, infoContent: fc } of extraData.frames) { for (const b of fc) { if (b.InfoType === 'TileGrid') gfMap.set(b.InfoId, frameIndex); } }
@@ -832,14 +832,15 @@ export function DraggableScreen({
       <div className={[
         'phone-screen',
         (isDraggingAnything || isExternalDragActive) ? 'phone-screen--dragging' : '',
-        isExternalDragActive && tileGrids.length === 0 ? 'phone-screen--empty-drop' : '',
       ].filter(Boolean).join(' ')}>
         <div className={[
           'phone-add-row',
-          infoContent.length === 0 ? 'phone-add-row--visible' : '',
-          (effectiveDraggingTile && tileGrids.length > 0) || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
-          effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId
-            ? 'phone-add-row--tile-drop-zone-active' : '',
+          infoContent.length === 0 && !isExternalDragActive && !effectiveBlockDragActive ? 'phone-add-row--visible' : '',
+          effectiveDraggingTile || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
+          effectiveDraggingTile && (
+            (!!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
+            || (isExternalDragActive && infoContent.length === 0)
+          ) ? 'phone-add-row--tile-drop-zone-active' : '',
         ].filter(Boolean).join(' ')}>
           <button
             className="phone-add-btn"
@@ -853,8 +854,13 @@ export function DraggableScreen({
             </svg>
           </button>
         </div>
-        {effectiveBlockDragActive && !!effectiveBlockDropPreview &&
-          effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId && infoContent.length > 0 && (
+        {infoContent.length > 0 && (
+          (effectiveBlockDragActive && !!effectiveBlockDropPreview && effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
+          || (effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
+        ) && (
+          <div className="block-drop-zone" />
+        )}
+        {infoContent.length === 0 && (isExternalDragActive || (effectiveBlockDragActive && !!effectiveBlockDropPreview)) && (
           <div className="block-drop-zone" />
         )}
         {groupInfoContent(infoContent).map((group) => {

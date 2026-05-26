@@ -1,0 +1,243 @@
+.ap-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 64px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ap-panel {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 560px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.ap-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ap-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.ap-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ap-rerun-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3b6ee8;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.ap-rerun-btn:hover:not(:disabled) {
+  background: #f0f4ff;
+  border-color: #3b6ee8;
+}
+
+.ap-rerun-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ap-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.12s;
+}
+
+.ap-close-btn:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.ap-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.ap-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 24px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ap-empty--ok {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+/* Spinner */
+.ap-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #d1d5db;
+  border-top-color: #3b6ee8;
+  border-radius: 50%;
+  animation: ap-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.ap-spinner--lg {
+  width: 22px;
+  height: 22px;
+  border-width: 2.5px;
+}
+
+@keyframes ap-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Sections */
+.ap-section {
+  border-left: 3px solid transparent;
+  margin: 4px 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ap-section--red  { border-left-color: #ef4444; }
+.ap-section--amber { border-left-color: #f59e0b; }
+
+.ap-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+
+.ap-section-header:hover {
+  background: #f9fafb;
+}
+
+.ap-section-chevron {
+  font-size: 12px;
+  color: #6b7280;
+  width: 12px;
+}
+
+.ap-section-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ap-section-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.ap-section-body {
+  padding: 0 4px 4px;
+}
+
+.ap-section-none {
+  padding: 6px 28px 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Issue rows */
+.ap-issue {
+  padding: 7px 12px;
+  border-radius: 5px;
+  transition: background 0.1s;
+}
+
+.ap-issue:hover {
+  background: #f9fafb;
+}
+
+.ap-issue-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.ap-issue-page {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ap-issue-location {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.ap-issue-detail {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

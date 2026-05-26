@@ -8,7 +8,7 @@ export type TileMenuAction =
   | { type: 'new-page' }
   | { type: 'existing-page'; pageId: string; objectType: string; objectUrl: string }
   | { type: 'direct-link'; linkType: string; value: string; label: string }
-  | { type: 'form'; formId: string; pageName: string }
+  | { type: 'form'; formId: string; pageName: string; formReferenceName: string }
   | { type: 'copy-tile' };
 
 interface TileActionMenuProps {
@@ -158,7 +158,7 @@ export function TileActionMenu({ tileId, pos, onAction, onClose }: TileActionMen
                     className="tam__sub-item"
                     onMouseDown={e => {
                       e.stopPropagation();
-                      act({ type: 'form', formId: String(f.FormId), pageName: f.PageName ?? f.FormName ?? 'Form' });
+                      act({ type: 'form', formId: String(f.FormId), pageName: f.PageName ?? f.FormName ?? 'Form', formReferenceName: f.ReferenceName ?? '' });
                     }}
                   >
                     {f.PageName ?? f.FormName}

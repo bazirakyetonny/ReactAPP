@@ -41,6 +41,8 @@ import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
+import { useAnalysis } from "./hooks/useAnalysis";
+import { AnalysisPanel } from "./components/AnalysisPanel";
 
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
@@ -92,6 +94,7 @@ function App() {
   const [invalidLinkCount, setInvalidLinkCount] = useState(0);
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -369,6 +372,15 @@ function App() {
   );
   runSaveRef.current = runSave;
 
+  // ── Analysis ─────────────────────────────────────────────────────────────
+
+  const { issues: analysisIssues, isAnalyzing, rerun: rerunAnalysis } = useAnalysis({
+    infoContent,
+    navContents,
+    pages: currentVersion?.Page ?? [],
+    versionId: currentVersion?.AppVersionId,
+  });
+
   // ── Data persistence ─────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -607,8 +619,8 @@ function App() {
       }
     }
 
-    if (tileAction?.ObjectType === "WebLink") {
-      const frameKey = tileAction.ObjectId || `weblink-frame-${id}`;
+    if (tileAction?.ObjectType === "WebLink" || tileAction?.ObjectType === "DynamicForm") {
+      const frameKey = tileAction.ObjectId || `form-frame-${id}`;
       // Prefer the canonical URL stored on the page record; fall back to tile Action
       const page = pagesRef.current.find(
         (p: any) => p.PageId === tileAction.ObjectId,
@@ -745,21 +757,69 @@ function App() {
 
     if (action.type === "direct-link") {
       pushSnapshot();
+      const objectId = action.linkType === "Phone"
+        ? `RYjufBtwDa${Date.now()}`
+        : "";
       handleEditTile(tileId, {
+        ...(action.label ? { Text: action.label } : {}),
         Action: {
           ObjectType: action.linkType,
-          ObjectId: "",
+          ObjectId: objectId,
           ObjectUrl: action.value,
+          FormId: 0,
         },
       });
       return;
     }
 
     if (action.type === "form") {
-      pushSnapshot();
-      handleEditTile(tileId, {
-        Action: { ObjectType: "Form", ObjectId: action.formId, ObjectUrl: "" },
-      });
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some((b) =>
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
+          ),
+        );
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
+            parentIndex = i;
+            break;
+          }
+        }
+      }
+      try {
+        const newPage = await createLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageName: action.pageName,
+          url: "",
+          WWPFormId: Number(action.formId),
+          WWPFormReferenceName: action.formReferenceName,
+        });
+        if (!newPage?.PageId) throw new Error("no page");
+        const url = newPage.PageLinkStructure?.Url ?? "";
+        pushSnapshot();
+        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        dataStore.set("Current_Version", updated);
+        setCurrentVersion(updated);
+        handleEditTile(tileId, {
+          Action: {
+            ObjectType: newPage.PageType ?? "DynamicForm",
+            ObjectId: newPage.PageId,
+            ObjectUrl: url,
+            FormId: Number(action.formId),
+          },
+        });
+        handleTileNavigate(newPage.PageId, parentIndex);
+        setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+        setNavUrls((prev) => ({ ...prev, [newPage.PageId]: url }));
+      } catch {
+        pushSnapshot();
+        handleEditTile(tileId, {
+          Action: { ObjectType: "DynamicForm", ObjectId: action.formId, ObjectUrl: "" },
+        });
+      }
       return;
     }
 
@@ -867,7 +927,18 @@ function App() {
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
+        analysisIssueCount={analysisIssues.length}
+        isAnalyzing={isAnalyzing}
+        onAnalysisOpen={() => setAnalysisOpen(true)}
       />
+      {analysisOpen && (
+        <AnalysisPanel
+          issues={analysisIssues}
+          isAnalyzing={isAnalyzing}
+          onClose={() => setAnalysisOpen(false)}
+          onRerun={rerunAnalysis}
+        />
+      )}
       {showCreateModal && (
         <CreateAppVersionModal
           templatesCollection={templatesCollection}

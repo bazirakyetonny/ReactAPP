@@ -53,6 +53,7 @@
 
 /* ── Icon buttons ───────────────────────────────────────────── */
 .navbar-icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -136,6 +137,41 @@
 
 .navbar-publish:hover {
   background: #142d56;
+}
+
+/* ── Bug / Analysis badges ───────────────────────────────────── */
+.navbar-bug-badge,
+.navbar-analysis-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.navbar-bug-badge--checking,
+.navbar-analysis-badge--checking {
+  background: #9ca3af;
+}
+
+.navbar-analysis-ok {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #22c55e;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .navbar-save-indicator {

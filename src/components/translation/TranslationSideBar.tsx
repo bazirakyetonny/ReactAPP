@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import "./TranslationSideBar.css";
 import type { ThemeColors, ThemeIcon, ThemeCtaColor } from "../../types";
-import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
+import { PhoneStatusBar } from "../phone/StatusBar";
+import { PhoneAppHeader, PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
@@ -15,6 +16,7 @@ import {
 
 export function TranslationSideBar({
   pageName,
+  isLinkedPage = false,
   appVersionId,
   appVersionLanguage,
   appVersionMultiLanguages,
@@ -24,6 +26,7 @@ export function TranslationSideBar({
   ctaColors,
 }: {
   pageName?: string;
+  isLinkedPage?: boolean;
   appVersionId: string;
   appVersionLanguage: string;
   appVersionMultiLanguages: string[];
@@ -110,6 +113,13 @@ export function TranslationSideBar({
     const next = { ...sdtPage, PageName: value };
     setSdtPage(next);
     saveNow(next);
+  // ── Blur handlers ─────────────────────────────────────────────────────────────
+
+  function handlePageNameBlur(value: string) {
+    const next = { ...sdtPage, PageName: value };
+    setSdtPage(next);
+    saveNow(next);
+    setEditingKey(null);
   }
 
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
