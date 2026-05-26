@@ -51,11 +51,17 @@ export function PhoneLinkedHeader({
   isNew,
   onBack,
   onRename,
+  hideBack = false,
+  editOnClick = false,
 }: {
   pageName: string;
   isNew?: boolean;
   onBack: () => void;
   onRename?: (name: string) => void;
+  /** Hide the back button (e.g. home page in translation sidebar) */
+  hideBack?: boolean;
+  /** Activate edit mode on single click instead of double-click */
+  editOnClick?: boolean;
 }) {
   const [editing, setEditing] = useState(isNew ?? false);
   const [draft, setDraft] = useState(isNew ? '' : pageName);
@@ -78,15 +84,17 @@ export function PhoneLinkedHeader({
 
   return (
     <div className="phone-app-header phone-linked-header">
-      <button
-        className="phone-back-btn"
-        type="button"
-        aria-label="Go back"
-        onClick={onBack}
-        onMouseDown={isNew ? e => e.preventDefault() : undefined}
-      >
-        <BackArrowIcon />
-      </button>
+      {!hideBack && (
+        <button
+          className="phone-back-btn"
+          type="button"
+          aria-label="Go back"
+          onClick={onBack}
+          onMouseDown={isNew ? e => e.preventDefault() : undefined}
+        >
+          <BackArrowIcon />
+        </button>
+      )}
 
       {editing ? (
         <input
@@ -115,10 +123,11 @@ export function PhoneLinkedHeader({
       ) : (
         <div
           className={`phone-linked-page-name-wrap${onRename ? ' phone-linked-page-name-wrap--editable' : ''}`}
-          onDoubleClick={() => onRename && setEditing(true)}
+          onDoubleClick={!editOnClick ? () => onRename && setEditing(true) : undefined}
+          onClick={editOnClick ? () => onRename && setEditing(true) : undefined}
         >
           <span className="phone-linked-page-name">{draft.toUpperCase()}</span>
-          {onRename && (
+          {onRename && !editOnClick && (
             <button
               className="phone-linked-edit-btn"
               type="button"

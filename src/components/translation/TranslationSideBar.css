@@ -10,53 +10,6 @@
   color: #374151;
 }
 
-.ts-page-name {
-  padding: 13px 16px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #1a3a6e;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-.ts-lang-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-.ts-lang-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  white-space: nowrap;
-}
-
-.ts-lang-select {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1a3a6e;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 4px 6px;
-  cursor: pointer;
-  outline: none;
-}
-
-.ts-lang-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .ts-loading {
   display: flex;
   align-items: center;
@@ -87,7 +40,7 @@
 .ts-phone-scroll {
   flex: 1;
   overflow-y: auto;
-  background: #ffffff;
+  background: #fafafa;
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
@@ -102,6 +55,36 @@
 /* Hide interactive add-row affordance — sidebar is read-only */
 .ts-phone-frame .phone-add-row {
   display: none;
+}
+
+/* ── Status bar lang select ─────────────────────────────────────────────────── */
+
+/* Groups the lang select + status icons on the right side of the status bar */
+.ts-status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Compact select that fits inside the 28px status bar */
+.ts-status-lang-select {
+  font-size: 9px;
+  font-weight: 700;
+  color: #111;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+  padding: 1px 3px;
+  height: 18px;
+  line-height: 1;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.ts-status-lang-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ── Click-to-edit ──────────────────────────────────────────────────────────── */
@@ -120,11 +103,6 @@
   border-bottom-color: rgba(255, 255, 255, 0.55);
 }
 
-/* Page name editable span (dark bg so invert hint color) */
-.ts-page-name-text:hover {
-  border-bottom-color: rgba(26, 58, 110, 0.4);
-}
-
 /* Shared input base — resets browser styles, underline shows edit mode */
 .ts-editable-input {
   all: unset;
@@ -135,39 +113,4 @@
   opacity: 0.9;
   padding: 0 1px;
   cursor: text;
-}
-
-/* Page name input */
-.ts-page-name-input {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #1a3a6e;
-}
-
-/* CTA edit rows — sit below each CtaBlock */
-.ts-cta-edit-group {
-  display: flex;
-  gap: 4px;
-  padding: 4px 8px 8px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-}
-
-.ts-cta-edit-row {
-  flex: 1;
-  min-width: 0;
-}
-
-.ts-cta-label-text {
-  font-size: 11px;
-  color: #6b7280;
-  border-bottom-color: rgba(107, 114, 128, 0.4);
-}
-
-/* CTA input */
-.ts-field-input {
-  font-size: 12px;
-  color: #1a3a6e;
-  border-bottom: 1px solid #2563eb;
 }

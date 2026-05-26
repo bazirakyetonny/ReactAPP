@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import "./css/AppVersionDropDown.css";
 import type { AppVersion } from "../../types";
 
@@ -115,11 +116,49 @@ export function AppVersionDropDown({
 }: AppVersionDropDownProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const subMenuRef = useRef<HTMLDivElement>(null);
+
+  // Submenu: JS-driven so it escapes the overflow-y:auto scroll container
+  const [subVersionId, setSubVersionId] = useState<string | null>(null);
+  const [subPos, setSubPos] = useState<{ top: number; left: number } | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showSub(id: string, rowEl: HTMLElement) {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    const rect = rowEl.getBoundingClientRect();
+    setSubVersionId(id);
+    setSubPos({ top: rect.top - 4, left: rect.right + 2 });
+  }
+
+  function scheduleSubHide() {
+    hideTimer.current = setTimeout(() => {
+      setSubVersionId(null);
+      setSubPos(null);
+    }, 100);
+  }
+
+  function cancelSubHide() {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+  }
+
+  // Clear submenu when main menu closes
+  useEffect(() => {
+    if (!open) {
+      setSubVersionId(null);
+      setSubPos(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        !wrapRef.current?.contains(target) &&
+        !subMenuRef.current?.contains(target)
+      ) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -166,73 +205,70 @@ export function AppVersionDropDown({
 
           <div className="vd-sep" role="separator" />
 
-          {appVersions.map((v) => {
-            const isActive = v.AppVersionId === selectedVersionId;
-            return (
-              <div key={v.AppVersionId} className="vd-item-wrap">
+          <div className="vd-versions-list">
+            {appVersions.map((v) => {
+              const isActive = v.AppVersionId === selectedVersionId;
+              return (
                 <div
-                  className={`vd-item-row${isActive ? " vd-item-row--active" : ""}`}
-                  role="option"
-                  aria-selected={isActive}
-                  onClick={() => {
-                    onVersionSelect?.(v.AppVersionId);
-                    setOpen(false);
-                  }}
+                  key={v.AppVersionId}
+                  className="vd-item-wrap"
+                  onMouseEnter={(e) => showSub(v.AppVersionId, e.currentTarget)}
+                  onMouseLeave={scheduleSubHide}
                 >
-                  <LocationPinIcon />
-                  <span className="vd-item-label">{v.AppVersionName}</span>
-                  <ChevronRightIcon />
+                  <div
+                    className={`vd-item-row${isActive ? " vd-item-row--active" : ""}`}
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => {
+                      onVersionSelect?.(v.AppVersionId);
+                      setOpen(false);
+                    }}
+                  >
+                    <LocationPinIcon />
+                    <span className="vd-item-label">{v.AppVersionName}</span>
+                    <ChevronRightIcon />
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="vd-submenu">
-                  <button
-                    className="vd-sub-item"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDuplicate?.(v.AppVersionId);
-                      setOpen(false);
-                    }}
+          {/* Submenu portal — fixed position, escapes overflow container */}
+          {subVersionId && subPos &&
+            ReactDOM.createPortal(
+              (() => {
+                const v = appVersions.find((a) => a.AppVersionId === subVersionId);
+                if (!v) return null;
+                return (
+                  <div
+                    className="vd-submenu-fixed"
+                    ref={subMenuRef}
+                    style={{ top: subPos.top, left: subPos.left }}
+                    onMouseEnter={cancelSubHide}
+                    onMouseLeave={scheduleSubHide}
                   >
-                    Duplicate
-                  </button>
-                  <button
-                    className="vd-sub-item"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRename?.(v.AppVersionId);
-                      setOpen(false);
-                    }}
-                  >
-                    Rename
-                  </button>
-                  <button
-                    className="vd-sub-item"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpdateTranslations?.(v.AppVersionId);
-                      setOpen(false);
-                    }}
-                  >
-                    Update Translations
-                  </button>
-                  <button
-                    className="vd-sub-item vd-sub-item--danger"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveToTrash?.(v.AppVersionId);
-                      setOpen(false);
-                    }}
-                  >
-                    Move To Trash
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                    <button className="vd-sub-item" type="button"
+                      onClick={(e) => { e.stopPropagation(); onDuplicate?.(v.AppVersionId); setOpen(false); }}>
+                      Duplicate
+                    </button>
+                    <button className="vd-sub-item" type="button"
+                      onClick={(e) => { e.stopPropagation(); onRename?.(v.AppVersionId); setOpen(false); }}>
+                      Rename
+                    </button>
+                    <button className="vd-sub-item" type="button"
+                      onClick={(e) => { e.stopPropagation(); onUpdateTranslations?.(v.AppVersionId); setOpen(false); }}>
+                      Update Translations
+                    </button>
+                    <button className="vd-sub-item vd-sub-item--danger" type="button"
+                      onClick={(e) => { e.stopPropagation(); onMoveToTrash?.(v.AppVersionId); setOpen(false); }}>
+                      Move To Trash
+                    </button>
+                  </div>
+                );
+              })(),
+              document.body,
+            )
+          }
         </div>
       )}
     </div>
