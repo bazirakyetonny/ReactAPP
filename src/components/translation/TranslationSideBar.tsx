@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import "./TranslationSideBar.css";
 import type { ThemeColors, ThemeIcon, ThemeCtaColor } from "../../types";
-import { PhoneStatusBar } from "../phone/StatusBar";
-import { PhoneAppHeader, PhoneLinkedHeader } from "../phone/PhoneHeaders";
+import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
 import { resolveColor } from "../../utils/tileUtils";
+import { TILE_H, TILE_GAP } from "../../constants";
 import {
   translateAppVersion,
   getTranslatedPage,
@@ -15,7 +15,6 @@ import {
 
 export function TranslationSideBar({
   pageName,
-  isLinkedPage = false,
   appVersionId,
   appVersionLanguage,
   appVersionMultiLanguages,
@@ -25,7 +24,6 @@ export function TranslationSideBar({
   ctaColors,
 }: {
   pageName?: string;
-  isLinkedPage?: boolean;
   appVersionId: string;
   appVersionLanguage: string;
   appVersionMultiLanguages: string[];
@@ -34,7 +32,10 @@ export function TranslationSideBar({
   themeIcons?: ThemeIcon[];
   ctaColors?: ThemeCtaColor[];
 }) {
-  const firstLang = appVersionMultiLanguages[0] ?? "";
+  const displayLanguages = appVersionMultiLanguages.filter(
+    (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
+  );
+  const firstLang = displayLanguages[0] ?? "";
   const [selectedLang, setSelectedLang] = useState(firstLang);
   const [sdtPage, setSdtPage] = useState<any>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -99,19 +100,16 @@ export function TranslationSideBar({
     };
   }, [selectedLang, activePageId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Save helper ──────────────────────────────────────────────────────────────
+  // ── Save helpers ─────────────────────────────────────────────────────────────
 
   function saveNow(next: any) {
     updateTranslatedPage(activePageId, selectedLang, next);
   }
 
-  // ── Blur handlers ─────────────────────────────────────────────────────────────
-
-  function handlePageNameBlur(value: string) {
+  function handlePageNameSave(value: string) {
     const next = { ...sdtPage, PageName: value };
     setSdtPage(next);
     saveNow(next);
-    setEditingKey(null);
   }
 
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
@@ -148,26 +146,42 @@ export function TranslationSideBar({
       const bi = i;
 
       if (block.InfoType === "TileGrid") {
+        const cols: any[] = block.Columns ?? [];
         out.push(
           <div key={block.InfoId} className="phone-tilegrid">
-            {(block.Columns ?? []).map((col: any, ci: number) => (
+            {cols.map((col: any, ci: number) => (
               <div key={col.ColId} className="phone-column">
                 {(col.Tiles ?? []).map((tile: any, ti: number) => {
                   const tileKey = `tile-${bi}-${ci}-${ti}`;
                   const bg = resolveColor(tile.BGColor ?? "", themeColors);
+                  // Mirror TileGrids.tsx stretch logic: single tile in a 2-col grid
+                  // should fill the height of the opposite column's stacked tiles.
+                  let derivedHeight: string | null = null;
+                  if (cols.length === 2 && (col.Tiles ?? []).length === 1) {
+                    const oppCol = cols.find((c: any) => c.ColId !== col.ColId);
+                    const oppCount = (oppCol?.Tiles ?? []).length;
+                    if (oppCount > 1) {
+                      derivedHeight = `${oppCount * TILE_H + (oppCount - 1) * TILE_GAP}px`;
+                    }
+                  }
+                  const tileHeight = derivedHeight ?? `${tile.Height || TILE_H}px`;
                   return (
-                    <div key={tile.Id} className="phone-tile-wrap">
+                    <div key={tile.Id} className="phone-tile-wrap" style={{ height: tileHeight }}>
                       <div
                         className="phone-tile"
-                        style={{ background: bg, color: tile.Color ?? "#333" }}
+                        style={{
+                          background: bg,
+                          color: tile.Color ?? "#333",
+                          textAlign: tile.Align ?? "center",
+                          alignItems: tile.Align === "left" ? "flex-start" : "center",
+                          justifyContent: tile.Align === "left" ? "flex-start" : "center",
+                        }}
                       >
                         {tile.BGImageUrl && (
                           <div
                             className="phone-tile-bg-img"
                             style={{
                               backgroundImage: `url(${tile.BGImageUrl})`,
-                              backgroundSize: tile.BGSize || "cover",
-                              backgroundPosition: tile.BGPosition || "center",
                             }}
                           />
                         )}
@@ -199,7 +213,7 @@ export function TranslationSideBar({
                               title="Click to edit"
                               onClick={() => setEditingKey(tileKey)}
                             >
-                              {tile.Text || " "}
+                              {tile.Text || " "}
                             </span>
                           )}
                         </div>
@@ -285,55 +299,46 @@ export function TranslationSideBar({
 
   return (
     <aside className="translation-sidebar">
-      <div className="ts-page-name">
-        {editingKey === "pageName" ? (
-          <input
-            className="ts-editable-input ts-page-name-input"
-            defaultValue={editablePageName}
-            autoFocus
-            onBlur={(e) => handlePageNameBlur(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-          />
-        ) : (
-          <span
-            className="ts-editable-text ts-page-name-text"
-            title="Click to edit page name"
-            onClick={() => setEditingKey("pageName")}
-          >
-            {editablePageName.toUpperCase() || " "}
-          </span>
-        )}
-      </div>
-
-      {appVersionMultiLanguages.length > 0 && (
-        <div className="ts-lang-bar">
-          <label className="ts-lang-label">Language</label>
-          <select
-            className="ts-lang-select"
-            value={selectedLang}
-            onChange={(e) => setSelectedLang(e.target.value)}
-            disabled={isLoading}
-          >
-            {appVersionMultiLanguages.map((lang) => (
-              <option key={lang} value={lang}>
-                {lang.toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <div className="ts-phone-wrap">
         {isLoading ? (
           <div className="ts-loading">Translating…</div>
         ) : (
           <div className="phone-frame ts-phone-frame">
-            <PhoneStatusBar />
-            {isLinkedPage ? (
-              <PhoneLinkedHeader pageName={pageName ?? ""} onBack={() => {}} />
-            ) : (
-              <PhoneAppHeader />
-            )}
+            {/* Status bar — lang select sits just before the network/wifi/battery icons */}
+            <div className="phone-status-bar">
+              <span className="phone-time">9:27</span>
+              <div className="ts-status-right">
+                {displayLanguages.length > 0 && (
+                  <select
+                    className="ts-status-lang-select"
+                    value={selectedLang}
+                    onChange={(e) => setSelectedLang(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    {displayLanguages.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {lang.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <div className="phone-status-icons">
+                  <i className="fas fa-signal" aria-hidden="true" />
+                  <i className="fas fa-wifi" aria-hidden="true" />
+                  <i className="fas fa-battery-full" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
+
+            {/* Page header — always PhoneLinkedHeader; "home" page hides back + disables rename */}
+            <PhoneLinkedHeader
+              pageName={editablePageName}
+              onBack={() => {}}
+              onRename={editablePageName.toLowerCase() === "home" ? undefined : handlePageNameSave}
+              hideBack={editablePageName.toLowerCase() === "home"}
+              editOnClick
+            />
+
             <div className="ts-phone-scroll">{renderEditableBlocks()}</div>
           </div>
         )}

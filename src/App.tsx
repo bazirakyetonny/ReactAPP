@@ -11,6 +11,7 @@ import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionM
 import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
 import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
 import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
+import { UpdateTranslationsModal } from "./components/appversion/UpdateTranslationsModal";
 import { CreateAppVersionTemplateModal } from "./components/appversion/CreateAppVersionTemplateModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
@@ -59,6 +60,8 @@ function App() {
   const [trashVersion, setTrashVersion] = useState<SDTAppVersion | null>(null);
   const [duplicateVersion, setDuplicateVersion] =
     useState<SDTAppVersion | null>(null);
+  const [updateTranslationsVersion, setUpdateTranslationsVersion] =
+    useState<SDTAppVersion | null>(null);
 
   useEffect(() => {
     getAppVersions()
@@ -73,6 +76,7 @@ function App() {
   const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
+  const [translationPageId, setTranslationPageId] = useState<string | null>(null);
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
     tileWidth: number;
@@ -305,6 +309,19 @@ function App() {
     activePageId = activePage?.PageId;
   }
   const activePageName = activePage?.PageName ?? "Home";
+
+  // Translation sidebar tracks whichever phone frame is visually active (phone-frame--active)
+  const homePage = allPages.find((p: any) => p.PageName.toLowerCase() === "home");
+  const transPage = translationPageId
+    ? allPages.find((p: any) => p.PageId === translationPageId)
+    : homePage;
+  const transPageId   = transPage?.PageId   ?? homePage?.PageId ?? "";
+  const transPageName = transPage?.PageName ?? "Home";
+
+  function handleActiveFrameChange(pageId: string | null) {
+    setTranslationPageId(pageId); // null = home frame active
+  }
+
   const appVersionMultiLanguages: string[] = (() => {
     try {
       return JSON.parse(currentVersion?.AppVersionMultiLanguages ?? "[]");
@@ -818,7 +835,11 @@ function App() {
             appVersions.find((a) => a.AppVersionId === id) ?? null,
           )
         }
-        onUpdateTranslations={(id) => console.log("update translations", id)}
+        onUpdateTranslations={(id) =>
+          setUpdateTranslationsVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
         onMoveVersionToTrash={(id) =>
           setTrashVersion(
             appVersions.find((a) => a.AppVersionId === id) ?? null,
@@ -950,6 +971,22 @@ function App() {
           }}
         />
       )}
+      {updateTranslationsVersion && (
+        <UpdateTranslationsModal
+          key={updateTranslationsVersion.AppVersionId}
+          versionId={updateTranslationsVersion.AppVersionId}
+          versionName={updateTranslationsVersion.AppVersionName}
+          baseLanguage={updateTranslationsVersion.AppVersionLanguage}
+          currentTranslateLanguages={updateTranslationsVersion.TranslateLanguages}
+          onClose={() => setUpdateTranslationsVersion(null)}
+          onUpdated={() => {
+            setUpdateTranslationsVersion(null);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
       <div className="app-body">
         {treeOpen && (
           <PageBubbleTree
@@ -1008,15 +1045,15 @@ function App() {
           onTileMenuAction={handleTileMenuAction}
           onRenamePage={handleRenamePage}
           liveTileText={liveTileText}
+          onActiveFrameChange={handleActiveFrameChange}
         />
         {isTranslationOpen ? (
           <TranslationSideBar
             appVersionId={currentVersion?.AppVersionId ?? ""}
             appVersionLanguage={currentVersion?.AppVersionLanguage ?? ""}
             appVersionMultiLanguages={appVersionMultiLanguages}
-            activePageId={activePageId}
-            pageName={activePageName}
-            isLinkedPage={!!activePageId}
+            activePageId={transPageId}
+            pageName={transPageName}
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}

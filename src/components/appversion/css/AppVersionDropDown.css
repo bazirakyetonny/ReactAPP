@@ -49,6 +49,31 @@
   margin: 4px 0;
 }
 
+/* ── Scrollable versions list ───────────────────────────────── */
+.vd-versions-list {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.vd-versions-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.vd-versions-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vd-versions-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.vd-versions-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 /* ── Version row wrapper (holds row + submenu) ──────────────── */
 .vd-item-wrap {
   position: relative;
@@ -86,23 +111,16 @@
   flex-shrink: 0;
 }
 
-/* ── Submenu panel ──────────────────────────────────────────── */
-.vd-submenu {
-  display: none;
-  position: absolute;
-  top: -4px;
-  left: 100%;
+/* ── Submenu panel — fixed position, escapes overflow container ── */
+.vd-submenu-fixed {
+  position: fixed;
   min-width: 175px;
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: 201;
+  z-index: 9999;
   padding: 4px 0;
-}
-
-.vd-item-wrap:hover > .vd-submenu {
-  display: block;
 }
 
 /* ── Submenu items ──────────────────────────────────────────── */

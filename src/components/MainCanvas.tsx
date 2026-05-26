@@ -115,6 +115,8 @@ interface MainCanvasProps {
   onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
   onRenamePage?: (pageId: string, newName: string) => void;
   liveTileText?: { id: string; text: string } | null;
+  /** Fires whenever the visually active frame changes. null = home frame. */
+  onActiveFrameChange?: (pageId: string | null) => void;
 }
 
 export function MainCanvas({
@@ -155,6 +157,7 @@ export function MainCanvas({
   onTileMenuAction,
   onRenamePage,
   liveTileText,
+  onActiveFrameChange,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -213,6 +216,17 @@ export function MainCanvas({
 
   const activeFrameIndex = manualActiveIndex !== null ? manualActiveIndex : derivedActiveIndex;
 
+  // Notify parent when the active frame changes (for translation sidebar sync)
+  useEffect(() => {
+    if (!onActiveFrameChange) return;
+    if (activeFrameIndex === -1) {
+      onActiveFrameChange(null); // null = home frame
+    } else {
+      const frame = linkedFrames?.[activeFrameIndex];
+      if (frame) onActiveFrameChange(frame.pageId);
+    }
+  }, [activeFrameIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Thumbnail scale sync ───────────────────────────────────────────────────
   const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
   const [thumbFrameW, setThumbFrameW] = useState(240);
@@ -255,7 +269,7 @@ export function MainCanvas({
     <main className="app-canvas">
       <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
-        <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef}>
+        <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef} onMouseDown={() => setManualActiveIndex(-1)}>
           <PhoneStatusBar />
           <PhoneAppHeader />
           <DraggableScreen

@@ -176,9 +176,9 @@ function GlobeIcon({ active }: { active?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="35"
-      height="27"
-      viewBox="0 0 15 25"
+      width="21"
+      height="21"
+      viewBox="0 0 21 21"
     >
       <path
         id="translate_icon"
@@ -195,9 +195,9 @@ function PathIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="28"
-      height="28"
-      viewBox="0 0 28 28"
+      width="21"
+      height="21"
+      viewBox="0 0 25 20"
     >
       <path
         id="сonnection_"
@@ -215,9 +215,9 @@ function ExpandIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="26"
-      height="25"
-      viewBox="0 0 20 25"
+      width="21"
+      height="21"
+      viewBox="0 0 20 20"
     >
       <g id="window-maximize" transform="translate(-3.25 -3.25)">
         <path

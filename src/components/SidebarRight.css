@@ -111,7 +111,9 @@
   border-radius: 10px;
   padding: 0;
   cursor: pointer;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
   text-align: left;
 }
 
@@ -272,7 +274,9 @@
   color: #6b7280;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .sr-icon-btn:hover {
@@ -298,7 +302,9 @@
   background: #fff;
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.1s, transform 0.1s;
+  transition:
+    border-color 0.1s,
+    transform 0.1s;
 }
 
 .sr-mood-chip:hover {
@@ -314,7 +320,9 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: outline 0.1s, transform 0.1s;
+  transition:
+    outline 0.1s,
+    transform 0.1s;
 }
 
 .sr-mood-dot:hover {
@@ -397,7 +405,9 @@
   background: transparent;
   color: #6b7280;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .sr-tool-btn:hover {
@@ -409,6 +419,37 @@
   background: #e5e7eb;
   color: #1f2937;
   border-color: #d1d5db;
+}
+
+/* ── Text colour button group (Light / Dark) ────────────────────────────────── */
+
+.sr-text-color-group {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: outline 0.12s, border-color 0.12s;
+}
+
+/* Buttons inside the group: no individual borders, flush corners */
+.sr-tool-btn--in-group {
+  border-radius: 0;
+  border: none;
+  background: #ffffff;
+}
+
+.sr-tool-btn--in-group + .sr-tool-btn--in-group {
+  border-left: 1px solid #d1d5db;
+}
+
+/* Active button inside the group gets a blue tint */
+.sr-tool-btn--in-group.sr-tool-btn-active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: transparent;
 }
 
 .sr-badge {
@@ -468,7 +509,9 @@
   background: #fff;
   height: 32px;
   overflow: hidden;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 
 .sr-category-wrap:focus-within {
@@ -526,7 +569,9 @@
   color: #6b7280;
   cursor: pointer;
   padding: 0;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .sr-category-btn:hover {
@@ -564,7 +609,11 @@
   border-radius: 5px;
   background: #fafafa;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+  width: 60px;
+  height: 60px;
 }
 
 .sr-icon-cell:hover {
@@ -633,7 +682,9 @@
   color: #ffffff;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.12s, transform 0.1s;
+  transition:
+    background 0.12s,
+    transform 0.1s;
 }
 
 .sr-add-circle:hover {
@@ -662,7 +713,9 @@
   background: transparent;
   color: #6b7280;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .sr-contact-btn:hover {
@@ -726,7 +779,10 @@
   cursor: pointer;
   font-family: inherit;
 }
-.sr-cta-img-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+.sr-cta-img-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
 .sr-cta-img-clear {
   width: 24px;
   height: 24px;
@@ -743,7 +799,10 @@
   justify-content: center;
   padding: 0;
 }
-.sr-cta-img-clear:hover { background: #d1d5db; color: #374151; }
+.sr-cta-img-clear:hover {
+  background: #d1d5db;
+  color: #374151;
+}
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 

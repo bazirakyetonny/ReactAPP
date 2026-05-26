@@ -237,16 +237,7 @@ function SquareFilledIcon() {
       fill="none"
       aria-hidden="true"
     >
-      <rect
-        x="1.5"
-        y="1.5"
-        width="11"
-        height="11"
-        rx="1.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <rect x="4" y="4" width="6" height="6" rx="0.5" fill="currentColor" />
+      <rect x="1.5" y="1.5" width="11" height="11" rx="1.5" fill="#1f2937" />
     </svg>
   );
 }
@@ -604,32 +595,35 @@ export function SidebarRight({
 
           {/* 3. Format toolbar */}
           <div className="sr-toolbar">
-            {/* Light (#ffffff) */}
-            <button
-              className={`sr-tool-btn${selectedTile?.Color === "#ffffff" ? " sr-tool-btn-active" : ""}`}
-              type="button"
-              title="Light text & icon (#ffffff)"
-              disabled={!selectedTile}
-              onClick={() =>
-                selectedTile &&
-                onEditTile?.(selectedTile.Id, { Color: "#ffffff" })
-              }
-            >
-              <SquareOutlineIcon />
-            </button>
-            {/* Dark (#333333) */}
-            <button
-              className={`sr-tool-btn${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
-              type="button"
-              title="Dark text & icon (#333333)"
-              disabled={!selectedTile}
-              onClick={() =>
-                selectedTile &&
-                onEditTile?.(selectedTile.Id, { Color: "#333333" })
-              }
-            >
-              <SquareFilledIcon />
-            </button>
+            {/* Text colour group: Light + Dark */}
+            <div className="sr-text-color-group">
+              {/* Light (#ffffff) */}
+              <button
+                className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#ffffff" ? " sr-tool-btn-active" : ""}`}
+                type="button"
+                title="Light text & icon (#ffffff)"
+                disabled={!selectedTile}
+                onClick={() =>
+                  selectedTile &&
+                  onEditTile?.(selectedTile.Id, { Color: "#ffffff" })
+                }
+              >
+                <SquareOutlineIcon />
+              </button>
+              {/* Dark (#333333) */}
+              <button
+                className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
+                type="button"
+                title="Dark text & icon (#333333)"
+                disabled={!selectedTile}
+                onClick={() =>
+                  selectedTile &&
+                  onEditTile?.(selectedTile.Id, { Color: "#333333" })
+                }
+              >
+                <SquareFilledIcon />
+              </button>
+            </div>
             <button
               className={`sr-tool-btn${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
               type="button"
