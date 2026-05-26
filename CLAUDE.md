@@ -50,6 +50,7 @@ All API calls live in `src/services/`. Each module wraps one domain. All import 
 - [docs/app-versions.md](docs/app-versions.md) — app version and template lifecycle: roles, ownership rules, DB schema (`trn_appversion`), template creation flow, mood/color selection
 - [docs/end-points.md](docs/end-points.md) — Toolbox API endpoint reference: all REST routes for app versions, pages, publish, theme, translation, media, trash, and services
 - [docs/tilegrid.md](docs/tilegrid.md) — TileGrid data structure, layout constraints, height/resize rules, tile drag and block drag behaviour
+- [docs/analysis.md](docs/analysis.md) — analysis feature: categories, URL sources, tile text limits, issue shape, how to extend
 
 ## Component & File Organisation Rules
 
@@ -68,11 +69,13 @@ src/
     useUndoRedo.ts                # Snapshot-based undo/redo with onRestorePages callback
     useNavigation.ts              # navStack + navContents for linked-page frame stack
     useContentHandlers.ts         # All tile/block/CTA/image mutation callbacks
+    useAnalysis.ts                # One-shot analysis scan on version load; returns issues + isAnalyzing
   utils/
     contentTransforms.ts          # Pure content-array transform functions (apply*)
     tileUtils.ts                  # Tile rendering helpers (resolveColor, resolveIconSVG)
     linkedFrames.ts               # Assembles linked-frame array for MainCanvas from navStack
     linkChecker.ts                # Extracts image/weblink/form URLs from content blocks
+    analysisUtils.ts              # gatherUrlCandidates, checkUrlCandidates, checkTileText
   services/                       # All API calls; each module wraps one domain
     apiClient.ts                  # Base: getBaseUrl, apiGet, apiPost, checkError, AuthError
     pagesApi.ts                   # savePage, updatePageTitle
@@ -89,6 +92,7 @@ src/
       AddCtaModal.tsx             # Modal for adding / editing a CTA block
       MediaLibraryModal.tsx       # Image picker with upload support
       TileImageModal.tsx          # Tile background image picker
+      WeblinkFrame.tsx            # Iframe wrapper for web links; shows fallback when X-Frame-Options blocks
     tile/                         # Tile drag-and-drop system
       TileGrids.tsx               # Stateless tile grid renderer
       DraggableScreen.tsx         # Drag/resize state + event wiring
@@ -101,6 +105,7 @@ src/
     widgets/
       MultiSelect.tsx             # Reusable multi-select dropdown
     MainCanvas.tsx                # Orchestrator: frame registry, scroll, thumbnails
+    AnalysisPanel.tsx             # Floating portal panel: Category 1 (invalid URLs) + Category 2 (long tile text)
     NavBar.tsx
     SidebarRight.tsx
     SidebarCtaControls.tsx        # CTA sidebar controls (extracted from SidebarRight)

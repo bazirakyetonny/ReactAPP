@@ -40,6 +40,8 @@ import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
+import { useAnalysis } from "./hooks/useAnalysis";
+import { AnalysisPanel } from "./components/AnalysisPanel";
 
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
@@ -88,6 +90,7 @@ function App() {
   const [invalidLinkCount, setInvalidLinkCount] = useState(0);
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -351,6 +354,15 @@ function App() {
     currentVersion?.AppVersionId,
   );
   runSaveRef.current = runSave;
+
+  // ── Analysis ─────────────────────────────────────────────────────────────
+
+  const { issues: analysisIssues, isAnalyzing, rerun: rerunAnalysis } = useAnalysis({
+    infoContent,
+    navContents,
+    pages: currentVersion?.Page ?? [],
+    versionId: currentVersion?.AppVersionId,
+  });
 
   // ── Data persistence ─────────────────────────────────────────────────────
 
@@ -894,7 +906,18 @@ function App() {
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
+        analysisIssueCount={analysisIssues.length}
+        isAnalyzing={isAnalyzing}
+        onAnalysisOpen={() => setAnalysisOpen(true)}
       />
+      {analysisOpen && (
+        <AnalysisPanel
+          issues={analysisIssues}
+          isAnalyzing={isAnalyzing}
+          onClose={() => setAnalysisOpen(false)}
+          onRerun={rerunAnalysis}
+        />
+      )}
       {showCreateModal && (
         <CreateAppVersionModal
           templatesCollection={templatesCollection}
