@@ -30,6 +30,9 @@ interface NavBarProps {
   isSaving?: boolean;
   saveError?: boolean;
   savedAt?: number | null;
+  analysisIssueCount?: number;
+  isAnalyzing?: boolean;
+  onAnalysisOpen?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -271,6 +274,15 @@ function CloudIcon() {
   );
 }
 
+function AnalysisIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M6 13l2.5-3 2.5 2 3-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function UploadIcon() {
   return (
     <svg
@@ -332,6 +344,9 @@ export function NavBar({
   isSaving = false,
   saveError = false,
   savedAt = null,
+  analysisIssueCount = 0,
+  isAnalyzing = false,
+  onAnalysisOpen,
 }: NavBarProps) {
   const [savedVisible, setSavedVisible] = useState(false);
   useEffect(() => {
@@ -380,6 +395,29 @@ export function NavBar({
                   : invalidLinkCount}
             </span>
           )}
+        </button>
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title={
+            isAnalyzing
+              ? "Analysing…"
+              : analysisIssueCount > 0
+                ? `${analysisIssueCount} issue${analysisIssueCount !== 1 ? "s" : ""} found`
+                : "Analysis"
+          }
+          onClick={onAnalysisOpen}
+        >
+          <AnalysisIcon />
+          {isAnalyzing && analysisIssueCount === 0 ? (
+            <span className="navbar-analysis-badge navbar-analysis-badge--checking">…</span>
+          ) : analysisIssueCount > 0 ? (
+            <span className="navbar-analysis-badge">
+              {analysisIssueCount > 99 ? "99+" : analysisIssueCount}
+            </span>
+          ) : !isAnalyzing ? (
+            <span className="navbar-analysis-ok">✓</span>
+          ) : null}
         </button>
         <button className="navbar-icon-btn" type="button" title="Share">
           <ShareIcon />
