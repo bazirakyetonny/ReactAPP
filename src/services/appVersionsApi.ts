@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from './apiClient';
+import type { VersionHistoryItem } from '../types';
 
 export interface SDTAppVersion {
   AppVersionId: string;
@@ -40,6 +41,13 @@ export function getActiveAppVersion(): Promise<SDTAppVersion> {
 
 export function getAppVersionHistory(appVersionId: string): Promise<SDTAppVersionHistory[]> {
   return apiGet<{ History: SDTAppVersionHistory[] }>(
+    '/api/toolbox/v2/app-version-history',
+    { AppVersionId: appVersionId }
+  ).then((d) => d.History ?? []);
+}
+
+export function getVersionHistory(appVersionId: string): Promise<VersionHistoryItem[]> {
+  return apiGet<{ History: VersionHistoryItem[] }>(
     '/api/toolbox/v2/app-version-history',
     { AppVersionId: appVersionId }
   ).then((d) => d.History ?? []);

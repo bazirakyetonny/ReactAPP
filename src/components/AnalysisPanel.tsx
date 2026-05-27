@@ -91,7 +91,7 @@ export function AnalysisPanel({ issues, isAnalyzing, onClose, onRerun }: Analysi
         </div>
       </div>
     </div>,
-    document.body,
+    document.getElementById("root") ?? document.body,
   );
 }
 
