@@ -340,5 +340,5 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.body);
+  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
 }

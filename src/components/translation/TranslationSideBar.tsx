@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./TranslationSideBar.css";
 import type { ThemeColors, ThemeIcon, ThemeCtaColor } from "../../types";
-import { PhoneStatusBar } from "../phone/StatusBar";
-import { PhoneAppHeader, PhoneLinkedHeader } from "../phone/PhoneHeaders";
+import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
@@ -16,7 +15,6 @@ import {
 
 export function TranslationSideBar({
   pageName,
-  isLinkedPage = false,
   appVersionId,
   appVersionLanguage,
   appVersionMultiLanguages,
@@ -26,7 +24,6 @@ export function TranslationSideBar({
   ctaColors,
 }: {
   pageName?: string;
-  isLinkedPage?: boolean;
   appVersionId: string;
   appVersionLanguage: string;
   appVersionMultiLanguages: string[];
@@ -82,7 +79,7 @@ export function TranslationSideBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // On language change (skip first render — already handled by mount effect)
+  // On language change or active page change (skip first render)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -113,13 +110,6 @@ export function TranslationSideBar({
     const next = { ...sdtPage, PageName: value };
     setSdtPage(next);
     saveNow(next);
-  // ── Blur handlers ─────────────────────────────────────────────────────────────
-
-  function handlePageNameBlur(value: string) {
-    const next = { ...sdtPage, PageName: value };
-    setSdtPage(next);
-    saveNow(next);
-    setEditingKey(null);
   }
 
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
@@ -190,9 +180,7 @@ export function TranslationSideBar({
                         {tile.BGImageUrl && (
                           <div
                             className="phone-tile-bg-img"
-                            style={{
-                              backgroundImage: `url(${tile.BGImageUrl})`,
-                            }}
+                            style={{ backgroundImage: `url(${tile.BGImageUrl})` }}
                           />
                         )}
                         {tile.BGImageUrl && tile.Opacity != null && (
@@ -210,12 +198,8 @@ export function TranslationSideBar({
                               defaultValue={tile.Text ?? ""}
                               autoFocus
                               style={{ color: tile.Color ?? "#333" }}
-                              onBlur={(e) =>
-                                handleTileBlur(bi, ci, ti, e.target.value)
-                              }
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && e.currentTarget.blur()
-                              }
+                              onBlur={(e) => handleTileBlur(bi, ci, ti, e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                             />
                           ) : (
                             <span
@@ -238,11 +222,7 @@ export function TranslationSideBar({
         i++;
       } else if (block.InfoType === "Description") {
         out.push(
-          <DescriptionBlock
-            key={block.InfoId}
-            block={block}
-            interactive={false}
-          />,
+          <DescriptionBlock key={block.InfoId} block={block} interactive={false} />,
         );
         i++;
       } else if (block.InfoType === "Images") {
@@ -259,8 +239,7 @@ export function TranslationSideBar({
         while (
           i < displayContent.length &&
           displayContent[i].InfoType === "Cta" &&
-          (displayContent[i].CtaAttributes?.CtaButtonType || "Image") ===
-            "Round" &&
+          (displayContent[i].CtaAttributes?.CtaButtonType || "Image") === "Round" &&
           row.length < 3
         ) {
           row.push({ block: displayContent[i], bi: i });
@@ -340,7 +319,7 @@ export function TranslationSideBar({
               </div>
             </div>
 
-            {/* Page header — always PhoneLinkedHeader; "home" page hides back + disables rename */}
+            {/* Page header — "home" hides back button and disables rename */}
             <PhoneLinkedHeader
               pageName={editablePageName}
               onBack={() => {}}

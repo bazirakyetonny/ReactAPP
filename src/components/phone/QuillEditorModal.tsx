@@ -65,6 +65,6 @@ export function QuillEditorModal({ initialHtml, onSave, onCancel }: QuillEditorM
         </div>
       </div>
     </div>,
-    document.body
+    document.getElementById("root") ?? document.body
   );
 }

@@ -79,6 +79,6 @@ export function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
         </div>
       ))}
     </div>,
-    document.body
+    document.getElementById("root") ?? document.body
   );
 }

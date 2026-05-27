@@ -266,7 +266,7 @@ export function AppVersionDropDown({
                   </div>
                 );
               })(),
-              document.body,
+              document.getElementById("root") ?? document.body,
             )
           }
         </div>

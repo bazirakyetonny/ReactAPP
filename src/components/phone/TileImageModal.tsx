@@ -292,5 +292,5 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.body);
+  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
 }

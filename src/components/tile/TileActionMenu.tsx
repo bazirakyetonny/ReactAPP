@@ -210,6 +210,6 @@ export function TileActionMenu({ tileId, pos, onAction, onClose }: TileActionMen
         />
       )}
     </>,
-    document.body,
+    document.getElementById("root") ?? document.body,
   );
 }
