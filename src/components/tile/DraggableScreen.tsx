@@ -1173,7 +1173,7 @@ export function DraggableScreen({
             >
               {tileData.BGImageUrl && <>
                 <div className="phone-tile-bg-img" style={{ backgroundImage: `url("${tileData.BGImageUrl}")` }} />
-                <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(tileData.Opacity ?? 0).toFixed(2)})` }} />
+                <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(Number(tileData.Opacity ?? 0) / 100).toFixed(2)})` }} />
               </>}
               {hasIcon && (
                 <div className="phone-tile-element">

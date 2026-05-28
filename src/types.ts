@@ -212,7 +212,7 @@ export interface Tile {
   Size?: string | number;
   Height?: string | number;
   OriginalImageUrl?: string;
-  Opacity?: number;
+  Opacity?: string | null;
   Permissions?: [];
   Action?: {
     ObjectType?: string;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { VersionHistoryItem } from "../../types";
+import type { AppVersionHistoryEntry } from "../../services/appVersionsApi";
 import {
   copyHistoryVersion,
   getVersionHistory,
@@ -23,10 +23,10 @@ function formatHistoryDate(iso: string): string {
   return `${date}, ${time}`;
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Entry dropdown menu ───────────────────────────────────────────────────────
 
 interface EntryMenuProps {
-  item: VersionHistoryItem;
+  item: AppVersionHistoryEntry;
   appVersionId: string;
   onRestored?: () => void;
   onClose: () => void;
@@ -37,7 +37,6 @@ function EntryMenu({ item, appVersionId, onRestored, onClose }: EntryMenuProps) 
   const [copying, setCopying] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -51,10 +50,10 @@ function EntryMenu({ item, appVersionId, onRestored, onClose }: EntryMenuProps) 
   async function handleRestore() {
     setRestoring(true);
     try {
-      await restoreHistoryVersion(appVersionId, item.VersionHistoryNumber);
+      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
       onRestored?.();
     } catch {
-      // silently swallow — caller can add error handling later
+      // silently swallow
     } finally {
       setRestoring(false);
       onClose();
@@ -66,8 +65,8 @@ function EntryMenu({ item, appVersionId, onRestored, onClose }: EntryMenuProps) 
     try {
       await copyHistoryVersion(
         appVersionId,
-        item.VersionHistoryNumber,
-        item.Name
+        item.AppVersionNumber,
+        item.AppVersionName
       );
     } catch {
       // silently swallow
@@ -114,7 +113,7 @@ export function VersionHistorySidebar({
   onClose,
   onRestored,
 }: VersionHistorySidebarProps) {
-  const [items, setItems] = useState<VersionHistoryItem[]>([]);
+  const [items, setItems] = useState<AppVersionHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
@@ -125,9 +124,8 @@ export function VersionHistorySidebar({
     setError(null);
     getVersionHistory(appVersionId)
       .then((data) => {
-        // Most-recent first
         const sorted = [...data].sort(
-          (a, b) => b.VersionHistoryNumber - a.VersionHistoryNumber
+          (a, b) => b.AppVersionNumber - a.AppVersionNumber
         );
         setItems(sorted);
       })
@@ -137,7 +135,6 @@ export function VersionHistorySidebar({
 
   return (
     <aside className="vhs-panel" aria-label="Version history">
-      {/* Header */}
       <div className="vhs-header">
         <h2 className="vhs-title">Version History</h2>
         <button
@@ -152,7 +149,6 @@ export function VersionHistorySidebar({
       </div>
       <hr className="vhs-divider" />
 
-      {/* Body */}
       <div className="vhs-list">
         {loading && (
           <div className="vhs-state">
@@ -170,10 +166,10 @@ export function VersionHistorySidebar({
         )}
 
         {!loading && !error && items.map((item, idx) => (
-          <div className="vhs-item" key={item.VersionHistoryNumber}>
+          <div className="vhs-item" key={item.AppVersionNumber}>
             <div className="vhs-item-row">
               <span className="vhs-chevron" aria-hidden="true">›</span>
-              <span className="vhs-date">{formatHistoryDate(item.DateTime)}</span>
+              <span className="vhs-date">{formatHistoryDate(item.PublishDate)}</span>
               <button
                 className="vhs-dots-btn"
                 type="button"
@@ -191,7 +187,7 @@ export function VersionHistorySidebar({
 
             <div className="vhs-publisher">
               <span className="vhs-publisher-dot" aria-hidden="true" />
-              <span>{item.PublisherName}</span>
+              <span>{item.PublishedBy}</span>
             </div>
 
             {openMenuIndex === idx && appVersionId && (

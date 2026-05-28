@@ -1,21 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import "./SidebarRight.css";
-import type { ThemeIcon, ThemeColors, Mood, ThemeCtaColor } from "../types";
+import type { ThemeIcon, ThemeColors, ThemeCtaColor } from "../types";
 import { SidebarCtaControls } from "./SidebarCtaControls";
 import { ColorPalette } from "./sidebar_right/ColorPalette";
-
-const COLOR_ORDER: (keyof ThemeColors)[] = [
-  "primaryColor",
-  "secondaryColor",
-  "accentColor",
-  "backgroundColor",
-  "textColor",
-  "buttonBGColor",
-  "buttonTextColor",
-  "cardBgColor",
-  "cardTextColor",
-  "borderColor",
-];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -296,7 +283,6 @@ export function SidebarRight({
   themeIcons = [],
   themeColors,
   ctaColors = [],
-  moods = [],
   selectedTile,
   onEditTile,
   onOpenTileImage,
@@ -313,7 +299,6 @@ export function SidebarRight({
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
   ctaColors?: ThemeCtaColor[];
-  moods?: Mood[];
   selectedTile?: any;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onOpenTileImage?: () => void;
@@ -327,9 +312,6 @@ export function SidebarRight({
   onBeforeCtaEdit?: () => void;
   moodId?: string;
 }) {
-  const palette = themeColors
-    ? COLOR_ORDER.map((k) => themeColors[k]).filter(Boolean)
-    : [];
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
 
@@ -341,12 +323,13 @@ export function SidebarRight({
   const [isSearching, setIsSearching] = useState(false);
 
   // Resolve the selected tile's current BGColor to a hex so we can highlight the active chip
+  console.log("selectedTile", selectedTile);
   const activeBgHex: string | undefined = selectedTile?.BGColor
     ? selectedTile.BGColor.startsWith("#")
       ? selectedTile.BGColor
       : themeColors?.[selectedTile.BGColor as keyof ThemeColors]
     : undefined;
-
+  console.log("activeBgHex", activeBgHex);
   const categories = useMemo(
     () => Array.from(new Set(themeIcons.map((i) => i.IconCategory))).sort(),
     [themeIcons],
@@ -397,8 +380,6 @@ export function SidebarRight({
       {selectedTile && (
         <>
           <ColorPalette
-            palette={palette}
-            moods={moods}
             selectedTile={selectedTile}
             activeBgHex={activeBgHex}
             onEditTile={onEditTile}
@@ -428,18 +409,18 @@ export function SidebarRight({
                     type="range"
                     min={0}
                     max={100}
-                    value={Math.round((selectedTile.Opacity ?? 0) * 100)}
+                    value={Math.round(Number(selectedTile.Opacity ?? 0))}
                     className="sr-opacity-slider"
                     onPointerDown={onBeforeOpacityChange}
                     onChange={(e) =>
                       selectedTile &&
                       onEditTile?.(selectedTile.Id, {
-                        Opacity: Number(e.target.value) / 100,
+                        Opacity: e.target.value,
                       })
                     }
                   />
                   <span className="sr-zoom-label">
-                    {Math.round((selectedTile.Opacity ?? 0) * 100)}%
+                    {Math.round(Number(selectedTile.Opacity ?? 0))}%
                   </span>
                 </>
               )}

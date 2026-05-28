@@ -8,8 +8,8 @@ interface TileImageModalProps {
   tileWidth: number;
   tileHeight: number;
   initialOriginalUrl?: string;
-  initialOpacity?: number;
-  onConfirm: (result: { bgImageUrl: string; opacity: number; originalImageUrl: string; originalMediaId: string }) => void;
+  initialOpacity?: string;
+  onConfirm: (result: { bgImageUrl: string; opacity: string; originalImageUrl: string; originalMediaId: string }) => void;
   onCancel: () => void;
 }
 
@@ -44,12 +44,13 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
   const [cropX, setCropX] = useState(0);
   const [cropY, setCropY] = useState(0);
   const [cropperSize, setCropperSize] = useState<{ w: number; h: number } | null>(null);
-  const [opacity, setOpacity] = useState(initialOpacity != null ? Math.round(initialOpacity * 100) : 0);
+  const [opacity, setOpacity] = useState(initialOpacity != null ? Math.round(Number(initialOpacity)) : 0);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [previewH, setPreviewH] = useState(240);
+  const [imgBounds, setImgBounds] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,55 +73,103 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
     const img = imgRef.current;
     if (!img) return;
     const containerW = img.clientWidth;
-    // Derive rendered image height from natural aspect ratio
-    const renderedH = Math.round(containerW * img.naturalHeight / img.naturalWidth);
-    const visH = Math.min(Math.max(renderedH, 160), 340);
+    const naturalAspect = img.naturalWidth / img.naturalHeight;
+    const renderedH = Math.round(containerW / naturalAspect);
+    const visH = Math.min(Math.max(renderedH, 160), 365);
     setPreviewH(visH);
 
+    // Compute the actual image display bounds within the container (object-fit: contain)
+    let displayW: number, displayH: number, offsetX: number, offsetY: number;
+    if (containerW / visH >= naturalAspect) {
+      // Container is wider relative to image — image fills height, bars on sides
+      displayH = visH;
+      displayW = Math.round(visH * naturalAspect);
+      offsetX = Math.round((containerW - displayW) / 2);
+      offsetY = 0;
+    } else {
+      // Container is taller relative to image — image fills width, bars top/bottom
+      displayW = containerW;
+      displayH = Math.round(containerW / naturalAspect);
+      offsetX = 0;
+      offsetY = Math.round((visH - displayH) / 2);
+    }
+    setImgBounds({ x: offsetX, y: offsetY, w: displayW, h: displayH });
+
     const tileAspect = tileWidth / tileHeight;
-    // Cropper at 65% of width so there is room to drag horizontally
-    let cW = Math.round(containerW * 0.65);
+    let cW = Math.round(displayW * 0.65);
     let cH = Math.round(cW / tileAspect);
-    // Scale down if too tall for the visible area (leave at least 20px margin)
-    if (cH > visH - 20) {
-      cH = Math.max(20, visH - 20);
+    if (cH > displayH - 20) {
+      cH = Math.max(20, displayH - 20);
       cW = Math.round(cH * tileAspect);
     }
     setCropperSize({ w: cW, h: cH });
-    setCropX(Math.max(0, Math.round((containerW - cW) / 2)));
-    setCropY(Math.max(0, Math.round((visH - cH) / 2)));
+    setCropX(offsetX + Math.max(0, Math.round((displayW - cW) / 2)));
+    setCropY(offsetY + Math.max(0, Math.round((displayH - cH) / 2)));
   }
 
   function startCropDrag(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!cropperSize || !imgRef.current) return;
-    const img = imgRef.current;
-    const maxX = img.clientWidth - cropperSize.w;
-    const maxY = previewH - cropperSize.h;
-    cropDragRef.current = { startX: e.clientX, startY: e.clientY, startCX: cropX, startCY: cropY, maxX: Math.max(0, maxX), maxY: Math.max(0, maxY) };
+    if (!cropperSize || !imgRef.current || !imgBounds) return;
+    const bounds = imgBounds;
+    const maxX = Math.max(bounds.x, bounds.x + bounds.w - cropperSize.w);
+    const maxY = Math.max(bounds.y, bounds.y + bounds.h - cropperSize.h);
+    cropDragRef.current = { startX: e.clientX, startY: e.clientY, startCX: cropX, startCY: cropY, maxX, maxY };
     function onMove(ev: MouseEvent) {
       const d = cropDragRef.current!;
-      setCropX(Math.max(0, Math.min(d.maxX, d.startCX + ev.clientX - d.startX)));
-      setCropY(Math.max(0, Math.min(d.maxY, d.startCY + ev.clientY - d.startY)));
+      setCropX(Math.max(bounds.x, Math.min(d.maxX, d.startCX + ev.clientX - d.startX)));
+      setCropY(Math.max(bounds.y, Math.min(d.maxY, d.startCY + ev.clientY - d.startY)));
     }
     function onUp() { cropDragRef.current = null; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }
 
+  function startResizeDrag(corner: 'tl' | 'tr' | 'bl' | 'br', e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!cropperSize || !imgBounds) return;
+    const aspect = tileWidth / tileHeight;
+    const bounds = imgBounds;
+    const startMouseX = e.clientX;
+    const startW = cropperSize.w;
+    const startH = cropperSize.h;
+    const startCropX = cropX;
+    const startCropY = cropY;
+    const MIN = 30;
+    // Fixed corner stays put; moving corner is the dragged one
+    const fixedX = (corner === 'tl' || corner === 'bl') ? startCropX + startW : startCropX;
+    const fixedY = (corner === 'tl' || corner === 'tr') ? startCropY + startH : startCropY;
+    // Max width/height the cropper can grow to before hitting imgBounds
+    const maxW = (corner === 'tr' || corner === 'br') ? bounds.x + bounds.w - startCropX : startCropX + startW - bounds.x;
+    const maxH = (corner === 'bl' || corner === 'br') ? bounds.y + bounds.h - startCropY : startCropY + startH - bounds.y;
+    const effectiveMaxW = Math.min(maxW, maxH * aspect);
+    function onMove(ev: MouseEvent) {
+      const dx = ev.clientX - startMouseX;
+      const sign = (corner === 'tr' || corner === 'br') ? 1 : -1;
+      const newW = Math.max(MIN, Math.min(effectiveMaxW, startW + sign * dx));
+      const newH = Math.round(newW / aspect);
+      setCropperSize({ w: newW, h: newH });
+      setCropX((corner === 'tl' || corner === 'bl') ? fixedX - newW : fixedX);
+      setCropY((corner === 'tl' || corner === 'tr') ? fixedY - newH : fixedY);
+    }
+    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   async function handleConfirm() {
-    if (!selectedMedia || !imgRef.current || !cropperSize) return;
+    if (!selectedMedia || !imgRef.current || !cropperSize || !imgBounds) return;
     setIsSaving(true); setSaveError(null);
     try {
       const img = imgRef.current;
-      const scaleX = img.naturalWidth / img.clientWidth;
-      const scaleY = img.naturalHeight / img.clientHeight;
+      const scaleX = img.naturalWidth / imgBounds.w;
+      const scaleY = img.naturalHeight / imgBounds.h;
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(cropperSize.w * scaleX));
       canvas.height = Math.max(1, Math.round(cropperSize.h * scaleY));
       const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, Math.round(cropX * scaleX), Math.round(cropY * scaleY), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, Math.round((cropX - imgBounds.x) * scaleX), Math.round((cropY - imgBounds.y) * scaleY), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
       const base64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
       const result = await uploadCroppedMedia({
         name: `crop_${selectedMedia.MediaName.replace(/\.[^.]+$/, '')}.jpg`,
@@ -130,7 +179,8 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
         croppedOriginalMediaId: selectedMedia.MediaId,
       });
       if (!result?.MediaUrl) throw new Error('Upload failed: no URL returned');
-      onConfirm({ bgImageUrl: result.MediaUrl, opacity: opacity / 100, originalImageUrl: selectedMedia.MediaUrl, originalMediaId: selectedMedia.MediaId });
+      const cacheBustedUrl = result.MediaUrl + (result.MediaUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      onConfirm({ bgImageUrl: cacheBustedUrl, opacity: String(opacity), originalImageUrl: selectedMedia.MediaUrl, originalMediaId: selectedMedia.MediaId });
     } catch (err: any) {
       setSaveError(err.message ?? 'Failed to save');
     } finally { setIsSaving(false); }
@@ -208,10 +258,10 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
                   style={{ left: cropX, top: cropY, width: cropperSize.w, height: cropperSize.h }}
                   onMouseDown={startCropDrag}
                 >
-                  <div className="tim-cropper-corner tim-cropper-corner--tl" />
-                  <div className="tim-cropper-corner tim-cropper-corner--tr" />
-                  <div className="tim-cropper-corner tim-cropper-corner--bl" />
-                  <div className="tim-cropper-corner tim-cropper-corner--br" />
+                  <div className="tim-cropper-corner tim-cropper-corner--tl" onMouseDown={e => startResizeDrag('tl', e)} />
+                  <div className="tim-cropper-corner tim-cropper-corner--tr" onMouseDown={e => startResizeDrag('tr', e)} />
+                  <div className="tim-cropper-corner tim-cropper-corner--bl" onMouseDown={e => startResizeDrag('bl', e)} />
+                  <div className="tim-cropper-corner tim-cropper-corner--br" onMouseDown={e => startResizeDrag('br', e)} />
                 </div>
               )}
               {uploadProgress && (
@@ -272,7 +322,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
             <div
               key={item.MediaId}
               className={`media-item${selectedMedia?.MediaId === item.MediaId ? ' media-item--selected' : ''}`}
-              onClick={() => { setSelectedMedia(item); setCropperSize(null); }}
+              onClick={() => { setSelectedMedia(item); setCropperSize(null); setImgBounds(null); }}
             >
               <img src={item.MediaUrl} alt={item.MediaName} draggable={false} />
             </div>

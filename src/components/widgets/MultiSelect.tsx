@@ -26,14 +26,32 @@ export function MultiSelect({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    if (!isOpen) return;
+
+    function handlePointerDown(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
         setSearch("");
       }
     }
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        setSearch("");
+      }
+    }
+
+    // capture:true fires before any bubble-phase stopPropagation in parent components
+    document.addEventListener("mousedown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen]);
 
   const filtered = options.filter((o) =>
@@ -47,7 +65,9 @@ export function MultiSelect({
     if (allFilteredSelected) {
       onChange(value.filter((v) => !filtered.some((o) => o.value === v)));
     } else {
-      const toAdd = filtered.map((o) => o.value).filter((v) => !value.includes(v));
+      const toAdd = filtered
+        .map((o) => o.value)
+        .filter((v) => !value.includes(v));
       onChange([...value, ...toAdd]);
     }
   }
@@ -60,29 +80,68 @@ export function MultiSelect({
     }
   }
 
-  const triggerLabel =
-    value.length === 0
-      ? ""
-      : value.length === 1
-        ? (options.find((o) => o.value === value[0])?.label ?? value[0])
-        : `${value.length} languages selected`;
-
   return (
     <div className="ms-wrap" ref={containerRef}>
-      <button
-        type="button"
+      {/* Trigger — div with role=button so chip <button>s inside are valid HTML */}
+      <div
         className={`ms-trigger${isOpen ? " ms-trigger--open" : ""}`}
-        onClick={() => setIsOpen((o) => !o)}
+        role="button"
+        tabIndex={0}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        onClick={() => setIsOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen((o) => !o);
+          }
+        }}
       >
-        <span className={`ms-trigger-label${!triggerLabel ? " ms-trigger-label--placeholder" : ""}`}>
-          {triggerLabel || placeholder}
-        </span>
-        <svg className="ms-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="ms-chips">
+          {value.length === 0 ? (
+            <span className="ms-trigger-placeholder">{placeholder}</span>
+          ) : (
+            value.map((v) => {
+              const label = options.find((o) => o.value === v)?.label ?? v;
+              return (
+                <span key={v} className="ms-chip">
+                  <span className="ms-chip-label">{label}</span>
+                  <button
+                    type="button"
+                    className="ms-chip-remove"
+                    aria-label={`Remove ${label}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleItem(v);
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <line x1="2" y1="2" x2="8" y2="8" />
+                      <line x1="8" y1="2" x2="2" y2="8" />
+                    </svg>
+                  </button>
+                </span>
+              );
+            })
+          )}
+        </div>
+
+        <svg
+          className="ms-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M6 9l6 6 6-6" />
         </svg>
-      </button>
+      </div>
 
       {isOpen && (
         <div className="ms-dropdown" role="listbox" aria-multiselectable="true">

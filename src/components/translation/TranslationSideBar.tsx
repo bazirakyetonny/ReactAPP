@@ -186,7 +186,7 @@ export function TranslationSideBar({
                         {tile.BGImageUrl && tile.Opacity != null && (
                           <div
                             className="phone-tile-bg-dim"
-                            style={{ opacity: 1 - (tile.Opacity ?? 0) }}
+                            style={{ opacity: 1 - Number(tile.Opacity ?? 0) / 100 }}
                           />
                         )}
                         <div

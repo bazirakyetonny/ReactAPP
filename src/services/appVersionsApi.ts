@@ -1,5 +1,4 @@
 import { apiGet, apiPost } from './apiClient';
-import type { VersionHistoryItem } from '../types';
 
 export interface SDTAppVersion {
   AppVersionId: string;
@@ -25,6 +24,15 @@ export interface SDTAppVersionHistory {
   AppVersionHistoryDescription: string;
 }
 
+export interface AppVersionHistoryEntry {
+  AppVersionId: string;
+  AppVersionName: string;
+  AppVersionNumber: number;
+  PublishDate: string;
+  PublishedBy: string;
+  IsActive: boolean;
+}
+
 const NULL_UUID = '00000000-0000-0000-0000-000000000000';
 
 export function getAppVersions(): Promise<SDTAppVersion[]> {
@@ -46,11 +54,11 @@ export function getAppVersionHistory(appVersionId: string): Promise<SDTAppVersio
   ).then((d) => d.History ?? []);
 }
 
-export function getVersionHistory(appVersionId: string): Promise<VersionHistoryItem[]> {
-  return apiGet<{ History: VersionHistoryItem[] }>(
+export function getVersionHistory(appVersionId: string): Promise<AppVersionHistoryEntry[]> {
+  return apiGet<AppVersionHistoryEntry[] | { History: AppVersionHistoryEntry[] }>(
     '/api/toolbox/v2/app-version-history',
     { AppVersionId: appVersionId }
-  ).then((d) => d.History ?? []);
+  ).then((d: any) => (Array.isArray(d) ? d : d.History ?? []));
 }
 
 export interface CreateAppVersionPayload {

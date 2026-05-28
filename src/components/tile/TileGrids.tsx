@@ -287,7 +287,7 @@ export function TileGrids({
                           >
                             {tile.BGImageUrl && <>
                               <div className="phone-tile-bg-img" style={{ backgroundImage: `url("${tile.BGImageUrl}")` }} />
-                              <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(tile.Opacity ?? 0).toFixed(2)})` }} />
+                              <div className="phone-tile-bg-dim" style={{ background: `rgba(0,0,0,${(Number(tile.Opacity ?? 0) / 100).toFixed(2)})` }} />
                             </>}
                             {hasIcon && (
                               <div className={`phone-tile-element${showDelIcon ? ' phone-tile-element--deletable' : ''}`}>
