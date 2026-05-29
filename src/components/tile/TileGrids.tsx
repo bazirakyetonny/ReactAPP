@@ -225,7 +225,7 @@ export function TileGrids({
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
-                      const displayText = liveTileText?.id === tile.Id ? liveTileText.text : tile.Text;
+                      const displayText = liveTileText?.id === tile.Id ? liveTileText?.text : tile.Text;
                       const hasText = !!displayText;
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;

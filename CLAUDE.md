@@ -38,11 +38,12 @@ All API calls live in `src/services/`. Each module wraps one domain. All import 
 
 ### State hooks
 
-`App.tsx` delegates state and handlers to four hooks:
+`App.tsx` delegates state and handlers to five hooks:
 - `useNavigation` — navStack + navContents for the linked-page frame stack
 - `useContentHandlers` — all tile/block/CTA/image mutation callbacks
 - `useUndoRedo` — snapshot-based undo/redo; `onRestorePages` fires the rename API on undo/redo
 - `useAutoSave` — debounces saves 1.5 s after the last change; `runSave(fn)` for immediate saves (renames, URL edits)
+- `useAnalysis` — two-pass debounce: sync checks (300 ms) update the badge fast; URL checks (4 s) run separately so HTTP latency doesn't block the count
 
 ## Docs
 
@@ -69,13 +70,13 @@ src/
     useUndoRedo.ts                # Snapshot-based undo/redo with onRestorePages callback
     useNavigation.ts              # navStack + navContents for linked-page frame stack
     useContentHandlers.ts         # All tile/block/CTA/image mutation callbacks
-    useAnalysis.ts                # One-shot analysis scan on version load; returns issues + isAnalyzing
+    useAnalysis.ts                # Two-pass debounced analysis: 300 ms fast (sync) + 4 s slow (URL); returns issues + isAnalyzing
   utils/
     contentTransforms.ts          # Pure content-array transform functions (apply*)
     tileUtils.ts                  # Tile rendering helpers (resolveColor, resolveIconSVG)
     linkedFrames.ts               # Assembles linked-frame array for MainCanvas from navStack
     linkChecker.ts                # Extracts image/weblink/form URLs from content blocks
-    analysisUtils.ts              # gatherUrlCandidates, checkUrlCandidates, checkTileText
+    analysisUtils.ts              # gatherUrlCandidates, checkUrlCandidates, checkTileText, checkCtaText, extractUrlFingerprint
   services/                       # All API calls; each module wraps one domain
     apiClient.ts                  # Base: getBaseUrl, apiGet, apiPost, checkError, AuthError
     pagesApi.ts                   # savePage, updatePageTitle
