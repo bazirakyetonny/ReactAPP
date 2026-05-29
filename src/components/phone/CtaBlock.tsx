@@ -67,6 +67,10 @@ interface CtaBlockProps {
   onDelete?: (infoId: string) => void;
   onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
   onSelectImage?: (ctaId: string) => void;
+  /** Live label override while sidebar is being typed into */
+  liveLabel?: string;
+  /** Highlight this block with a red analysis outline */
+  isAnalysisHighlight?: boolean;
   /** Translation sidebar: show label as an editable input */
   editableLabel?: boolean;
   /** Translation sidebar: fire when label span is clicked (to enter edit mode) */
@@ -75,9 +79,9 @@ interface CtaBlockProps {
   onLabelBlur?: (value: string) => void;
 }
 
-export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
+export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, liveLabel, isAnalysisHighlight = false, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
-  const label = attrs.CtaLabel || 'Button';
+  const label = liveLabel !== undefined ? liveLabel : (attrs.CtaLabel || 'Button');
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
   const color = attrs.CtaColor || '#ffffff';
   const type = attrs.CtaButtonType || 'Image';
@@ -108,6 +112,7 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
         interactive ? 'phone-cta-block--interactive' : '',
         isDragging ? 'phone-cta-block--dragging' : '',
         isSelected ? 'phone-cta-block--selected' : '',
+        isAnalysisHighlight ? 'phone-cta-block--analysis' : '',
       ].filter(Boolean).join(' ')}
       onMouseDown={interactive && onDragStart
         ? (e) => onDragStart(e, block.InfoId, e.currentTarget as HTMLElement)
