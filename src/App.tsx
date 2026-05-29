@@ -37,14 +37,12 @@ import {
 } from "./services/pagesApi";
 import { NEW_PAGE_SENTINEL } from "./utils/linkedFrames";
 import type { TileMenuAction } from "./components/tile/TileActionMenu";
-import { extractLinks, checkLink } from "./utils/linkChecker";
 import { buildLinkedFrames } from "./utils/linkedFrames";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
-import { AnalysisPanel } from "./components/AnalysisPanel";
 
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
@@ -94,15 +92,17 @@ function App() {
     insertBeforeInfoId: string | null;
     frameId: string | null;
   } | null>(null);
-  const [invalidLinkCount, setInvalidLinkCount] = useState(0);
-  const [isCheckingLinks, setIsCheckingLinks] = useState(false);
-  const linkCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
     text: string;
+  } | null>(null);
+  const [liveCtaLabel, setLiveCtaLabel] = useState<{
+    id: string;
+    label: string;
   } | null>(null);
 
   // Live refs so hooks always read the current values
@@ -279,31 +279,6 @@ function App() {
       .catch(() => {});
   }
 
-  // ── Link checker ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const token = { cancelled: false };
-    if (linkCheckTimerRef.current) clearTimeout(linkCheckTimerRef.current);
-    linkCheckTimerRef.current = setTimeout(async () => {
-      const blocks = [...infoContent, ...Object.values(navContents).flat()];
-      const links = extractLinks(blocks);
-      if (links.length === 0) {
-        setInvalidLinkCount(0);
-        setIsCheckingLinks(false);
-        return;
-      }
-      setIsCheckingLinks(true);
-      const results = await Promise.all(links.map(checkLink));
-      if (token.cancelled) return;
-      setInvalidLinkCount(results.filter((r: boolean) => !r).length);
-      setIsCheckingLinks(false);
-    }, 3000);
-    return () => {
-      if (linkCheckTimerRef.current) clearTimeout(linkCheckTimerRef.current);
-      token.cancelled = true;
-    };
-  }, [infoContent, navContents]);
-
   // ── Derived state ────────────────────────────────────────────────────────
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
@@ -384,6 +359,40 @@ function App() {
     pages: currentVersion?.Page ?? [],
     versionId: currentVersion?.AppVersionId,
   });
+
+  const homePageId = (currentVersion?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home')?.PageId ?? 'home';
+
+  function openAnalysis() {
+    setAnalysisOpen(true);
+    setAnalysisIndex(0);
+    if (analysisIssues.length > 0 && analysisIssues[0].pageId !== homePageId) {
+      handleNavigateToPath([analysisIssues[0].pageId]);
+    }
+  }
+
+  function goToAnalysisIssue(idx: number) {
+    const issue = analysisIssues[idx];
+    if (!issue) return;
+    setAnalysisIndex(idx);
+    if (issue.pageId !== homePageId) handleNavigateToPath([issue.pageId]);
+  }
+
+  function handleAnalysisPrev() {
+    if (analysisIssues.length === 0) return;
+    goToAnalysisIssue((analysisIndex - 1 + analysisIssues.length) % analysisIssues.length);
+  }
+
+  function handleAnalysisNext() {
+    if (analysisIssues.length === 0) return;
+    goToAnalysisIssue((analysisIndex + 1) % analysisIssues.length);
+  }
+
+  const currentAnalysisIssue = analysisOpen && analysisIssues.length > 0
+    ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
+    : null;
+  const analysisHighlight = currentAnalysisIssue
+    ? { blockId: currentAnalysisIssue.blockId, tileId: currentAnalysisIssue.subItemId, message: currentAnalysisIssue.category === 1 ? 'Invalid URL' : 'Text too long' }
+    : null;
 
   // ── Data persistence ─────────────────────────────────────────────────────
 
@@ -701,61 +710,14 @@ function App() {
     }
 
     if (action.type === "direct-link" && action.linkType === "Weblink") {
-      const searchInBlocks = (blocks: any[]) =>
-        blocks.some((b) =>
-          (b.Columns ?? []).some((c: any) =>
-            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
-          ),
-        );
-      let parentIndex = -1;
-      if (!searchInBlocks(infoContentRef.current)) {
-        const stack = navStackRef.current;
-        for (let i = 0; i < stack.length; i++) {
-          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
-            parentIndex = i;
-            break;
-          }
-        }
-      }
-      try {
-        const newPage = await createLinkPage({
-          appVersionId: cv.AppVersionId,
-          pageName: action.label || "Web Link",
-          url: action.value,
-        });
-        if (!newPage?.PageId) throw new Error("no page");
-        const url = newPage.PageLinkStructure?.Url ?? action.value;
-        pushSnapshot();
-        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
-        dataStore.set("Current_Version", updated);
-        setCurrentVersion(updated);
-        handleEditTile(tileId, {
-          Action: {
-            ObjectType: newPage.PageType ?? "WebLink",
-            ObjectId: newPage.PageId,
-            ObjectUrl: url,
-            FormId: 0,
-          },
-        });
-        handleTileNavigate(newPage.PageId, parentIndex);
-        setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
-        setNavUrls((prev) => ({ ...prev, [newPage.PageId]: url }));
-      } catch {
-        // API failed — still open the frame using a synthetic key
-        pushSnapshot();
-        const frameKey = `weblink-frame-${tileId}`;
-        handleEditTile(tileId, {
-          Action: {
-            ObjectType: "WebLink",
-            ObjectId: "",
-            ObjectUrl: action.value,
-            FormId: 0,
-          },
-        });
-        handleTileNavigate(frameKey, parentIndex);
-        setNavSourceTiles((prev) => ({ ...prev, [frameKey]: tileId }));
-        setNavUrls((prev) => ({ ...prev, [frameKey]: action.value }));
-      }
+      pushSnapshot();
+      handleEditTile(tileId, {
+        Action: {
+          ObjectType: "WebLink",
+          ObjectUrl: action.value,
+          FormId: 0,
+        },
+      });
       return;
     }
 
@@ -924,8 +886,6 @@ function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
-        invalidLinkCount={invalidLinkCount}
-        isCheckingLinks={isCheckingLinks}
         isSaving={isSaving}
         saveError={saveError}
         savedAt={savedAt}
@@ -933,19 +893,18 @@ function App() {
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
         isHistoryOpen={isHistoryOpen}
         onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
+        analysisIssues={analysisIssues}
         analysisIssueCount={analysisIssues.length}
         isAnalyzing={isAnalyzing}
-        onAnalysisOpen={() => setAnalysisOpen(true)}
+        onAnalysisOpen={openAnalysis}
+        onAnalysisRerun={rerunAnalysis}
+        analysisOpen={analysisOpen}
+        analysisCurrentIndex={Math.min(analysisIndex, Math.max(0, analysisIssues.length - 1))}
+        onAnalysisPrev={handleAnalysisPrev}
+        onAnalysisNext={handleAnalysisNext}
+        onAnalysisClose={() => setAnalysisOpen(false)}
         onPublish={() => setShowPublishModal(true)}
       />
-      {analysisOpen && (
-        <AnalysisPanel
-          issues={analysisIssues}
-          isAnalyzing={isAnalyzing}
-          onClose={() => setAnalysisOpen(false)}
-          onRerun={rerunAnalysis}
-        />
-      )}
       {showPublishModal && currentVersion && (
         <PublishModal
           currentVersionId={currentVersion.AppVersionId}
@@ -1137,6 +1096,8 @@ function App() {
           onTileMenuAction={handleTileMenuAction}
           onRenamePage={handleRenamePage}
           liveTileText={liveTileText}
+          liveCtaLabel={liveCtaLabel}
+          analysisHighlight={analysisHighlight}
           onActiveFrameChange={handleActiveFrameChange}
         />
         {isHistoryOpen ? (
@@ -1167,9 +1128,16 @@ function App() {
             onEditTile={handleEditTile}
             onOpenTileImage={handleOpenTileImageFromSidebar}
             onBeforeOpacityChange={pushSnapshot}
+            onBeforeTileTextEdit={pushSnapshot}
+            onLiveTileText={(id, text) => setLiveTileText({ id, text })}
+            onEndLiveTileText={() => setLiveTileText(null)}
+            onBeforeTileActionEdit={pushSnapshot}
             pageName={activePageName}
             selectedCta={selectedCta}
             onEditCta={handleEditCta}
+            onBeforeCtaEdit={pushSnapshot}
+            onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
+            onEndLiveCtaLabel={() => setLiveCtaLabel(null)}
           />
         )}
       </div>

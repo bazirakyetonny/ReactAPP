@@ -129,6 +129,8 @@ export interface DraggableScreenProps {
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
   liveTileText?: { id: string; text: string } | null;
+  liveCtaLabel?: { id: string; label: string } | null;
+  analysisHighlight?: import('../../utils/analysisUtils').AnalysisHighlight | null;
 }
 
 export function DraggableScreen({
@@ -180,6 +182,8 @@ export function DraggableScreen({
   onEditCta,
   onTileMenuAction,
   liveTileText,
+  liveCtaLabel,
+  analysisHighlight,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -878,7 +882,7 @@ export function DraggableScreen({
               <React.Fragment key={rowKey}>
                 <div className="phone-round-cta-row">
                   {blocks.map(block => (
-                    <div key={block.InfoId} ref={(el) => {
+                    <div key={block.InfoId} style={{ position: 'relative' }} ref={(el) => {
                       if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                       else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                     }}>
@@ -888,11 +892,16 @@ export function DraggableScreen({
                         interactive={true}
                         isDragging={blockDragId === block.InfoId}
                         isSelected={selectedCtaId === block.InfoId}
-                        onSelect={onSelectCta}
+                        onSelect={(ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                         onDelete={(infoId) => onDeleteBlock?.(infoId)}
                         onDragStart={handleBlockDragStart}
                         onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
+                        liveLabel={liveCtaLabel?.id === block.InfoId ? liveCtaLabel?.label : undefined}
+                        isAnalysisHighlight={analysisHighlight?.blockId === block.InfoId}
                       />
+                      {analysisHighlight?.blockId === block.InfoId && analysisHighlight?.message && (
+                        <div className="block-analysis-label">{analysisHighlight.message}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -967,6 +976,8 @@ export function DraggableScreen({
                     setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
                   }
                   liveTileText={liveTileText}
+                  analysisHighlightTileId={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.tileId : undefined}
+                  analysisHighlightMessage={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.message : undefined}
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
@@ -975,7 +986,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Description') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div onClick={onDeselectTile} ref={(el) => {
+                <div onClick={() => { onCollapseFromParent?.(); onDeselectTile?.(); }} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
@@ -1012,10 +1023,13 @@ export function DraggableScreen({
           if (block.InfoType === 'Images') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div onClick={onDeselectTile} ref={(el) => {
-                  if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
-                  else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
-                }}>
+                <div
+                  className={analysisHighlight?.blockId === block.InfoId ? 'block--analysis-highlight' : undefined}
+                  onClick={() => { onCollapseFromParent?.(); onDeselectTile?.(); }}
+                  ref={(el) => {
+                    if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
+                    else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
+                  }}>
                   <ImageBlock
                     block={block}
                     interactive={true}
@@ -1024,6 +1038,9 @@ export function DraggableScreen({
                     onDelete={(infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={handleBlockDragStart}
                   />
+                  {analysisHighlight?.blockId === block.InfoId && analysisHighlight?.message && (
+                    <div className="block-analysis-label">{analysisHighlight.message}</div>
+                  )}
                 </div>
                 {(tileDragZoneActive || blockDragZoneActive)
                   ? <div className="block-drop-zone" />
@@ -1049,7 +1066,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Cta') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div ref={(el) => {
+                <div style={{ position: 'relative' }} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
@@ -1059,11 +1076,16 @@ export function DraggableScreen({
                     interactive={true}
                     isDragging={blockDragId === block.InfoId}
                     isSelected={selectedCtaId === block.InfoId}
-                    onSelect={onSelectCta}
+                    onSelect={(ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                     onDelete={(infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={handleBlockDragStart}
                     onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
+                    liveLabel={liveCtaLabel?.id === block.InfoId ? liveCtaLabel?.label : undefined}
+                    isAnalysisHighlight={analysisHighlight?.blockId === block.InfoId}
                   />
+                  {analysisHighlight?.blockId === block.InfoId && analysisHighlight?.message && (
+                    <div className="block-analysis-label">{analysisHighlight.message}</div>
+                  )}
                 </div>
                 {(tileDragZoneActive || blockDragZoneActive)
                   ? <div className="block-drop-zone" />

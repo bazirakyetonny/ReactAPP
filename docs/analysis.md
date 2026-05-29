@@ -33,11 +33,13 @@ Checks whether URLs embedded in content blocks are reachable. Uses the same `che
 
 ---
 
-## Category 2 — Long Tile Text
+## Category 2 — Long Text
+
+Covers both tile text and CTA label length checks.
+
+### 2a — Long Tile Text
 
 Checks whether the `Text` field of each tile exceeds the maximum allowed length for its grid layout.
-
-### Limits by grid shape
 
 | Grid columns | Tiles per column | Max chars |
 |---|---|---|
@@ -47,6 +49,28 @@ Checks whether the `Text` field of each tile exceeds the maximum allowed length 
 | 1 | > 1 | 15 |
 
 Column count = `block.Columns.length`. Tile count = `col.Tiles.length` per column.
+
+### 2b — Long CTA Label
+
+Checks whether the `CtaLabel` field of each CTA block exceeds the maximum allowed length for its button type and, for Round buttons, the number of buttons sharing the same row.
+
+**Round buttons** — consecutive Round CTAs are grouped into rows of up to 3 (matching the canvas rendering logic):
+
+| Buttons in row | Max chars |
+|---|---|
+| 3 | 8 |
+| 2 | 15 |
+| 1 | 30 |
+
+**Other button types:**
+
+| Button type | Max chars |
+|---|---|
+| FullWidth | 30 |
+| Icon | 20 |
+| Image | 20 |
+
+Implementation: `checkCtaText` in `src/utils/analysisUtils.ts`. Runs on the fast sync path (300 ms debounce) alongside tile text checks.
 
 ---
 
@@ -72,7 +96,7 @@ interface AnalysisIssue {
 
 | File | Role |
 |---|---|
-| `src/utils/analysisUtils.ts` | `gatherUrlCandidates`, `checkUrlCandidates`, `checkTileText` |
+| `src/utils/analysisUtils.ts` | `gatherUrlCandidates`, `checkUrlCandidates`, `checkTileText`, `checkCtaText` |
 | `src/hooks/useAnalysis.ts` | Debounced scan; returns `{ issues, isAnalyzing, rerun }` |
 | `src/components/AnalysisPanel.tsx` | Floating portal panel with two collapsible sections |
 | `src/components/AnalysisPanel.css` | Panel styles |

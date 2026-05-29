@@ -490,6 +490,65 @@
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }
 
+/* Analysis highlight — dashed red outline; label overlaps bottom border. */
+.phone-tile-wrap.phone-tile-wrap--analysis .phone-tile {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+.phone-cta-block.phone-cta-block--analysis .phone-cta-fullwidth {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
+}
+.phone-cta-block.phone-cta-block--analysis .phone-cta-round-wrap {
+  outline: 2px solid #ef4444;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.block--analysis-highlight {
+  position: relative;
+}
+.block--analysis-highlight .phone-image-single,
+.block--analysis-highlight .phone-carousel-img {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
+}
+
+/* Analysis label — sits on the bottom border, half inside / half outside */
+.phone-tile-analysis-label {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fafafa;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Analysis label for image/CTA blocks — same overlap pattern */
+.block-analysis-label {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fafafa;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+}
+
 /* Options button — top left */
 .phone-tile-options-btn {
   position: absolute;
@@ -1582,6 +1641,8 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
+  width: 100%;
+  min-width: 0;
 }
 .phone-cta-round {
   width: 60px;
@@ -1596,7 +1657,7 @@
   letter-spacing: 0.05em;
   color: #374151;
   text-align: center;
-  max-width: 60px;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1619,6 +1680,10 @@
 .phone-cta-label {
   flex: 1;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .phone-cta-label-input {
