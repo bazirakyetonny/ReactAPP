@@ -5,15 +5,35 @@
 - Repo: `bazirakyetonny/ReactAPP`
 - Base branch: `main`
 
-## gh CLI path
+## Token
 
-Ensure `gh` is on PATH before any `gh` commands:
-
+GitHub token lives in `.mcp.json` → `mcpServers.github.env.GITHUB_PERSONAL_ACCESS_TOKEN`.
+Read it with:
 ```bash
-export PATH="$PATH:/c/Program Files/GitHub CLI"
+python -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['github']['env']['GITHUB_PERSONAL_ACCESS_TOKEN'])"
 ```
 
-## PR body
+## Step 1 — Push the branch
+
+Before creating the PR, ensure the branch is pushed:
+```bash
+git push -u origin HEAD
+```
+
+## Step 2 — Create the PR via MCP
+
+Use the `mcp__github__create_pull_request` tool:
+
+```
+owner: bazirakyetonny
+repo:  ReactAPP
+title: <concise title, ≤ 70 chars>
+body:  (see template below)
+head:  <current-branch-name>
+base:  main
+```
+
+### PR body template
 
 ```markdown
 ## Summary
@@ -26,22 +46,28 @@ export PATH="$PATH:/c/Program Files/GitHub CLI"
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-## Reviewers
+## Step 3 — Assign reviewers
 
-After the PR is created:
-
-1. Fetch direct collaborators:
+1. Fetch collaborators via the GitHub API:
    ```bash
-   gh api "repos/bazirakyetonny/ReactAPP/collaborators?affiliation=direct" --jq '.[].login'
+   TOKEN=$(python -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['github']['env']['GITHUB_PERSONAL_ACCESS_TOKEN'])")
+   curl -s -H "Authorization: token $TOKEN" \
+     "https://api.github.com/repos/bazirakyetonny/ReactAPP/collaborators?affiliation=direct" \
+     | python -c "import sys,json; [print(u['login']) for u in json.load(sys.stdin)]"
    ```
-2. Exclude the current user; present the rest to the user
+2. Exclude the current git user (`git config user.name`); present the rest
 3. Ask: "Who should review this PR?"
-4. Assign selected reviewers:
+4. Assign via the GitHub API:
    ```bash
-   gh pr edit <PR-URL> --add-reviewer <reviewer1,reviewer2>
+   curl -s -X POST \
+     -H "Authorization: token $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"reviewers\": [\"<reviewer>\"]}" \
+     "https://api.github.com/repos/bazirakyetonny/ReactAPP/pulls/<PR-NUMBER>/requested_reviewers"
    ```
 
 ## Rules
 
 - Keep the PR focused on the feature — no unrelated refactors
 - No migration notes section (no database or env vars in this widget project)
+- Always confirm the branch is pushed before calling `mcp__github__create_pull_request`
