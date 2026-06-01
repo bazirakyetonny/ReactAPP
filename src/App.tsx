@@ -14,6 +14,7 @@ import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVe
 import { UpdateTranslationsModal } from "./components/appversion/UpdateTranslationsModal";
 import { CreateAppVersionTemplateModal } from "./components/appversion/CreateAppVersionTemplateModal";
 import { PublishModal } from "./components/appversion/PublishModal";
+import { ShareLinkModal } from "./components/appversion/ShareLinkModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
 import { AddCtaModal } from "./components/phone/AddCtaModal";
@@ -96,6 +97,7 @@ function App() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -937,6 +939,7 @@ function App() {
         onAnalysisNext={handleAnalysisNext}
         onAnalysisClose={() => setAnalysisOpen(false)}
         onPublish={() => setShowPublishModal(true)}
+        onShareClick={() => setShowShareModal(true)}
       />
       {showPublishModal && currentVersion && (
         <PublishModal
@@ -978,6 +981,12 @@ function App() {
             setShowPublishModal(false);
             setAnalysisOpen(true);
           }}
+        />
+      )}
+      {showShareModal && (
+        <ShareLinkModal
+          shareLink={dataStore.get("PreviewLink") ?? ""}
+          onClose={() => setShowShareModal(false)}
         />
       )}
       {showCreateModal && (
