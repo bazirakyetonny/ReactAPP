@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "format-toolbar",
+  "prompt": "Extract the format toolbar section from src/components/SidebarRight.tsx into a new component. The section is the sr-toolbar div (contains the text colour buttons and alignment buttons). Create TileFormatToolbar in src/components/sidebar_right/ with its own CSS file.",
+  "assertions": [
+    "TileFormatToolbar.tsx exports a function named TileFormatToolbar",
+    "TileFormatToolbar.tsx defines SquareOutlineIcon, SquareFilledIcon, AlignLeftIcon, AlignCenterIcon (SVG functions that were previously in SidebarRight.tsx)",
+    "TileFormatToolbar.tsx has props: selectedTile and onEditTile",
+    "TileFormatToolbar.css contains the .sr-toolbar rule",
+    "SidebarRight.tsx imports TileFormatToolbar",
+    "SidebarRight.tsx renders <TileFormatToolbar instead of the old sr-toolbar div",
+    "SidebarRight.tsx no longer defines SquareOutlineIcon, SquareFilledIcon, AlignLeftIcon, AlignCenterIcon",
+    "SidebarRight.css does not contain .sr-toolbar"
+  ]
+}

@@ -51,11 +51,8 @@ Run the full suite and fix all failures. Do not skip or comment out failing test
 - Single file (server): `npx jest src/<path>.spec.ts` from `apps/server/`
 - Single file (client): `npx vitest run src/<path>.test.tsx` from `apps/client/`
 
-## Step 7 — Commit
 
-Follow `.claude/skills/git-commit/SKILL.md`. Stage only the files changed by name.
-
-## Step 8 — Manual review
+## Step 7 — Manual review
 
 **Stop here. Do not push or open a PR yet.**
 
@@ -63,5 +60,10 @@ Ask the user to:
 
 1. Run the app and manually test the feature against the acceptance criteria
 2. Review the diff (`git diff chat-refactor..HEAD`) for anything unexpected
+
+
+## Step 8 — Commit
+
+Follow `.claude/skills/git-commit/SKILL.md`. Stage only the files changed by name.
 
 Once satisfied, ask: "Does everything look good? When you're ready to push, run `/open-pr` to create the pull request."

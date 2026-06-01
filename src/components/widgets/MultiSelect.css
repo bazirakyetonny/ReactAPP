@@ -7,9 +7,10 @@
 .ms-trigger {
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px 10px;
   font-family: inherit;
   font-size: 13px;
   color: #111827;
@@ -19,6 +20,8 @@
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  min-height: 36px;
 }
 
 .ms-trigger--open {
@@ -32,23 +35,80 @@
   box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
 }
 
-.ms-trigger-label {
+/* ── Chips area ─────────────────────────────────────────────── */
+.ms-chips {
   flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  align-items: center;
 }
 
-.ms-trigger-label--placeholder {
+.ms-trigger-placeholder {
   color: #9ca3af;
+  font-size: 13px;
+  line-height: 22px;
+  user-select: none;
 }
 
+/* ── Individual chip ────────────────────────────────────────── */
+.ms-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 6px 2px 8px;
+  background: #e8edf7;
+  color: #1a3a6e;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.ms-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.ms-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #4b6fa8;
+  transition: background 0.1s, color 0.1s;
+}
+
+.ms-chip-remove:hover {
+  background: #c7d3ed;
+  color: #1a3a6e;
+}
+
+.ms-chip-remove svg {
+  width: 8px;
+  height: 8px;
+  display: block;
+}
+
+/* ── Chevron ────────────────────────────────────────────────── */
 .ms-chevron {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
   color: #6b7280;
-  margin-left: 6px;
+  margin-top: 4px;
   transition: transform 0.15s;
 }
 

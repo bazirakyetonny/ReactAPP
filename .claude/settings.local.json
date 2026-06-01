@@ -24,7 +24,8 @@
       "Skill(implement-analysis)",
       "Skill(linked-pages)",
       "Bash(npm run *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Write(.claude/skills/extract-component-workspace/*)"
     ]
   },
   "enabledPlugins": {

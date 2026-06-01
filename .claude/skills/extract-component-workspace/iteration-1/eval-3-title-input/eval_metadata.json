@@ -1,0 +1,15 @@
+{
+  "eval_id": 3,
+  "eval_name": "title-input",
+  "prompt": "Pull the tile title input (the sr-section div with the text input field for editing tile text) out of src/components/SidebarRight.tsx into a TileTitleInput component in src/components/sidebar_right/. It should manage its own local text state.",
+  "assertions": [
+    "TileTitleInput.tsx exports a function named TileTitleInput",
+    "TileTitleInput.tsx has internal useState for tileText (not a prop)",
+    "TileTitleInput.tsx has useRef for isEditingTextRef",
+    "TileTitleInput.tsx has useEffect that syncs tileText from selectedTile",
+    "TileTitleInput.tsx accepts props: selectedTile, onEditTile, onBeforeTileTextEdit, onLiveTileText, onEndLiveTileText",
+    "SidebarRight.tsx imports TileTitleInput",
+    "SidebarRight.tsx renders <TileTitleInput instead of the sr-section div",
+    "SidebarRight.tsx no longer declares tileText state or isEditingTextRef"
+  ]
+}

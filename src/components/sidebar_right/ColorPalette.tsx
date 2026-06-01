@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Mood } from "../../types";
+import { dataStore } from "../../data/datastore";
 import "./ColorPalette.css";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -26,25 +27,49 @@ function MoodToggleIcon() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ColorPalette({
-  palette,
-  moods,
   selectedTile,
   activeBgHex,
   onEditTile,
   moodId,
 }: {
-  palette: string[];
-  moods: Mood[];
   selectedTile: any;
   activeBgHex?: string;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   moodId?: string;
 }) {
-  const [showMoods, setShowMoods] = useState(!!moodId);
+  const moods: Mood[] = dataStore.get("Moods") ?? [];
+  const themes: any[] = dataStore.get("themes") ?? [];
 
-  const activeMoodName = moodId
-    ? (moods.find((m) => m.MoodId === moodId)?.MoodName ?? "")
+  const activeColorName = selectedTile?.BGColor;
+
+  const activeMood = moodId
+    ? moods.find((m) => m.MoodId === moodId)
     : undefined;
+  const themeId = activeMood?.ThemeId ?? dataStore.get("CurrentThemeId");
+  const theme = themes.find((t) => t.ThemeId === themeId);
+  const moodColorNames = JSON.parse(
+    activeMood?.MoodColorNames ?? "[]",
+  ) as string[];
+  const moodColors = moodColorNames.map((n) => {
+    return {
+      ColorId: n,
+      ColorName: n,
+      ColorCode: theme.ThemeColors[n],
+    };
+  });
+
+  const themeColors = Object.entries(theme?.ThemeColors ?? {}).map(([k, v]) => {
+    return {
+      ColorId: k,
+      ColorName: k,
+      ColorCode: v,
+    };
+  });
+
+  console.log("moodColors", moods);
+  console.log("themeColors", themes);
+  const activeMoodName = activeMood?.MoodName;
+  const [showMoods, setShowMoods] = useState(!!activeMoodName);
 
   return (
     <>
@@ -69,39 +94,39 @@ export function ColorPalette({
             moods.length === 0 ? (
               <span className="sr-zoom-label">No moods</span>
             ) : (
-              moods.flatMap((mood) =>
-                mood.MoodColors.slice(0, 4).map((mc) => (
-                  <button
-                    key={mc.MoodColorId}
-                    className={`sr-palette-chip${activeBgHex === mc.ColorCode ? " sr-palette-chip--active" : ""}`}
-                    style={{ background: mc.ColorCode }}
-                    type="button"
-                    aria-label={`Apply colour ${mc.ColorCode}`}
-                    onClick={() =>
-                      selectedTile &&
-                      onEditTile?.(selectedTile.Id, {
-                        BGColor: mc.ColorCode,
-                        BGImageUrl: null,
-                        OriginalImageUrl: null,
-                        Opacity: null,
-                      })
-                    }
-                  />
-                )),
-              )
+              moodColors.map((mc) => (
+                <button
+                  key={mc.ColorId}
+                  className={`sr-palette-chip${activeColorName === mc.ColorName ? " sr-palette-chip--active" : ""}`}
+                  style={{ background: mc.ColorCode }}
+                  title={mc.ColorName}
+                  type="button"
+                  aria-label={`Apply colour ${mc.ColorCode}`}
+                  onClick={() =>
+                    selectedTile &&
+                    onEditTile?.(selectedTile.Id, {
+                      BGColor: mc.ColorName,
+                      BGImageUrl: null,
+                      OriginalImageUrl: null,
+                      Opacity: null,
+                    })
+                  }
+                />
+              ))
             )
           ) : (
-            palette.map((c) => (
+            themeColors.map((mc) => (
               <button
-                key={c}
-                className={`sr-palette-chip${activeBgHex === c ? " sr-palette-chip--active" : ""}`}
-                style={{ background: c }}
+                key={mc.ColorId}
+                className={`sr-palette-chip${activeColorName === mc.ColorName ? " sr-palette-chip--active" : ""}`}
+                style={{ background: mc.ColorCode }}
+                title={mc.ColorName}
                 type="button"
-                aria-label={c}
+                aria-label={`Apply colour ${mc.ColorCode}`}
                 onClick={() =>
                   selectedTile &&
                   onEditTile?.(selectedTile.Id, {
-                    BGColor: c,
+                    BGColor: mc.ColorName,
                     BGImageUrl: null,
                     OriginalImageUrl: null,
                     Opacity: null,

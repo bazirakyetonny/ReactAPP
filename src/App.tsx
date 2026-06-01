@@ -16,14 +16,13 @@ import { CreateAppVersionTemplateModal } from "./components/appversion/CreateApp
 import { PublishModal } from "./components/appversion/PublishModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
-import { TileImageModal } from "./components/phone/TileImageModal";
 import { AddCtaModal } from "./components/phone/AddCtaModal";
 import { SidebarRight } from "./components/SidebarRight";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
 import { VersionHistorySidebar } from "./components/appversion/VersionHistorySidebar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { dataStore } from "./data/datastore";
-import type { Theme, Mood, CategoryTemplates } from "./types";
+import type { Theme, CategoryTemplates } from "./types";
 import {
   parseInfoContent,
   applyEditTile,
@@ -43,10 +42,10 @@ import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
+import { TileImageModal } from "./components/phone/TileImageModal";
 
 function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
-  const allMoods: Mood[] = dataStore.get("Moods") ?? [];
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
 
@@ -79,13 +78,15 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [translationPageId, setTranslationPageId] = useState<string | null>(null);
+  const [translationPageId, setTranslationPageId] = useState<string | null>(
+    null,
+  );
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
     tileWidth: number;
     tileHeight: number;
     initialOriginalUrl?: string;
-    initialOpacity?: number;
+    initialOpacity?: string;
   } | null>(null);
   const [pendingCta, setPendingCta] = useState<{
     blockType: string;
@@ -282,7 +283,6 @@ function App() {
   // ── Derived state ────────────────────────────────────────────────────────
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
-  const themeMoods = allMoods.filter((m) => m.ThemeId === selectedThemeId);
   const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
   let activePageId = navStack[navStack.length - 1];
   let activePage = allPages.find((p) => p.PageId === activePageId);
@@ -293,11 +293,13 @@ function App() {
   const activePageName = activePage?.PageName ?? "Home";
 
   // Translation sidebar tracks whichever phone frame is visually active (phone-frame--active)
-  const homePage = allPages.find((p: any) => p.PageName.toLowerCase() === "home");
+  const homePage = allPages.find(
+    (p: any) => p.PageName.toLowerCase() === "home",
+  );
   const transPage = translationPageId
     ? allPages.find((p: any) => p.PageId === translationPageId)
     : homePage;
-  const transPageId   = transPage?.PageId   ?? homePage?.PageId ?? "";
+  const transPageId = transPage?.PageId ?? homePage?.PageId ?? "";
   const transPageName = transPage?.PageName ?? "Home";
 
   function handleActiveFrameChange(pageId: string | null) {
@@ -353,14 +355,21 @@ function App() {
 
   // ── Analysis ─────────────────────────────────────────────────────────────
 
-  const { issues: analysisIssues, isAnalyzing, rerun: rerunAnalysis } = useAnalysis({
+  const {
+    issues: analysisIssues,
+    isAnalyzing,
+    rerun: rerunAnalysis,
+  } = useAnalysis({
     infoContent,
     navContents,
     pages: currentVersion?.Page ?? [],
     versionId: currentVersion?.AppVersionId,
   });
 
-  const homePageId = (currentVersion?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home')?.PageId ?? 'home';
+  const homePageId =
+    (currentVersion?.Page ?? []).find(
+      (p: any) => p.PageName?.toLowerCase() === "home",
+    )?.PageId ?? "home";
 
   function openAnalysis() {
     setAnalysisOpen(true);
@@ -379,7 +388,9 @@ function App() {
 
   function handleAnalysisPrev() {
     if (analysisIssues.length === 0) return;
-    goToAnalysisIssue((analysisIndex - 1 + analysisIssues.length) % analysisIssues.length);
+    goToAnalysisIssue(
+      (analysisIndex - 1 + analysisIssues.length) % analysisIssues.length,
+    );
   }
 
   function handleAnalysisNext() {
@@ -387,11 +398,17 @@ function App() {
     goToAnalysisIssue((analysisIndex + 1) % analysisIssues.length);
   }
 
-  const currentAnalysisIssue = analysisOpen && analysisIssues.length > 0
-    ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
-    : null;
+  const currentAnalysisIssue =
+    analysisOpen && analysisIssues.length > 0
+      ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
+      : null;
   const analysisHighlight = currentAnalysisIssue
-    ? { blockId: currentAnalysisIssue.blockId, tileId: currentAnalysisIssue.subItemId, message: currentAnalysisIssue.category === 1 ? 'Invalid URL' : 'Text too long' }
+    ? {
+        blockId: currentAnalysisIssue.blockId,
+        tileId: currentAnalysisIssue.subItemId,
+        message:
+          currentAnalysisIssue.category === 1 ? "Invalid URL" : "Text too long",
+      }
     : null;
 
   // ── Data persistence ─────────────────────────────────────────────────────
@@ -452,6 +469,13 @@ function App() {
       );
     find(infoContentRef.current);
     Object.values(navContentsRef.current).forEach(find);
+    console.log({
+      tileId,
+      tileWidth: rect.width,
+      tileHeight: rect.height,
+      initialOriginalUrl: tile?.OriginalImageUrl,
+      initialOpacity: tile?.Opacity,
+    });
     setTileImageModal({
       tileId,
       tileWidth: rect.width,
@@ -463,7 +487,7 @@ function App() {
 
   function handleTileImageConfirm(result: {
     bgImageUrl: string;
-    opacity: number;
+    opacity: string;
     originalImageUrl: string;
     originalMediaId: string;
   }) {
@@ -632,7 +656,10 @@ function App() {
       }
     }
 
-    if (tileAction?.ObjectType === "WebLink" || tileAction?.ObjectType === "DynamicForm") {
+    if (
+      tileAction?.ObjectType === "WebLink" ||
+      tileAction?.ObjectType === "DynamicForm"
+    ) {
       const frameKey = tileAction.ObjectId || `form-frame-${id}`;
       // Prefer the canonical URL stored on the page record; fall back to tile Action
       const page = pagesRef.current.find(
@@ -723,9 +750,8 @@ function App() {
 
     if (action.type === "direct-link") {
       pushSnapshot();
-      const objectId = action.linkType === "Phone"
-        ? `RYjufBtwDa${Date.now()}`
-        : "";
+      const objectId =
+        action.linkType === "Phone" ? `RYjufBtwDa${Date.now()}` : "";
       handleEditTile(tileId, {
         ...(action.label ? { Text: action.label } : {}),
         Action: {
@@ -783,7 +809,11 @@ function App() {
       } catch {
         pushSnapshot();
         handleEditTile(tileId, {
-          Action: { ObjectType: "DynamicForm", ObjectId: action.formId, ObjectUrl: "" },
+          Action: {
+            ObjectType: "DynamicForm",
+            ObjectId: action.formId,
+            ObjectUrl: "",
+          },
         });
       }
       return;
@@ -899,12 +929,43 @@ function App() {
         onAnalysisOpen={openAnalysis}
         onAnalysisRerun={rerunAnalysis}
         analysisOpen={analysisOpen}
-        analysisCurrentIndex={Math.min(analysisIndex, Math.max(0, analysisIssues.length - 1))}
+        analysisCurrentIndex={Math.min(
+          analysisIndex,
+          Math.max(0, analysisIssues.length - 1),
+        )}
         onAnalysisPrev={handleAnalysisPrev}
         onAnalysisNext={handleAnalysisNext}
         onAnalysisClose={() => setAnalysisOpen(false)}
         onPublish={() => setShowPublishModal(true)}
       />
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
+        />
+      )}
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
+        />
+      )}
       {showPublishModal && currentVersion && (
         <PublishModal
           currentVersionId={currentVersion.AppVersionId}
@@ -1028,7 +1089,9 @@ function App() {
           versionId={updateTranslationsVersion.AppVersionId}
           versionName={updateTranslationsVersion.AppVersionName}
           baseLanguage={updateTranslationsVersion.AppVersionLanguage}
-          currentTranslateLanguages={updateTranslationsVersion.TranslateLanguages}
+          currentTranslateLanguages={
+            updateTranslationsVersion.TranslateLanguages
+          }
           onClose={() => setUpdateTranslationsVersion(null)}
           onUpdated={() => {
             setUpdateTranslationsVersion(null);
@@ -1122,7 +1185,6 @@ function App() {
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             themeColors={selectedTheme?.ThemeColors}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
-            moods={themeMoods}
             moodId={currentVersion?.MoodId}
             selectedTile={selectedTile}
             onEditTile={handleEditTile}
