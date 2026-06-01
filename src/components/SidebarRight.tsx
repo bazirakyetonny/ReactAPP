@@ -304,10 +304,13 @@ export function SidebarRight({
   onBeforeTileTextEdit,
   onLiveTileText,
   onEndLiveTileText,
+  onBeforeTileActionEdit,
   pageName,
   selectedCta,
   onEditCta,
   onBeforeCtaEdit,
+  onLiveCtaLabel,
+  onEndLiveCtaLabel,
   moodId,
 }: {
   themeIcons?: ThemeIcon[];
@@ -321,10 +324,13 @@ export function SidebarRight({
   onBeforeTileTextEdit?: () => void;
   onLiveTileText?: (id: string, text: string) => void;
   onEndLiveTileText?: () => void;
+  onBeforeTileActionEdit?: () => void;
   pageName?: string;
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
+  onLiveCtaLabel?: (id: string, label: string) => void;
+  onEndLiveCtaLabel?: () => void;
   moodId?: string;
 }) {
   const palette = themeColors
@@ -332,10 +338,16 @@ export function SidebarRight({
     : [];
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
+  const [actionUrl, setActionUrl] = useState(selectedTile?.Action?.ObjectUrl ?? "");
+  const isEditingActionRef = useRef(false);
 
   useEffect(() => {
     if (!isEditingTextRef.current) setTileText(selectedTile?.Text ?? "");
   }, [selectedTile?.Id, selectedTile?.Text]);
+
+  useEffect(() => {
+    if (!isEditingActionRef.current) setActionUrl(selectedTile?.Action?.ObjectUrl ?? "");
+  }, [selectedTile?.Id, selectedTile?.Action?.ObjectUrl]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -391,6 +403,8 @@ export function SidebarRight({
           palette={ctaColors}
           onEditCta={onEditCta}
           onBeforeCtaEdit={onBeforeCtaEdit}
+          onLiveCtaLabel={onLiveCtaLabel}
+          onEndLiveCtaLabel={onEndLiveCtaLabel}
         />
       )}
 
@@ -490,6 +504,32 @@ export function SidebarRight({
               }}
             />
           </div>
+          {/* 2d. WebLink URL input */}
+          {selectedTile?.Action?.ObjectType === 'WebLink' && (
+            <div className="sr-section">
+              <input
+                className="sr-input"
+                type="text"
+                placeholder="https://example.com"
+                value={actionUrl}
+                onFocus={() => {
+                  isEditingActionRef.current = true;
+                  onBeforeTileActionEdit?.();
+                }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setActionUrl(val);
+                  if (selectedTile)
+                    onEditTile?.(selectedTile.Id, {
+                      Action: { ...selectedTile.Action, ObjectUrl: val },
+                    });
+                }}
+                onBlur={() => {
+                  isEditingActionRef.current = false;
+                }}
+              />
+            </div>
+          )}
           {/* 3. Format toolbar */}
           <div className="sr-toolbar">
             {/* Text colour group: Light + Dark */}
@@ -626,7 +666,7 @@ export function SidebarRight({
                   onClick={() =>
                     selectedTile &&
                     onEditTile?.(selectedTile.Id, {
-                      Icon: null,
+                      Icon: icon.IconCodeName,
                       IconSVG: icon.IconSVG,
                       IconId: icon.IconId,
                       IconCodeName: icon.IconCodeName,

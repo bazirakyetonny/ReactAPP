@@ -98,11 +98,13 @@ const CTA_BUTTON_TYPES = [
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCtaEdit }: {
+export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCtaEdit, onLiveCtaLabel, onEndLiveCtaLabel }: {
   selectedCta: any;
   palette: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
+  onLiveCtaLabel?: (id: string, label: string) => void;
+  onEndLiveCtaLabel?: () => void;
 }) {
   const attrs = selectedCta?.CtaAttributes ?? {};
   const ctaId = selectedCta?.InfoId;
@@ -111,7 +113,7 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
   const [ctaLabel, setCtaLabel] = useState(attrs.CtaLabel ?? '');
   const [ctaAction, setCtaAction] = useState(attrs.CtaAction ?? '');
 
-  useEffect(() => { setCtaLabel(attrs.CtaLabel ?? ''); }, [ctaId]);
+  useEffect(() => { setCtaLabel(attrs.CtaLabel ?? ''); }, [ctaId, attrs.CtaLabel]);
   useEffect(() => { setCtaAction(attrs.CtaAction ?? ''); }, [ctaId]);
 
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
@@ -176,9 +178,8 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
           type="text"
           placeholder="Label"
           value={ctaLabel}
-          onFocus={() => onBeforeCtaEdit?.()}
-          onChange={e => setCtaLabel(e.target.value)}
-          onBlur={() => { if (ctaLabel !== (attrs.CtaLabel ?? '')) patch({ CtaLabel: ctaLabel }); }}
+          onChange={e => { setCtaLabel(e.target.value); onLiveCtaLabel?.(ctaId, e.target.value); }}
+          onBlur={() => { onEndLiveCtaLabel?.(); if (ctaLabel !== (attrs.CtaLabel ?? '')) { onBeforeCtaEdit?.(); patch({ CtaLabel: ctaLabel }); } }}
         />
       </div>
 
@@ -214,22 +215,24 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
 
       {/* CtaColor — light / dark text & icon */}
       <div className="sr-toolbar">
-        <button
-          className={`sr-tool-btn${attrs.CtaColor === '#ffffff' ? ' sr-tool-btn-active' : ''}`}
-          type="button"
-          title="Light text & icon"
-          onClick={() => patch({ CtaColor: '#ffffff' })}
-        >
-          <SquareOutlineIcon />
-        </button>
-        <button
-          className={`sr-tool-btn${attrs.CtaColor === '#333333' ? ' sr-tool-btn-active' : ''}`}
-          type="button"
-          title="Dark text & icon"
-          onClick={() => patch({ CtaColor: '#333333' })}
-        >
-          <SquareFilledIcon />
-        </button>
+        <div className="sr-text-color-group">
+          <button
+            className={`sr-tool-btn sr-tool-btn--in-group${attrs.CtaColor === '#ffffff' ? ' sr-tool-btn-active' : ''}`}
+            type="button"
+            title="Light text & icon"
+            onClick={() => patch({ CtaColor: '#ffffff' })}
+          >
+            <SquareOutlineIcon />
+          </button>
+          <button
+            className={`sr-tool-btn sr-tool-btn--in-group${attrs.CtaColor === '#333333' ? ' sr-tool-btn-active' : ''}`}
+            type="button"
+            title="Dark text & icon"
+            onClick={() => patch({ CtaColor: '#333333' })}
+          >
+            <SquareFilledIcon />
+          </button>
+        </div>
       </div>
 
       {/* CtaButtonIcon — icon grid (Round and Icon types only) */}

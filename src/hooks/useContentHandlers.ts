@@ -162,9 +162,10 @@ export function useContentHandlers({
     const isHeightOnly = keys.length === 1 && 'Height' in patch;
     const isOpacityOnly = keys.length === 1 && 'Opacity' in patch;
     const isTextOnly = keys.length === 1 && 'Text' in patch;
+    const isActionOnly = keys.length === 1 && 'Action' in patch;
     if (isHeightOnly) {
       if (!isResizingRef.current) { pushSnapshot(); isResizingRef.current = true; }
-    } else if (!isOpacityOnly && !isTextOnly) {
+    } else if (!isOpacityOnly && !isTextOnly && !isActionOnly) {
       pushSnapshot();
     }
     setInfoContent(prev => applyEditTile(prev, tileId, patch));

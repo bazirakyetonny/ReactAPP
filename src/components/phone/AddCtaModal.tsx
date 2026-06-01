@@ -57,10 +57,22 @@ function prefill(ctaType: string, supplier: any): { label: string; action: strin
   }
 }
 
+function hasValueForType(ctaType: string, s: any, allForms: any[]): boolean {
+  switch (ctaType) {
+    case 'Phone':   return !!s.SupplierGenContactPhone?.trim();
+    case 'Email':   return !!s.SupplierGenEmail?.trim();
+    case 'Weblink': return !!s.SupplierGenWebsite?.trim();
+    case 'Address': return !!s.SupplierGenAddressLine1?.trim();
+    case 'Form':    return allForms.some(f => f.SupplierId === s.SupplierGenId);
+    default:        return true;
+  }
+}
+
 export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false }: AddCtaModalProps) {
   const suppliers: any[] = dataStore.get('Suppliers') ?? [];
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const cfg = CONFIG[ctaType] ?? CONFIG.Form;
+  const filteredSuppliers = suppliers.filter(s => hasValueForType(ctaType, s, allForms));
   const isForm = ctaType === 'Form';
 
   const [supplierId, setSupplierId] = useState('');
@@ -148,7 +160,7 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false
                   onChange={e => handleSupplierChange(e.target.value)}
                 >
                   <option value="">Select supplier to connect...</option>
-                  {suppliers.map(s => (
+                  {filteredSuppliers.map(s => (
                     <option key={s.SupplierGenId} value={s.SupplierGenId}>
                       {s.SupplierGenCompanyName || s.SupplierGenContactName}
                     </option>
