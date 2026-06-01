@@ -5,7 +5,7 @@
   flex-direction: column;
   width: 260px;
   min-width: 260px;
-  height: 100%;
+  align-self: stretch;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
   overflow: hidden;
@@ -62,7 +62,10 @@
 .vhs-list {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ── Loading / Error / Empty states ──────────────────────────────────────── */
@@ -97,7 +100,23 @@
 .vhs-item {
   position: relative;
   padding: 10px 12px 10px 8px;
-  border-bottom: 1px solid #f3f4f6;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.vhs-item:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.vhs-item--restoring {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
 }
 
 .vhs-item-row {
@@ -108,8 +127,8 @@
 
 .vhs-chevron {
   flex-shrink: 0;
-  color: #9ca3af;
-  font-size: 11px;
+  color: #6b7280;
+  font-size: 13px;
   width: 16px;
   text-align: center;
   user-select: none;
@@ -119,7 +138,7 @@
   flex: 1;
   font-size: 13px;
   font-weight: 500;
-  color: #2563eb;
+  color: #333333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

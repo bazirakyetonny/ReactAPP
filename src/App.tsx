@@ -283,6 +283,33 @@ function App() {
       .catch(() => {});
   }
 
+  async function handleVersionRestored() {
+    try {
+      const fetched = (await getActiveAppVersion()) as any;
+      const fullVersion = {
+        ...fetched,
+        Page: fetched.Page ?? fetched.Pages ?? [],
+      };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+      setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      setNavSourceTiles({});
+      setNavUrls({});
+      clearHistory();
+      setSelectedTileId(null);
+      getAppVersions()
+        .then(setAppVersions)
+        .catch(() => {});
+    } catch {
+      // silently swallow — sidebar will still close
+    } finally {
+      setIsHistoryOpen(false);
+    }
+  }
+
   // ── Derived state ────────────────────────────────────────────────────────
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
@@ -1184,7 +1211,7 @@ function App() {
           <VersionHistorySidebar
             appVersionId={currentVersion?.AppVersionId}
             onClose={() => setIsHistoryOpen(false)}
-            onRestored={() => setIsHistoryOpen(false)}
+            onRestored={handleVersionRestored}
           />
         ) : isTranslationOpen ? (
           <TranslationSideBar

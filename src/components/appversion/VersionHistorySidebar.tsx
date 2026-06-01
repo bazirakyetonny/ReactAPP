@@ -82,7 +82,7 @@ function EntryMenu({
   }
 
   return (
-    <div className="vhs-dropdown" ref={ref} role="menu">
+    <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
       <button
         className="vhs-dropdown-item"
         type="button"
@@ -122,6 +122,20 @@ export function VersionHistorySidebar({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
+  const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
+
+  async function handleCardRestore(item: AppVersionHistoryEntry, idx: number) {
+    if (!appVersionId || restoringIndex !== null) return;
+    setRestoringIndex(idx);
+    try {
+      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
+      onRestored?.();
+    } catch {
+      // silently swallow
+    } finally {
+      setRestoringIndex(null);
+    }
+  }
 
   useEffect(() => {
     if (!appVersionId) return;
@@ -171,13 +185,19 @@ export function VersionHistorySidebar({
         {!loading &&
           !error &&
           items.map((item, idx) => (
-            <div className="vhs-item" key={item.AppVersionNumber}>
+            <div
+              className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}`}
+              key={item.AppVersionNumber}
+              role="button"
+              tabIndex={0}
+              title="Click to restore this version"
+              onClick={() => handleCardRestore(item, idx)}
+              onKeyDown={(e) => e.key === "Enter" && handleCardRestore(item, idx)}
+            >
               <div className="vhs-item-row">
-                <span className="vhs-chevron" aria-hidden="true">
-                  ›
-                </span>
+                <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
                 <span className="vhs-date">
-                  {formatHistoryDate(item.PublishDate)}
+                  {restoringIndex === idx ? "Restoring…" : formatHistoryDate(item.PublishDate)}
                 </span>
                 <button
                   className="vhs-dots-btn"
@@ -186,9 +206,10 @@ export function VersionHistorySidebar({
                   aria-label="Version options"
                   aria-haspopup="menu"
                   aria-expanded={openMenuIndex === idx}
-                  onClick={() =>
-                    setOpenMenuIndex((prev) => (prev === idx ? null : idx))
-                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuIndex((prev) => (prev === idx ? null : idx));
+                  }}
                 >
                   ⋮
                 </button>
