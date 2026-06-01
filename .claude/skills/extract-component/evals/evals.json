@@ -1,0 +1,23 @@
+{
+  "skill_name": "extract-component",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Extract the format toolbar section from src/components/SidebarRight.tsx into a new component. The section is the sr-toolbar div (contains the text colour buttons and alignment buttons). Create TileFormatToolbar in src/components/sidebar_right/ with its own CSS file.",
+      "expected_output": "A new TileFormatToolbar.tsx and TileFormatToolbar.css in src/components/sidebar_right/. SidebarRight.tsx imports and uses it. The SquareOutlineIcon, SquareFilledIcon, AlignLeftIcon, AlignCenterIcon SVG functions move to TileFormatToolbar.tsx. The sr-toolbar and related CSS rules move to TileFormatToolbar.css. SidebarRight.tsx passes selectedTile and onEditTile as props.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The image tools block in src/components/SidebarRight.tsx (the sr-image-tools div — add/change image button, opacity slider, zoom label, and remove image button) should be its own component. Extract it to TileImageTools in src/components/sidebar_right/.",
+      "expected_output": "A new TileImageTools.tsx in src/components/sidebar_right/. The AddImageIcon and TrashIcon SVG functions move there. SidebarRight.tsx imports TileImageTools and replaces the sr-image-tools div with it. Props: selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Pull the tile title input (the sr-section div with the text input field for editing tile text) out of src/components/SidebarRight.tsx into a TileTitleInput component in src/components/sidebar_right/. It should manage its own local text state.",
+      "expected_output": "A new TileTitleInput.tsx in src/components/sidebar_right/. The tileText state, isEditingTextRef, and useEffect move into TileTitleInput. SidebarRight.tsx no longer declares those. Props: selectedTile, onEditTile, onBeforeTileTextEdit, onLiveTileText, onEndLiveTileText. The sr-section and sr-input CSS rules move to TileTitleInput.css.",
+      "files": []
+    }
+  ]
+}

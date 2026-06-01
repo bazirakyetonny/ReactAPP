@@ -5,7 +5,7 @@ import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
-import { resolveColor } from "../../utils/tileUtils";
+import { resolveColor, resolveIconSVG } from "../../utils/tileUtils";
 import { TILE_H, TILE_GAP } from "../../constants";
 import {
   translateAppVersion,
@@ -154,6 +154,7 @@ export function TranslationSideBar({
                 {(col.Tiles ?? []).map((tile: any, ti: number) => {
                   const tileKey = `tile-${bi}-${ci}-${ti}`;
                   const bg = resolveColor(tile.BGColor ?? "", themeColors);
+                  const iconSVG = resolveIconSVG(tile, themeIcons);
                   // Mirror TileGrids.tsx stretch logic: single tile in a 2-col grid
                   // should fill the height of the opposite column's stacked tiles.
                   let derivedHeight: string | null = null;
@@ -188,6 +189,14 @@ export function TranslationSideBar({
                             className="phone-tile-bg-dim"
                             style={{ opacity: 1 - Number(tile.Opacity ?? 0) / 100 }}
                           />
+                        )}
+                        {iconSVG && (
+                          <div className="phone-tile-element">
+                            <span
+                              className="phone-tile-icon"
+                              dangerouslySetInnerHTML={{ __html: iconSVG }}
+                            />
+                          </div>
                         )}
                         <div
                           className={`phone-tile-element${tile.Align === "left" ? " phone-tile-element--left" : ""}`}
