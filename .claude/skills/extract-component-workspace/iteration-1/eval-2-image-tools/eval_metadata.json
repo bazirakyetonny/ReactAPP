@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "image-tools",
+  "prompt": "The image tools block in src/components/SidebarRight.tsx (the sr-image-tools div — add/change image button, opacity slider, zoom label, and remove image button) should be its own component. Extract it to TileImageTools in src/components/sidebar_right/.",
+  "assertions": [
+    "TileImageTools.tsx exports a function named TileImageTools",
+    "TileImageTools.tsx defines AddImageIcon and TrashIcon (SVG functions previously in SidebarRight.tsx)",
+    "TileImageTools.tsx accepts props: selectedTile, onEditTile, onOpenTileImage, onBeforeOpacityChange",
+    "SidebarRight.tsx imports TileImageTools",
+    "SidebarRight.tsx renders <TileImageTools instead of the old sr-image-tools div",
+    "SidebarRight.tsx no longer defines AddImageIcon or TrashIcon"
+  ]
+}

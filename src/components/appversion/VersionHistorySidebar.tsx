@@ -32,7 +32,12 @@ interface EntryMenuProps {
   onClose: () => void;
 }
 
-function EntryMenu({ item, appVersionId, onRestored, onClose }: EntryMenuProps) {
+function EntryMenu({
+  item,
+  appVersionId,
+  onRestored,
+  onClose,
+}: EntryMenuProps) {
   const [restoring, setRestoring] = useState(false);
   const [copying, setCopying] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -66,7 +71,7 @@ function EntryMenu({ item, appVersionId, onRestored, onClose }: EntryMenuProps) 
       await copyHistoryVersion(
         appVersionId,
         item.AppVersionNumber,
-        item.AppVersionName
+        item.AppVersionName,
       );
     } catch {
       // silently swallow
@@ -125,7 +130,7 @@ export function VersionHistorySidebar({
     getVersionHistory(appVersionId)
       .then((data) => {
         const sorted = [...data].sort(
-          (a, b) => b.AppVersionNumber - a.AppVersionNumber
+          (a, b) => b.AppVersionNumber - a.AppVersionNumber,
         );
         setItems(sorted);
       })
@@ -157,49 +162,53 @@ export function VersionHistorySidebar({
           </div>
         )}
 
-        {!loading && error && (
-          <div className="vhs-state">{error}</div>
-        )}
+        {!loading && error && <div className="vhs-state">{error}</div>}
 
         {!loading && !error && items.length === 0 && (
           <div className="vhs-state">No history available.</div>
         )}
 
-        {!loading && !error && items.map((item, idx) => (
-          <div className="vhs-item" key={item.AppVersionNumber}>
-            <div className="vhs-item-row">
-              <span className="vhs-chevron" aria-hidden="true">›</span>
-              <span className="vhs-date">{formatHistoryDate(item.PublishDate)}</span>
-              <button
-                className="vhs-dots-btn"
-                type="button"
-                title="Options"
-                aria-label="Version options"
-                aria-haspopup="menu"
-                aria-expanded={openMenuIndex === idx}
-                onClick={() =>
-                  setOpenMenuIndex((prev) => (prev === idx ? null : idx))
-                }
-              >
-                ⋮
-              </button>
-            </div>
+        {!loading &&
+          !error &&
+          items.map((item, idx) => (
+            <div className="vhs-item" key={item.AppVersionNumber}>
+              <div className="vhs-item-row">
+                <span className="vhs-chevron" aria-hidden="true">
+                  ›
+                </span>
+                <span className="vhs-date">
+                  {formatHistoryDate(item.PublishDate)}
+                </span>
+                <button
+                  className="vhs-dots-btn"
+                  type="button"
+                  title="Options"
+                  aria-label="Version options"
+                  aria-haspopup="menu"
+                  aria-expanded={openMenuIndex === idx}
+                  onClick={() =>
+                    setOpenMenuIndex((prev) => (prev === idx ? null : idx))
+                  }
+                >
+                  ⋮
+                </button>
+              </div>
 
-            <div className="vhs-publisher">
-              <span className="vhs-publisher-dot" aria-hidden="true" />
-              <span>{item.PublishedBy}</span>
-            </div>
+              <div className="vhs-publisher">
+                <span className="vhs-publisher-dot" aria-hidden="true" />
+                <span>{item.PublishedBy}</span>
+              </div>
 
-            {openMenuIndex === idx && appVersionId && (
-              <EntryMenu
-                item={item}
-                appVersionId={appVersionId}
-                onRestored={onRestored}
-                onClose={() => setOpenMenuIndex(null)}
-              />
-            )}
-          </div>
-        ))}
+              {openMenuIndex === idx && appVersionId && (
+                <EntryMenu
+                  item={item}
+                  appVersionId={appVersionId}
+                  onRestored={onRestored}
+                  onClose={() => setOpenMenuIndex(null)}
+                />
+              )}
+            </div>
+          ))}
       </div>
     </aside>
   );

@@ -1,0 +1,25 @@
+{
+  "skill_name": "write-tests",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write Vitest tests for src/utils/analysisUtils.ts — cover checkTileText(): no issues when label fits, flags a label that exceeds the limit for a 3-column grid, flags a label that exceeds the limit for a 2-column grid.",
+      "expected_output": "Test file at src/utils/analysisUtils.test.ts. Pure function — no mocks needed. Uses TileGrid block shape with Columns array. Asserts on issues length, subcategory ('long-text'), blockId, and pageId."
+    },
+    {
+      "id": 2,
+      "prompt": "Write Vitest tests for src/utils/analysisUtils.ts — cover gatherUrlCandidates(): extracts BGImageUrl from a tile, extracts WebLink ObjectUrl from a tile action, extracts Cta image URL, extracts Cta Weblink action, returns empty array for non-URL block types.",
+      "expected_output": "Test file at src/utils/analysisUtils.test.ts. Pure function — no mocks needed. Constructs minimal block shapes and asserts on returned candidates array (url, blockId, location fields)."
+    },
+    {
+      "id": 3,
+      "prompt": "Write Vitest tests for src/hooks/useUndoRedo.ts — cover: canUndo is false initially, pushSnapshot then undo restores previous state, redo re-applies undone snapshot, onRestorePages callback fires on undo.",
+      "expected_output": "Test file at src/hooks/useUndoRedo.test.ts. Uses renderHook + act from @testing-library/react. Wraps all state mutations in act(). Passes a vi.fn() as onRestorePages and asserts it was called."
+    },
+    {
+      "id": 4,
+      "prompt": "Write Vitest tests for src/services/pagesApi.ts — cover: savePage calls apiPost with the correct endpoint and payload, savePage calls checkError on the response.",
+      "expected_output": "Test file at src/services/pagesApi.test.ts. Mocks './apiClient' module with vi.mock, stubbing apiPost as vi.fn().mockResolvedValue({ Message: 'OK' }) and checkError as vi.fn(). Does NOT call fetch() directly."
+    }
+  ]
+}

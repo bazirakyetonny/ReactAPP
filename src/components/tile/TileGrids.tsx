@@ -51,6 +51,8 @@ interface TileGridsProps {
   onTileDoubleClick?: (tileId: string, rect: DOMRect) => void;
   onTileOptionsClick?: (tileId: string, rect: DOMRect) => void;
   liveTileText?: { id: string; text: string } | null;
+  analysisHighlightTileId?: string;
+  analysisHighlightMessage?: string;
 }
 
 function getColsForRender(
@@ -122,6 +124,8 @@ export function TileGrids({
   onTileDoubleClick,
   onTileOptionsClick,
   liveTileText,
+  analysisHighlightTileId,
+  analysisHighlightMessage,
 }: TileGridsProps) {
   return (
     <>
@@ -200,6 +204,7 @@ export function TileGrids({
                       const isPlaceholder = tile._new === true;
                       const bg = tile.BGImageUrl ? undefined : resolveColor(tile.BGColor, themeColors);
                       const isSelected = interactive && selectedTileId === tile.Id;
+                      const isAnalysisHighlight = analysisHighlightTileId === tile.Id;
                       const isDraggingThis = activeDragTileId === tile.Id;
 
                       let derivedLongTileHeight: string | null = null;
@@ -220,7 +225,7 @@ export function TileGrids({
                       const isGhost = isFreeResizeOppCol && tileIndex >= (freeResizePreview?.activeCount ?? Infinity);
                       const iconSVG = resolveIconSVG(tile, themeIcons);
                       const hasIcon = !!iconSVG;
-                      const displayText = liveTileText?.id === tile.Id ? liveTileText.text : tile.Text;
+                      const displayText = liveTileText?.id === tile.Id ? liveTileText?.text : tile.Text;
                       const hasText = !!displayText;
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;
@@ -242,6 +247,7 @@ export function TileGrids({
                           className={[
                             'phone-tile-wrap',
                             isSelected ? 'selected' : '',
+                            isAnalysisHighlight ? 'phone-tile-wrap--analysis' : '',
                             activeNavTileIds?.has(tile.Id) ? 'phone-tile-wrap--nav-active' : '',
                             isGhost ? 'phone-tile-wrap--ghost' : '',
                             isTileDragging ? 'phone-tile-wrap--tile-drag-source' : '',
@@ -363,6 +369,9 @@ export function TileGrids({
                                 onResizeDragStart?.(tile.Id, e.clientY, actualHeight);
                               }}
                             />
+                          )}
+                          {isAnalysisHighlight && analysisHighlightMessage && (
+                            <div className="phone-tile-analysis-label">{analysisHighlightMessage}</div>
                           )}
                         </div>
                       );

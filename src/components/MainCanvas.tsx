@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './MainCanvas.css';
 import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../types';
+import type { AnalysisHighlight } from '../utils/analysisUtils';
 import { PhoneStatusBar } from './phone/StatusBar';
 import { PhoneAppHeader, PhoneLinkedHeader } from './phone/PhoneHeaders';
 import { DraggableScreen, AllFrameData, CrossFramePreview } from './tile/DraggableScreen';
@@ -115,6 +116,8 @@ interface MainCanvasProps {
   onTileMenuAction?: (tileId: string, action: TileMenuAction) => void;
   onRenamePage?: (pageId: string, newName: string) => void;
   liveTileText?: { id: string; text: string } | null;
+  liveCtaLabel?: { id: string; label: string } | null;
+  analysisHighlight?: AnalysisHighlight | null;
   /** Fires whenever the visually active frame changes. null = home frame. */
   onActiveFrameChange?: (pageId: string | null) => void;
 }
@@ -157,6 +160,8 @@ export function MainCanvas({
   onTileMenuAction,
   onRenamePage,
   liveTileText,
+  liveCtaLabel,
+  analysisHighlight,
   onActiveFrameChange,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
@@ -201,7 +206,7 @@ export function MainCanvas({
 
   // ── Active frame ───────────────────────────────────────────────────────────
   const [manualActiveIndex, setManualActiveIndex] = useState<number | null>(null);
-  useEffect(() => { setManualActiveIndex(null); }, [selectedTileId]);
+  useEffect(() => { if (selectedTileId) setManualActiveIndex(null); }, [selectedTileId]);
 
   const derivedActiveIndex = (() => {
     if (!selectedTileId) return -1;
@@ -321,6 +326,8 @@ export function MainCanvas({
             themeCtaColors={themeCtaColors}
             onTileMenuAction={onTileMenuAction}
             liveTileText={liveTileText}
+            liveCtaLabel={liveCtaLabel}
+            analysisHighlight={analysisHighlight}
           />
         </div>
 
@@ -408,6 +415,8 @@ export function MainCanvas({
                 themeCtaColors={themeCtaColors}
                 onTileMenuAction={onTileMenuAction}
                 liveTileText={liveTileText}
+                liveCtaLabel={liveCtaLabel}
+                analysisHighlight={analysisHighlight}
               />}
             </div>
           );

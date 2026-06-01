@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./NavBar.css";
 import type { AppVersion, Theme } from "../types";
+import type { AnalysisIssue } from "../utils/analysisUtils";
 import { AppVersionDropDown } from "./appversion/AppVersionDropDown";
 
 interface NavBarProps {
@@ -25,38 +26,24 @@ interface NavBarProps {
   onExpand?: () => void;
   isTranslationOpen?: boolean;
   onTranslationToggle?: () => void;
-  invalidLinkCount?: number;
-  isCheckingLinks?: boolean;
   isSaving?: boolean;
   saveError?: boolean;
   savedAt?: number | null;
+  analysisIssues?: AnalysisIssue[];
   analysisIssueCount?: number;
   isAnalyzing?: boolean;
   onAnalysisOpen?: () => void;
+  onAnalysisRerun?: () => void;
+  analysisOpen?: boolean;
+  analysisCurrentIndex?: number;
+  onAnalysisPrev?: () => void;
+  onAnalysisNext?: () => void;
+  onAnalysisClose?: () => void;
   isHistoryOpen?: boolean;
   onHistoryToggle?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
-
-function BugIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 21 21"
-    >
-      <path
-        id="analyze"
-        d="M8.786.02a9.494,9.494,0,0,0-5.194,2A12.252,12.252,0,0,0,1.912,3.739a9.426,9.426,0,0,0-.989,9.768,9.243,9.243,0,0,0,1.85,2.582,8.991,8.991,0,0,0,3.369,2.18,9.4,9.4,0,0,0,8.934-1.292l.415-.313,2.135,2.128c2.3,2.294,2.217,2.223,2.6,2.219A.8.8,0,0,0,21,20.234c0-.381.074-.3-2.218-2.6L16.654,15.5l.312-.415A9.442,9.442,0,0,0,16.94,3.739,12.292,12.292,0,0,0,15.26,2.022,9.488,9.488,0,0,0,10.689.085,16.037,16.037,0,0,0,8.786.02M10.8,1.738a7.507,7.507,0,0,1,1.3.35,7.806,7.806,0,0,1,5.02,5.973,9.789,9.789,0,0,1,.048,2.389,7.775,7.775,0,0,1-4.3,5.993,7.3,7.3,0,0,1-3.432.791,7.354,7.354,0,0,1-3.361-.755,7.824,7.824,0,0,1-4.178-5.023,5.959,5.959,0,0,1-.232-2.025,6,6,0,0,1,.217-1.976A7.841,7.841,0,0,1,7.847,1.781a6.249,6.249,0,0,1,1.7-.129,6.4,6.4,0,0,1,1.245.086m2.615,4.8c-.079.033-.743.672-1.787,1.715L9.959,9.911l-.845-.842a12.438,12.438,0,0,0-.97-.905.892.892,0,0,0-.694.013c-.084.044-.74.676-1.6,1.546C4.307,11.273,4.3,11.278,4.3,11.592a.862.862,0,0,0,.48.725.938.938,0,0,0,.651.012,12.252,12.252,0,0,0,1.253-1.174l1.12-1.119.818.821c.867.872,1.027.992,1.316.993.361,0,.279.071,2.445-2.093,1.154-1.152,2.044-2.07,2.077-2.14a.817.817,0,0,0-.422-1.087.984.984,0,0,0-.632,0"
-        transform="translate(0.001 -0.011)"
-        fill="#7c8791"
-        fill-rule="evenodd"
-      ></path>
-    </svg>
-  );
-}
 
 function ShareIcon() {
   return (
@@ -278,9 +265,30 @@ function CloudIcon() {
 
 function AnalysisIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M6 13l2.5-3 2.5 2 3-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="2"
+        y="2"
+        width="16"
+        height="16"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M6 13l2.5-3 2.5 2 3-4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -341,17 +349,26 @@ export function NavBar({
   onExpand,
   isTranslationOpen = false,
   onTranslationToggle,
-  invalidLinkCount = 0,
-  isCheckingLinks = false,
   isSaving = false,
   saveError = false,
   savedAt = null,
+  analysisIssues: _analysisIssues = [] as AnalysisIssue[],
   analysisIssueCount = 0,
   isAnalyzing = false,
   onAnalysisOpen,
+  onAnalysisRerun: _onAnalysisRerun,
+  analysisOpen = false,
+  analysisCurrentIndex = 0,
+  onAnalysisPrev,
+  onAnalysisNext,
+  onAnalysisClose,
   isHistoryOpen = false,
   onHistoryToggle,
 }: NavBarProps) {
+  const safeIndex = Math.min(
+    analysisCurrentIndex,
+    Math.max(0, analysisIssueCount - 1),
+  );
   const [savedVisible, setSavedVisible] = useState(false);
   useEffect(() => {
     if (!savedAt) return;
@@ -377,50 +394,28 @@ export function NavBar({
           onMoveToTrash={onMoveVersionToTrash}
         />
         <button
-          className="navbar-icon-btn"
+          className={`navbar-icon-btn${analysisOpen ? " navbar-icon-btn--active" : ""}`}
           type="button"
           title={
-            invalidLinkCount > 0
-              ? `${invalidLinkCount} broken link${invalidLinkCount !== 1 ? "s" : ""} detected`
-              : isCheckingLinks
-                ? "Checking links…"
-                : "Debug"
+            analysisOpen
+              ? "Close analysis"
+              : isAnalyzing
+                ? "Analysing…"
+                : analysisIssueCount > 0
+                  ? `${analysisIssueCount} issue${analysisIssueCount !== 1 ? "s" : ""} found`
+                  : "Analysis"
           }
-        >
-          <BugIcon />
-          {(invalidLinkCount > 0 || isCheckingLinks) && (
-            <span
-              className={`navbar-bug-badge${isCheckingLinks && invalidLinkCount === 0 ? " navbar-bug-badge--checking" : ""}`}
-            >
-              {isCheckingLinks && invalidLinkCount === 0
-                ? "…"
-                : invalidLinkCount > 99
-                  ? "99+"
-                  : invalidLinkCount}
-            </span>
-          )}
-        </button>
-        <button
-          className="navbar-icon-btn"
-          type="button"
-          title={
-            isAnalyzing
-              ? "Analysing…"
-              : analysisIssueCount > 0
-                ? `${analysisIssueCount} issue${analysisIssueCount !== 1 ? "s" : ""} found`
-                : "Analysis"
-          }
-          onClick={onAnalysisOpen}
+          onClick={analysisOpen ? onAnalysisClose : onAnalysisOpen}
         >
           <AnalysisIcon />
           {isAnalyzing && analysisIssueCount === 0 ? (
-            <span className="navbar-analysis-badge navbar-analysis-badge--checking">…</span>
+            <span className="navbar-analysis-badge navbar-analysis-badge--checking">
+              …
+            </span>
           ) : analysisIssueCount > 0 ? (
             <span className="navbar-analysis-badge">
               {analysisIssueCount > 99 ? "99+" : analysisIssueCount}
             </span>
-          ) : !isAnalyzing ? (
-            <span className="navbar-analysis-ok">✓</span>
           ) : null}
         </button>
         <button className="navbar-icon-btn" type="button" title="Share">
@@ -441,7 +436,69 @@ export function NavBar({
         )}
       </div>
 
-      <div className="navbar-spacer" />
+      {analysisOpen ? (
+        <div className="navbar-center">
+          <div className="navbar-analysis-bar">
+            <button
+              className="navbar-analysis-nav-btn"
+              onClick={onAnalysisPrev}
+              disabled={analysisIssueCount === 0}
+              title="Previous issue"
+              type="button"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1.5 6.5L5 3l3.5 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              className="navbar-analysis-nav-btn"
+              onClick={onAnalysisNext}
+              disabled={analysisIssueCount === 0}
+              title="Next issue"
+              type="button"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1.5 3.5L5 7l3.5-3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <span className="navbar-analysis-counter">
+              {isAnalyzing && analysisIssueCount === 0 ? (
+                <span className="navbar-analysis-spinner" />
+              ) : analysisIssueCount === 0 ? (
+                "0 issues"
+              ) : (
+                `${safeIndex + 1}/${analysisIssueCount} issues`
+              )}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="navbar-spacer" />
+      )}
 
       {/* Right: history + content actions + theme + publish */}
       <div className="navbar-right">
