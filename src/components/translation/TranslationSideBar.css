@@ -1,5 +1,5 @@
 .translation-sidebar {
-  width: 300px;
+  width: 340px;
   flex-shrink: 0;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
@@ -27,12 +27,10 @@
   flex: 1;
 }
 
-/* Override phone-frame dimensions to fit the 300px sidebar */
+/* Match phone-frame dimensions to the main canvas .phone-frame */
 .ts-phone-frame {
-  width: 100% !important;
-  max-width: 260px;
-  height: fit-content;
-  max-height: calc(100vh - 120px);
+  width: clamp(192px, 26.4vw, 288px);
+  height: 620px;
   display: flex;
   flex-direction: column;
 }
