@@ -74,19 +74,9 @@
 
 .slm-link-anchor {
   display: block;
-  padding: 9px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #f9fafb;
-  font-size: 13px;
-  color: #1a3a6e;
   text-decoration: underline;
   word-break: break-all;
   cursor: pointer;
-}
-
-.slm-link-anchor:hover {
-  background: #f0f4ff;
 }
 
 .slm-link-empty {
