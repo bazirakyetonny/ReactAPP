@@ -165,29 +165,40 @@ export function TranslationSideBar({
                       derivedHeight = `${oppCount * TILE_H + (oppCount - 1) * TILE_GAP}px`;
                     }
                   }
-                  const tileHeight = derivedHeight ?? `${tile.Height || TILE_H}px`;
+                  const tileHeight =
+                    derivedHeight ?? `${tile.Height || TILE_H}px`;
                   return (
-                    <div key={tile.Id} className="phone-tile-wrap" style={{ height: tileHeight }}>
+                    <div
+                      key={tile.Id}
+                      className="phone-tile-wrap"
+                      style={{ height: tileHeight }}
+                    >
                       <div
                         className="phone-tile"
                         style={{
                           background: bg,
                           color: tile.Color ?? "#333",
                           textAlign: tile.Align ?? "center",
-                          alignItems: tile.Align === "left" ? "flex-start" : "center",
-                          justifyContent: tile.Align === "left" ? "flex-start" : "center",
+                          alignItems:
+                            tile.Align === "left" ? "flex-start" : "center",
+                          justifyContent:
+                            tile.Align === "left" ? "flex-start" : "center",
                         }}
                       >
                         {tile.BGImageUrl && (
                           <div
                             className="phone-tile-bg-img"
-                            style={{ backgroundImage: `url(${tile.BGImageUrl})` }}
+                            style={{
+                              backgroundImage: `url(${tile.BGImageUrl})`,
+                            }}
                           />
                         )}
                         {tile.BGImageUrl && tile.Opacity != null && (
                           <div
                             className="phone-tile-bg-dim"
-                            style={{ opacity: 1 - Number(tile.Opacity ?? 0) / 100 }}
+                            style={{
+                              opacity: 1 - Number(tile.Opacity ?? 0) / 100,
+                            }}
                           />
                         )}
                         {iconSVG && (
@@ -207,8 +218,12 @@ export function TranslationSideBar({
                               defaultValue={tile.Text ?? ""}
                               autoFocus
                               style={{ color: tile.Color ?? "#333" }}
-                              onBlur={(e) => handleTileBlur(bi, ci, ti, e.target.value)}
-                              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                              onBlur={(e) =>
+                                handleTileBlur(bi, ci, ti, e.target.value)
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && e.currentTarget.blur()
+                              }
                             />
                           ) : (
                             <span
@@ -231,7 +246,11 @@ export function TranslationSideBar({
         i++;
       } else if (block.InfoType === "Description") {
         out.push(
-          <DescriptionBlock key={block.InfoId} block={block} interactive={false} />,
+          <DescriptionBlock
+            key={block.InfoId}
+            block={block}
+            interactive={false}
+          />,
         );
         i++;
       } else if (block.InfoType === "Images") {
@@ -248,7 +267,8 @@ export function TranslationSideBar({
         while (
           i < displayContent.length &&
           displayContent[i].InfoType === "Cta" &&
-          (displayContent[i].CtaAttributes?.CtaButtonType || "Image") === "Round" &&
+          (displayContent[i].CtaAttributes?.CtaButtonType || "Image") ===
+            "Round" &&
           row.length < 3
         ) {
           row.push({ block: displayContent[i], bi: i });
@@ -332,7 +352,11 @@ export function TranslationSideBar({
             <PhoneLinkedHeader
               pageName={editablePageName}
               onBack={() => {}}
-              onRename={editablePageName.toLowerCase() === "home" ? undefined : handlePageNameSave}
+              onRename={
+                editablePageName.toLowerCase() === "home"
+                  ? undefined
+                  : handlePageNameSave
+              }
               hideBack={editablePageName.toLowerCase() === "home"}
               editOnClick
             />
