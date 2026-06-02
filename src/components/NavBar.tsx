@@ -41,6 +41,7 @@ interface NavBarProps {
   onAnalysisClose?: () => void;
   isHistoryOpen?: boolean;
   onHistoryToggle?: () => void;
+  onShareClick?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -364,6 +365,7 @@ export function NavBar({
   onAnalysisClose,
   isHistoryOpen = false,
   onHistoryToggle,
+  onShareClick,
 }: NavBarProps) {
   const safeIndex = Math.min(
     analysisCurrentIndex,
@@ -418,7 +420,12 @@ export function NavBar({
             </span>
           ) : null}
         </button>
-        <button className="navbar-icon-btn" type="button" title="Share">
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title="Share"
+          onClick={onShareClick}
+        >
           <ShareIcon />
         </button>
         <button className="navbar-icon-btn" type="button" title="Select frame">
