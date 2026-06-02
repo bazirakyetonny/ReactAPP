@@ -1017,9 +1017,6 @@ function App() {
         infoContent={infoContent}
         linkedFrames={linkedFrames}
         homePageId={homePageId}
-        appVersionId={currentVersion?.AppVersionId ?? ""}
-        appVersionLanguage={currentVersion?.AppVersionLanguage ?? ""}
-        appVersionMultiLanguages={appVersionMultiLanguages}
         themeColors={selectedTheme?.ThemeColors}
         themeIcons={selectedTheme?.ThemeIcons ?? []}
         themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}

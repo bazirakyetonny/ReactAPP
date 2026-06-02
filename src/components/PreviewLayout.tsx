@@ -3,15 +3,13 @@ import './PreviewLayout.css';
 import type { ThemeColors, ThemeIcon, ThemeCtaColor } from '../types';
 import type { LinkedFrame } from './MainCanvas';
 import { MainCanvas } from './MainCanvas';
+import { dataStore } from '../data/datastore';
 import { getTranslatedPage } from '../services/translationApi';
 
 interface PreviewLayoutProps {
   infoContent: any[];
   linkedFrames: LinkedFrame[];
   homePageId: string;
-  appVersionId: string;
-  appVersionLanguage: string;
-  appVersionMultiLanguages: string[];
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   themeCtaColors?: ThemeCtaColor[];
@@ -24,12 +22,24 @@ interface PreviewLayoutProps {
 
 const noop = () => {};
 
+function getLanguages(): { baseLanguage: string; allLanguages: string[] } {
+  const cv = dataStore.get("Current_Version");
+  const baseLanguage: string = cv?.AppVersionLanguage ?? "";
+  let multiLanguages: string[] = [];
+  try {
+    multiLanguages = JSON.parse(cv?.AppVersionMultiLanguages ?? "[]");
+  } catch {}
+  const allLanguages = [
+    baseLanguage,
+    ...multiLanguages.filter((l) => l.toLowerCase() !== baseLanguage.toLowerCase()),
+  ].filter(Boolean);
+  return { baseLanguage, allLanguages };
+}
+
 export function PreviewLayout({
   infoContent,
   linkedFrames,
   homePageId,
-  appVersionLanguage,
-  appVersionMultiLanguages,
   themeColors,
   themeIcons,
   themeCtaColors,
@@ -39,11 +49,9 @@ export function PreviewLayout({
   activeNavTileIds,
   onActiveFrameChange,
 }: PreviewLayoutProps) {
-  const displayLanguages = appVersionMultiLanguages.filter(
-    (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
-  );
+  const { baseLanguage, allLanguages } = getLanguages();
 
-  const [previewLang, setPreviewLang] = useState<string | null>(null);
+  const [previewLang, setPreviewLang] = useState<string>(baseLanguage);
   const [translatedContents, setTranslatedContents] = useState<Record<string, any[]>>({});
   const isMounted = useRef(true);
 
@@ -52,9 +60,11 @@ export function PreviewLayout({
     return () => { isMounted.current = false; };
   }, []);
 
+  const isBaseLanguage = previewLang.toLowerCase() === baseLanguage.toLowerCase();
+
   // Fetch home page translation when language changes
   useEffect(() => {
-    if (!previewLang || !homePageId) {
+    if (isBaseLanguage || !homePageId) {
       setTranslatedContents({});
       return;
     }
@@ -66,11 +76,11 @@ export function PreviewLayout({
         }
       })
       .catch(() => {});
-  }, [previewLang, homePageId]);
+  }, [previewLang, homePageId, isBaseLanguage]);
 
   // Fetch linked page translations as frames appear
   useEffect(() => {
-    if (!previewLang) return;
+    if (isBaseLanguage) return;
     linkedFrames?.forEach((frame) => {
       if (!frame.pageId || translatedContents[frame.pageId]) return;
       getTranslatedPage(frame.pageId, previewLang)
@@ -83,33 +93,31 @@ export function PreviewLayout({
         .catch(() => {});
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkedFrames, previewLang]);
+  }, [linkedFrames, previewLang, isBaseLanguage]);
 
   const effectiveInfoContent =
-    previewLang && translatedContents[homePageId]
+    !isBaseLanguage && translatedContents[homePageId]
       ? translatedContents[homePageId]
       : infoContent;
 
   const effectiveLinkedFrames: LinkedFrame[] = (linkedFrames ?? []).map((frame) => ({
     ...frame,
     infoContent:
-      previewLang && translatedContents[frame.pageId]
+      !isBaseLanguage && translatedContents[frame.pageId]
         ? translatedContents[frame.pageId]
         : frame.infoContent,
   }));
 
-  const langSelect = displayLanguages.length > 0 ? (
+  const langSelect = allLanguages.length > 1 ? (
     <select
       className="preview-status-lang-select"
-      value={previewLang ?? appVersionLanguage}
+      value={previewLang}
       onChange={(e) => {
-        const val = e.target.value;
-        setPreviewLang(val === appVersionLanguage ? null : val);
+        setPreviewLang(e.target.value);
         setTranslatedContents({});
       }}
     >
-      <option value={appVersionLanguage}>{appVersionLanguage.toUpperCase()}</option>
-      {displayLanguages.map((l) => (
+      {allLanguages.map((l) => (
         <option key={l} value={l}>{l.toUpperCase()}</option>
       ))}
     </select>
