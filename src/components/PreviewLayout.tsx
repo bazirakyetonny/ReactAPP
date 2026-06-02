@@ -53,7 +53,10 @@ export function PreviewLayout({
 
   const [previewLang, setPreviewLang] = useState<string>(baseLanguage);
   const [translatedContents, setTranslatedContents] = useState<Record<string, any[]>>({});
-  const isMounted = useRef(true);
+  const isMounted = useRef(false);
+  const fetchingRef = useRef<Set<string>>(new Set());
+  const translatedRef = useRef(translatedContents);
+  translatedRef.current = translatedContents;
 
   useEffect(() => {
     isMounted.current = true;
@@ -62,38 +65,30 @@ export function PreviewLayout({
 
   const isBaseLanguage = previewLang.toLowerCase() === baseLanguage.toLowerCase();
 
-  // Fetch home page translation when language changes
+  // The currently visible page in preview: last linked frame, or home
+  const activePageId =
+    linkedFrames.length > 0 ? linkedFrames[linkedFrames.length - 1].pageId : homePageId;
+
+  // Fetch translation only for the currently visible page, on demand
   useEffect(() => {
-    if (isBaseLanguage || !homePageId) {
+    if (isBaseLanguage || !activePageId) {
       setTranslatedContents({});
+      fetchingRef.current.clear();
       return;
     }
-    getTranslatedPage(homePageId, previewLang)
+    if (translatedRef.current[activePageId] || fetchingRef.current.has(activePageId)) return;
+    fetchingRef.current.add(activePageId);
+    getTranslatedPage(activePageId, previewLang)
       .then((result) => {
         const content = (result as any)?.SDT_TranslatedPage?.PageStructure?.InfoContent ?? null;
         if (isMounted.current && content) {
-          setTranslatedContents({ [homePageId]: content });
+          setTranslatedContents((prev) => ({ ...prev, [activePageId]: content }));
         }
       })
-      .catch(() => {});
-  }, [previewLang, homePageId, isBaseLanguage]);
-
-  // Fetch linked page translations as frames appear
-  useEffect(() => {
-    if (isBaseLanguage) return;
-    linkedFrames?.forEach((frame) => {
-      if (!frame.pageId || translatedContents[frame.pageId]) return;
-      getTranslatedPage(frame.pageId, previewLang)
-        .then((result) => {
-          const content = (result as any)?.SDT_TranslatedPage?.PageStructure?.InfoContent ?? null;
-          if (isMounted.current && content) {
-            setTranslatedContents((prev) => ({ ...prev, [frame.pageId]: content }));
-          }
-        })
-        .catch(() => {});
-    });
+      .catch(() => {})
+      .finally(() => { fetchingRef.current.delete(activePageId); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkedFrames, previewLang, isBaseLanguage]);
+  }, [activePageId, previewLang, isBaseLanguage]);
 
   const effectiveInfoContent =
     !isBaseLanguage && translatedContents[homePageId]
@@ -115,6 +110,7 @@ export function PreviewLayout({
       onChange={(e) => {
         setPreviewLang(e.target.value);
         setTranslatedContents({});
+        fetchingRef.current.clear();
       }}
     >
       {allLanguages.map((l) => (

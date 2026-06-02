@@ -13,9 +13,10 @@ interface UseAnalysisParams {
   navContents: Record<string, any[]>;
   pages: any[];
   versionId?: string;
+  disabled?: boolean;
 }
 
-export function useAnalysis({ infoContent, navContents, pages, versionId }: UseAnalysisParams) {
+export function useAnalysis({ infoContent, navContents, pages, versionId, disabled }: UseAnalysisParams) {
   // Sync issues (text length, etc.) update quickly; URL issues update after network checks.
   // Separating them lets the count reflect content changes immediately without waiting for HTTP.
   const [syncIssues, setSyncIssues] = useState<AnalysisIssue[]>([]);
@@ -182,29 +183,33 @@ export function useAnalysis({ infoContent, navContents, pages, versionId }: UseA
 
   // On version switch, clear stale URL issues and cache so the new version is fully re-scanned.
   useEffect(() => {
+    if (disabled) return;
     urlCacheRef.current.clear();
     firstUrlDoneRef.current = false;
     setUrlIssues([]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versionId]);
+  }, [versionId, disabled]);
 
   // Fast path: 300 ms debounce — reflects tile text changes almost immediately.
   useEffect(() => {
+    if (disabled) return;
     if (fastTimerRef.current) clearTimeout(fastTimerRef.current);
     fastTimerRef.current = setTimeout(() => setSyncIssues(runSyncChecks()), 300);
     return () => { if (fastTimerRef.current) clearTimeout(fastTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [infoContent, navContents, pages, versionId]);
+  }, [infoContent, navContents, pages, versionId, disabled]);
 
   // Fingerprint changes only when actual URL values change — not on every text/tile edit.
   const urlFingerprint = useMemo(
-    () => extractUrlFingerprint(infoContent, navContents),
-    [infoContent, navContents],
+    () => (disabled ? '' : extractUrlFingerprint(infoContent, navContents)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [infoContent, navContents, disabled],
   );
 
   // Fingerprint of navigation links (which tiles point to which pages).
   // Changes when a page is linked or unlinked, even if no URL values change.
   const pageLinkFingerprint = useMemo(() => {
+    if (disabled) return '';
     const parts: string[] = [];
     function scan(blocks: any[]) {
       for (const b of blocks) {
@@ -219,21 +224,24 @@ export function useAnalysis({ infoContent, navContents, pages, versionId }: UseA
     scan(infoContent);
     for (const blocks of Object.values(navContents)) scan(blocks);
     return parts.sort().join('|');
-  }, [infoContent, navContents]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [infoContent, navContents, disabled]);
 
   // When page links change (link/unlink) but no URLs changed, rebuild issues from cache
   // immediately — no HTTP needed since all URL results are already cached.
   const pageLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (disabled) return;
     if (urlCacheRef.current.size === 0) return; // initial load — slow path covers this
     if (pageLinkTimerRef.current) clearTimeout(pageLinkTimerRef.current);
     pageLinkTimerRef.current = setTimeout(() => rebuildUrlIssues(allCandidates()), 100);
     return () => { if (pageLinkTimerRef.current) clearTimeout(pageLinkTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageLinkFingerprint]);
+  }, [pageLinkFingerprint, disabled]);
 
   // Slow path: debounced URL check, only fires when URLs themselves change.
   useEffect(() => {
+    if (disabled) return;
     cancelRef.current = true;
     if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
     slowTimerRef.current = setTimeout(runUrlChecks, 4000);
@@ -242,7 +250,7 @@ export function useAnalysis({ infoContent, navContents, pages, versionId }: UseA
       if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlFingerprint, versionId]);
+  }, [urlFingerprint, versionId, disabled]);
 
   function rerun() {
     setSyncIssues(runSyncChecks());

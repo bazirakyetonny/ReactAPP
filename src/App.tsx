@@ -6,6 +6,7 @@ import {
   activateAppVersion,
   type SDTAppVersion,
 } from "./services/appVersionsApi";
+import { getBaseUrl } from "./services/apiClient";
 import { updateAppVersionTheme } from "./services/themeApi";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
@@ -64,9 +65,11 @@ function App() {
     useState<SDTAppVersion | null>(null);
 
   useEffect(() => {
+    if (isPreviewMode) return;
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
@@ -391,6 +394,7 @@ function App() {
     navContents,
     pages: currentVersion?.Page ?? [],
     versionId: currentVersion?.AppVersionId,
+    disabled: isPreviewMode,
   });
 
   const homePageId =
@@ -1105,7 +1109,7 @@ function App() {
         onClosePublish={() => setShowPublishModal(false)}
         onFixIssues={() => { setShowPublishModal(false); setAnalysisOpen(true); }}
         showShareModal={showShareModal}
-        shareLink={dataStore.get("PreviewLink") ?? ""}
+        shareLink={currentVersion?.AppVersionId ? `${getBaseUrl()}/wp_applicationdesign_preview?AppVersionId=${currentVersion.AppVersionId}` : ""}
         onCloseShare={() => setShowShareModal(false)}
         showCreateModal={showCreateModal}
         templatesCollection={templatesCollection}
