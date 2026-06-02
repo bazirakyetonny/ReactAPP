@@ -387,29 +387,33 @@ export function TileGrids({
                 );
               })}
             </div>
-            {isAddRowDropActive && <div className="block-drop-zone" />}
-            <div className={interactive ? [
-              'phone-add-row',
-              isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
-            ].filter(Boolean).join(' ') : 'phone-add-row'}>
-              {interactive && (
-                <button
-                  className="phone-add-btn"
-                  type="button"
-                  aria-label="Add content"
-                  onClick={(e) => onAddBtnClick?.(e,
-                    overrideAddBtnInsertBeforeInfoId !== undefined
-                      ? overrideAddBtnInsertBeforeInfoId
-                      : tileGrids[gridIdx + 1]?.InfoId ?? null
+            {(isAddRowDropActive || isDraggingTile || (interactive && !!onAddBtnClick)) && (
+              <>
+                {isAddRowDropActive && <div className="block-drop-zone" />}
+                <div className={[
+                  'phone-add-row',
+                  isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
+                ].filter(Boolean).join(' ')}>
+                  {interactive && onAddBtnClick && (
+                    <button
+                      className="phone-add-btn"
+                      type="button"
+                      aria-label="Add content"
+                      onClick={(e) => onAddBtnClick(e,
+                        overrideAddBtnInsertBeforeInfoId !== undefined
+                          ? overrideAddBtnInsertBeforeInfoId
+                          : tileGrids[gridIdx + 1]?.InfoId ?? null
+                      )}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
                   )}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </button>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         );
       })}
