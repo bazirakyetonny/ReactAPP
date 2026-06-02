@@ -45,7 +45,7 @@ export function createWidget(
   // console.log("CurrentThemeId", CurrentThemeId);
   // console.log("Current_Version", Current_Version);
   // console.log("OrganisationLogo", OrganisationLogo);
-  // console.log("Current_Language", Current_Language);
+  console.log("Current_Language", Current_Language);
   // console.log("HasMultiLingualSupport", HasMultiLingualSupport);
   // console.log("SupportedLanguages", SupportedLanguages);
   // console.log("UserRoles", UserRoles);
