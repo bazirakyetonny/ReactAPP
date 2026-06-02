@@ -131,6 +131,7 @@ export interface DraggableScreenProps {
   liveTileText?: { id: string; text: string } | null;
   liveCtaLabel?: { id: string; label: string } | null;
   analysisHighlight?: import('../../utils/analysisUtils').AnalysisHighlight | null;
+  isPreviewMode?: boolean;
 }
 
 export function DraggableScreen({
@@ -184,6 +185,7 @@ export function DraggableScreen({
   liveTileText,
   liveCtaLabel,
   analysisHighlight,
+  isPreviewMode = false,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -839,24 +841,26 @@ export function DraggableScreen({
       ].filter(Boolean).join(' ')}>
         <div className={[
           'phone-add-row',
-          infoContent.length === 0 && !isExternalDragActive && !effectiveBlockDragActive ? 'phone-add-row--visible' : '',
+          !isPreviewMode && infoContent.length === 0 && !isExternalDragActive && !effectiveBlockDragActive ? 'phone-add-row--visible' : '',
           effectiveDraggingTile || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
           effectiveDraggingTile && (
             (!!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
             || (isExternalDragActive && infoContent.length === 0)
           ) ? 'phone-add-row--tile-drop-zone-active' : '',
         ].filter(Boolean).join(' ')}>
-          <button
-            className="phone-add-btn"
-            type="button"
-            aria-label="Add content block"
-            onClick={(e) => openAddMenu(e, infoContent[0]?.InfoId ?? null)}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </button>
+          {!isPreviewMode && (
+            <button
+              className="phone-add-btn"
+              type="button"
+              aria-label="Add content block"
+              onClick={(e) => openAddMenu(e, infoContent[0]?.InfoId ?? null)}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
         </div>
         {infoContent.length > 0 && (
           (effectiveBlockDragActive && !!effectiveBlockDropPreview && effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
@@ -889,13 +893,13 @@ export function DraggableScreen({
                       <CtaBlock
                         block={block}
                         ctaColors={themeCtaColors}
-                        interactive={true}
+                        interactive={!isPreviewMode}
                         isDragging={blockDragId === block.InfoId}
-                        isSelected={selectedCtaId === block.InfoId}
-                        onSelect={(ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
-                        onDelete={(infoId) => onDeleteBlock?.(infoId)}
-                        onDragStart={handleBlockDragStart}
-                        onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
+                        isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                        onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
+                        onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
+                        onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
+                        onSelectImage={isPreviewMode ? undefined : (ctaId) => setCtaImageEditId(ctaId)}
                         liveLabel={liveCtaLabel?.id === block.InfoId ? liveCtaLabel?.label : undefined}
                         isAnalysisHighlight={analysisHighlight?.blockId === block.InfoId}
                       />
@@ -905,20 +909,18 @@ export function DraggableScreen({
                     </div>
                   ))}
                 </div>
-                {(tileDragZoneActive || blockDragZoneActive)
-                  ? <div className="block-drop-zone" />
-                  : !effectiveBlockDragActive && (
-                    <div className="phone-add-row">
-                      <button className="phone-add-btn" type="button" aria-label="Add content block"
-                        onClick={(e) => openAddMenu(e, nextInfoId)}>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
-                }
+                {!isPreviewMode && (tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
+                {!isPreviewMode && !effectiveBlockDragActive && !(tileDragZoneActive || blockDragZoneActive) && (
+                  <div className="phone-add-row">
+                    <button className="phone-add-btn" type="button" aria-label="Add content block"
+                      onClick={(e) => openAddMenu(e, nextInfoId)}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </React.Fragment>
             );
           }
@@ -941,26 +943,24 @@ export function DraggableScreen({
                   selectedTileId={selectedTileId}
                   onSelectTile={onSelectTile}
                   interactive={true}
-                  onAddColumn={onAddColumn}
-                  onDeleteTile={onDeleteTile}
-                  onEditTile={onEditTile}
-                  onResizeDragStart={handleResizeDragStart}
+                  onAddColumn={isPreviewMode ? undefined : onAddColumn}
+                  onDeleteTile={isPreviewMode ? undefined : onDeleteTile}
+                  onEditTile={isPreviewMode ? undefined : onEditTile}
+                  onResizeDragStart={isPreviewMode ? undefined : handleResizeDragStart}
                   activeDragTileId={dragTileId}
-                  splitPreview={splitPreview}
-                  freeResizePreview={freeResizePreview}
+                  splitPreview={isPreviewMode ? undefined : splitPreview}
+                  freeResizePreview={isPreviewMode ? undefined : freeResizePreview}
                   onColRef={(id, el) => {
                     if (el) colElRefs.current.set(id, el);
                     else colElRefs.current.delete(id);
                     onColRefExternal?.(id, el);
                   }}
                   onGridRef={(id, el) => {
-                    // Register grid element for both within-grid drop detection and
-                    // block-level insertion detection (grid rect = tiles only, no add-row).
                     if (el) { gridElRefs.current.set(id, el); blockWrapperElsRef.current.set(id, el); }
                     else { gridElRefs.current.delete(id); blockWrapperElsRef.current.delete(id); }
                     onGridRefExternal?.(id, el);
                   }}
-                  onTileDragStart={handleTileDragStart}
+                  onTileDragStart={isPreviewMode ? undefined : handleTileDragStart}
                   tileDragId={tileDragId}
                   tileDropPreview={effectiveTileDropPreview}
                   tileDragFromGridId={tileDragInfoRef.current?.fromGridId ?? null}
@@ -968,11 +968,11 @@ export function DraggableScreen({
                   blockInsertPreview={effectiveBlockInsertPreview}
                   isDraggingTile={effectiveDraggingTile}
                   onTileNavigate={onTileNavigate}
-                  onCollapseFromParent={onCollapseFromParent}
+                  onCollapseFromParent={isPreviewMode ? undefined : onCollapseFromParent}
                   activeNavTileIds={activeNavTileIds}
-                  onAddBtnClick={openAddMenu}
-                  onTileDoubleClick={onTileDoubleClick}
-                  onTileOptionsClick={(tileId, rect) =>
+                  onAddBtnClick={isPreviewMode ? undefined : openAddMenu}
+                  onTileDoubleClick={isPreviewMode ? undefined : onTileDoubleClick}
+                  onTileOptionsClick={isPreviewMode ? undefined : (tileId, rect) =>
                     setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
                   }
                   liveTileText={liveTileText}
@@ -992,31 +992,29 @@ export function DraggableScreen({
                 }}>
                   <DescriptionBlock
                     block={block}
-                    interactive={true}
+                    interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
-                    onEdit={(infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
-                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
-                    onDragStart={handleBlockDragStart}
+                    onEdit={isPreviewMode ? undefined : (infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
+                    onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
                   />
                 </div>
-                {(tileDragZoneActive || blockDragZoneActive)
-                  ? <div className="block-drop-zone" />
-                  : !effectiveBlockDragActive && (
-                    <div className="phone-add-row">
-                      <button
-                        className="phone-add-btn"
-                        type="button"
-                        aria-label="Add content block"
-                        onClick={(e) => openAddMenu(e, nextInfoId)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
-                }
+                {!isPreviewMode && (tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
+                {!isPreviewMode && !effectiveBlockDragActive && !(tileDragZoneActive || blockDragZoneActive) && (
+                  <div className="phone-add-row">
+                    <button
+                      className="phone-add-btn"
+                      type="button"
+                      aria-label="Add content block"
+                      onClick={(e) => openAddMenu(e, nextInfoId)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </React.Fragment>
             );
           }
@@ -1032,34 +1030,32 @@ export function DraggableScreen({
                   }}>
                   <ImageBlock
                     block={block}
-                    interactive={true}
+                    interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
-                    onEdit={(infoId) => setImageEditorState({ mode: 'edit', infoId, currentImages: block.Images ?? [] })}
-                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
-                    onDragStart={handleBlockDragStart}
+                    onEdit={isPreviewMode ? undefined : (infoId) => setImageEditorState({ mode: 'edit', infoId, currentImages: block.Images ?? [] })}
+                    onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
                   />
                   {analysisHighlight?.blockId === block.InfoId && analysisHighlight?.message && (
                     <div className="block-analysis-label">{analysisHighlight.message}</div>
                   )}
                 </div>
-                {(tileDragZoneActive || blockDragZoneActive)
-                  ? <div className="block-drop-zone" />
-                  : !effectiveBlockDragActive && (
-                    <div className="phone-add-row">
-                      <button
-                        className="phone-add-btn"
-                        type="button"
-                        aria-label="Add content block"
-                        onClick={(e) => openAddMenu(e, nextInfoId)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
-                }
+                {!isPreviewMode && (tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
+                {!isPreviewMode && !effectiveBlockDragActive && !(tileDragZoneActive || blockDragZoneActive) && (
+                  <div className="phone-add-row">
+                    <button
+                      className="phone-add-btn"
+                      type="button"
+                      aria-label="Add content block"
+                      onClick={(e) => openAddMenu(e, nextInfoId)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </React.Fragment>
             );
           }
@@ -1073,13 +1069,13 @@ export function DraggableScreen({
                   <CtaBlock
                     block={block}
                     ctaColors={themeCtaColors}
-                    interactive={true}
+                    interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
-                    isSelected={selectedCtaId === block.InfoId}
-                    onSelect={(ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
-                    onDelete={(infoId) => onDeleteBlock?.(infoId)}
-                    onDragStart={handleBlockDragStart}
-                    onSelectImage={(ctaId) => setCtaImageEditId(ctaId)}
+                    isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                    onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
+                    onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
+                    onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
+                    onSelectImage={isPreviewMode ? undefined : (ctaId) => setCtaImageEditId(ctaId)}
                     liveLabel={liveCtaLabel?.id === block.InfoId ? liveCtaLabel?.label : undefined}
                     isAnalysisHighlight={analysisHighlight?.blockId === block.InfoId}
                   />
@@ -1087,23 +1083,22 @@ export function DraggableScreen({
                     <div className="block-analysis-label">{analysisHighlight.message}</div>
                   )}
                 </div>
-                {(tileDragZoneActive || blockDragZoneActive)
-                  ? <div className="block-drop-zone" />
-                  : !effectiveBlockDragActive && (
-                    <div className="phone-add-row">
-                      <button
-                        className="phone-add-btn"
-                        type="button"
-                        aria-label="Add content block"
-                        onClick={(e) => openAddMenu(e, nextInfoId)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
+                {!isPreviewMode && (tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
+                {!isPreviewMode && !effectiveBlockDragActive && !(tileDragZoneActive || blockDragZoneActive) && (
+                  <div className="phone-add-row">
+                    <button
+                      className="phone-add-btn"
+                      type="button"
+                      aria-label="Add content block"
+                      onClick={(e) => openAddMenu(e, nextInfoId)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )
                 }
               </React.Fragment>
             );
@@ -1112,7 +1107,7 @@ export function DraggableScreen({
         })}
       </div>
 
-      {addMenu && (
+      {addMenu && !isPreviewMode && (
         <AddBlockMenu
           pos={addMenu.pos}
           onSelect={handleMenuSelect}
@@ -1120,7 +1115,7 @@ export function DraggableScreen({
         />
       )}
 
-      {tileMenu && (
+      {tileMenu && !isPreviewMode && (
         <TileActionMenu
           tileId={tileMenu.tileId}
           pos={tileMenu.pos}
