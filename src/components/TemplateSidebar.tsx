@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./TemplateSidebar.css";
 import { MultiSelect } from "./widgets/MultiSelect";
 import type { MultiSelectOption } from "./widgets/MultiSelect";
@@ -21,6 +21,20 @@ export function TemplateSidebar({
 }) {
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(ALL_CATEGORIES);
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [gridMaxHeight, setGridMaxHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    function update() {
+      if (!gridRef.current) return;
+      const top = gridRef.current.getBoundingClientRect().top;
+      setGridMaxHeight(window.innerHeight - top);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const filtered =
     selectedCategories.length === 0
@@ -50,7 +64,7 @@ export function TemplateSidebar({
           placeholder="Filter by category…"
         />
       </div>
-      <div className="tmpl-grid">
+      <div className="tmpl-grid" ref={gridRef} style={{ maxHeight: gridMaxHeight }}>
         {filtered.map((template) => (
           <button
             key={template.TemplateId}

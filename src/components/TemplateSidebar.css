@@ -1,6 +1,7 @@
 .template-sidebar {
   width: 280px;
   flex-shrink: 0;
+  height: 100%;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
   display: flex;
@@ -39,7 +40,6 @@
 }
 
 .tmpl-grid {
-  flex: 1;
   overflow-y: auto;
   padding: 10px 12px;
   display: grid;
