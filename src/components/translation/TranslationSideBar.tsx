@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import "./TranslationSideBar.css";
-import type { ThemeColors, ThemeIcon, ThemeCtaColor } from "../../types";
+import type { ThemeColors, ThemeIcon, ThemeCtaColor, SupportedLanguages } from "../../types";
+import { dataStore } from "../../data/datastore";
+import { FlagSelect } from "./FlagSelect";
 import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
@@ -36,6 +38,15 @@ export function TranslationSideBar({
     (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
   );
   const firstLang = displayLanguages[0] ?? "";
+  const supportedLangs: SupportedLanguages[] = dataStore.get("SupportedLanguages") ?? [];
+  const flagOptions = displayLanguages.map(
+    (code) =>
+      supportedLangs.find((l) => l.value === code) ?? {
+        value: code,
+        label: code.toUpperCase(),
+        flag: "",
+      },
+  );
   const [selectedLang, setSelectedLang] = useState(firstLang);
   const [sdtPage, setSdtPage] = useState<any>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -326,19 +337,13 @@ export function TranslationSideBar({
             <div className="phone-status-bar">
               <span className="phone-time">9:27</span>
               <div className="ts-status-right">
-                {displayLanguages.length > 0 && (
-                  <select
-                    className="ts-status-lang-select"
+                {flagOptions.length > 0 && (
+                  <FlagSelect
+                    options={flagOptions}
                     value={selectedLang}
-                    onChange={(e) => setSelectedLang(e.target.value)}
+                    onChange={setSelectedLang}
                     disabled={isLoading}
-                  >
-                    {displayLanguages.map((lang) => (
-                      <option key={lang} value={lang}>
-                        {lang.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 )}
                 <div className="phone-status-icons">
                   <i className="fas fa-signal" aria-hidden="true" />
