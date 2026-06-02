@@ -98,26 +98,25 @@ export function PreviewLayout({
         : frame.infoContent,
   }));
 
+  const langSelect = displayLanguages.length > 0 ? (
+    <select
+      className="preview-status-lang-select"
+      value={previewLang ?? appVersionLanguage}
+      onChange={(e) => {
+        const val = e.target.value;
+        setPreviewLang(val === appVersionLanguage ? null : val);
+        setTranslatedContents({});
+      }}
+    >
+      <option value={appVersionLanguage}>{appVersionLanguage.toUpperCase()}</option>
+      {displayLanguages.map((l) => (
+        <option key={l} value={l}>{l.toUpperCase()}</option>
+      ))}
+    </select>
+  ) : undefined;
+
   return (
     <div className="preview-layout">
-      {displayLanguages.length > 0 && (
-        <div className="preview-lang-bar">
-          <select
-            className="preview-lang-select"
-            value={previewLang ?? appVersionLanguage}
-            onChange={(e) => {
-              const val = e.target.value;
-              setPreviewLang(val === appVersionLanguage ? null : val);
-              setTranslatedContents({});
-            }}
-          >
-            <option value={appVersionLanguage}>{appVersionLanguage.toUpperCase()}</option>
-            {displayLanguages.map((l) => (
-              <option key={l} value={l}>{l.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-      )}
       <MainCanvas
         isPreviewMode
         infoContent={effectiveInfoContent}
@@ -134,6 +133,7 @@ export function PreviewLayout({
         onAddColumn={noop}
         onDeleteTile={noop}
         onEditTile={noop}
+        statusBarExtra={langSelect}
       />
     </div>
   );

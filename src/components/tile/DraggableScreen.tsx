@@ -837,18 +837,19 @@ export function DraggableScreen({
     <>
       <div className={[
         'phone-screen',
+        isPreviewMode ? 'phone-screen--preview' : '',
         (isDraggingAnything || isExternalDragActive) ? 'phone-screen--dragging' : '',
       ].filter(Boolean).join(' ')}>
-        <div className={[
-          'phone-add-row',
-          !isPreviewMode && infoContent.length === 0 && !isExternalDragActive && !effectiveBlockDragActive ? 'phone-add-row--visible' : '',
-          effectiveDraggingTile || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
-          effectiveDraggingTile && (
-            (!!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
-            || (isExternalDragActive && infoContent.length === 0)
-          ) ? 'phone-add-row--tile-drop-zone-active' : '',
-        ].filter(Boolean).join(' ')}>
-          {!isPreviewMode && (
+        {!isPreviewMode && (
+          <div className={[
+            'phone-add-row',
+            infoContent.length === 0 && !isExternalDragActive && !effectiveBlockDragActive ? 'phone-add-row--visible' : '',
+            effectiveDraggingTile || effectiveBlockDragActive ? 'phone-add-row--tile-drop-zone' : '',
+            effectiveDraggingTile && (
+              (!!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
+              || (isExternalDragActive && infoContent.length === 0)
+            ) ? 'phone-add-row--tile-drop-zone-active' : '',
+          ].filter(Boolean).join(' ')}>
             <button
               className="phone-add-btn"
               type="button"
@@ -860,8 +861,8 @@ export function DraggableScreen({
                 <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {infoContent.length > 0 && (
           (effectiveBlockDragActive && !!effectiveBlockDropPreview && effectiveBlockDropPreview.insertBeforeInfoId === infoContent[0]?.InfoId)
           || (effectiveDraggingTile && !!effectiveBlockInsertPreview && effectiveBlockInsertPreview.insertBeforeInfoId === infoContent[0]?.InfoId)

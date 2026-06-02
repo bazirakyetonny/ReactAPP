@@ -121,6 +121,8 @@ interface MainCanvasProps {
   analysisHighlight?: AnalysisHighlight | null;
   /** Fires whenever the visually active frame changes. null = home frame. */
   onActiveFrameChange?: (pageId: string | null) => void;
+  /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
+  statusBarExtra?: React.ReactNode;
 }
 
 export function MainCanvas({
@@ -165,6 +167,7 @@ export function MainCanvas({
   liveCtaLabel,
   analysisHighlight,
   onActiveFrameChange,
+  statusBarExtra,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -284,7 +287,7 @@ export function MainCanvas({
         {/* Home frame */}
         {showHomeFrame && (
         <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef} onMouseDown={() => setManualActiveIndex(-1)}>
-          <PhoneStatusBar />
+          <PhoneStatusBar rightExtra={statusBarExtra} />
           <PhoneAppHeader />
           <DraggableScreen
             infoContent={infoContent}
@@ -358,7 +361,7 @@ export function MainCanvas({
               ref={(el) => { if (el) linkedFrameRefs.current.set(frameArrayIndex, el); else linkedFrameRefs.current.delete(frameArrayIndex); }}
               onMouseDown={() => setManualActiveIndex(frameArrayIndex)}
             >
-              <PhoneStatusBar />
+              <PhoneStatusBar rightExtra={statusBarExtra} />
               <PhoneLinkedHeader
                 pageName={
                   isWebLink

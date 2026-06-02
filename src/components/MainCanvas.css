@@ -93,11 +93,36 @@
   letter-spacing: 0.02em;
 }
 
+.phone-status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .phone-status-icons {
   display: flex;
   align-items: center;
   gap: 10px;
   color: #575b5d;
+}
+
+.preview-status-lang-select {
+  font-size: 9px;
+  font-weight: 700;
+  color: #111;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+/* Gap between content blocks in preview mode (replaces phone-add-row spacing) */
+.phone-screen--preview > * + * {
+  margin-top: 8px;
 }
 
 .phone-app-header {
@@ -639,22 +664,6 @@
   height: 28px;
 }
 
-.phone-add-row::before {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 50%;
-  border-top: 1.5px dashed #b0b8c4;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.phone-add-row:hover::before {
-  opacity: 1;
-}
-
 .phone-add-btn {
   position: relative;
   z-index: 1;
@@ -669,7 +678,7 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  opacity: 0;
+  opacity: 0.28;
   transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
@@ -680,10 +689,6 @@
 /* Always-visible state — used when the layout has no content */
 .phone-add-row--visible {
   height: 28px;
-}
-
-.phone-add-row--visible::before {
-  opacity: 1;
 }
 
 .phone-add-row--visible .phone-add-btn {
