@@ -18,11 +18,12 @@ import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
 import { AddCtaModal } from "./components/phone/AddCtaModal";
 import { SidebarRight } from "./components/SidebarRight";
+import { TemplateSidebar } from "./components/TemplateSidebar";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
 import { VersionHistorySidebar } from "./components/appversion/VersionHistorySidebar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { dataStore } from "./data/datastore";
-import type { Theme, CategoryTemplates } from "./types";
+import type { Theme, CategoryTemplates, TrnPageTemplate } from "./types";
 import {
   parseInfoContent,
   applyEditTile,
@@ -48,6 +49,8 @@ function App() {
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
+  const pageTemplates: TrnPageTemplate[] =
+    dataStore.get("BC_Trn_TemplateCollection") ?? [];
 
   const [currentVersion, setCurrentVersion] = useState<any>(() =>
     dataStore.get("Current_Version"),
@@ -370,6 +373,20 @@ function App() {
     (currentVersion?.Page ?? []).find(
       (p: any) => p.PageName?.toLowerCase() === "home",
     )?.PageId ?? "home";
+
+  const isActivePageBlank =
+    activePageId === homePageId
+      ? infoContent.length === 0
+      : (navContents[activePageId] ?? []).length === 0;
+
+  function handleApplyTemplate(content: any[]) {
+    pushSnapshot();
+    if (activePageId === homePageId) {
+      setInfoContent(content);
+    } else {
+      setNavContents((prev) => ({ ...prev, [activePageId]: content }));
+    }
+  }
 
   function openAnalysis() {
     setAnalysisOpen(true);
@@ -1179,6 +1196,11 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
+          />
+        ) : isActivePageBlank ? (
+          <TemplateSidebar
+            templates={pageTemplates}
+            onApply={handleApplyTemplate}
           />
         ) : (
           <SidebarRight

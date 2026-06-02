@@ -407,6 +407,15 @@ export interface ExtractionResult {
   final_summary: string | null;
 }
 
+export interface TrnPageTemplate {
+  TemplateId: string;
+  TemplateName: string;
+  TemplateDescription: string;
+  TemplateCategory: string;
+  TemplateImage_GXI: string;
+  TemplateContent: string;
+}
+
 export interface VersionPageTemplate {
   id: string;
   name: string;
