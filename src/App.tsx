@@ -879,14 +879,52 @@ function App() {
     }
 
     if (action.type === "direct-link" && action.linkType === "Weblink") {
-      pushSnapshot();
-      handleEditTile(tileId, {
-        Action: {
-          ObjectType: "WebLink",
-          ObjectUrl: action.value,
-          FormId: 0,
-        },
-      });
+      const url = action.value;
+      const existing = (cv.Page ?? []).find(
+        (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
+      );
+      if (existing) {
+        pushSnapshot();
+        handleEditTile(tileId, {
+          Action: {
+            ObjectType: "WebLink",
+            ObjectId: existing.PageId,
+            ObjectUrl: url,
+            FormId: 0,
+          },
+        });
+      } else {
+        try {
+          const newPage = await createLinkPage({
+            appVersionId: cv.AppVersionId,
+            pageName: action.label || url,
+            url,
+            WWPFormId: 0,
+          });
+          if (!newPage?.PageId) throw new Error("no page");
+          pushSnapshot();
+          const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+          dataStore.set("Current_Version", updated);
+          setCurrentVersion(updated);
+          handleEditTile(tileId, {
+            Action: {
+              ObjectType: "WebLink",
+              ObjectId: newPage.PageId,
+              ObjectUrl: newPage.PageLinkStructure?.Url ?? url,
+              FormId: 0,
+            },
+          });
+        } catch {
+          pushSnapshot();
+          handleEditTile(tileId, {
+            Action: {
+              ObjectType: "WebLink",
+              ObjectUrl: url,
+              FormId: 0,
+            },
+          });
+        }
+      }
       return;
     }
 
@@ -989,6 +1027,94 @@ function App() {
     }
   }
 
+  // ── CTA click — select + navigate for WebLink CTAs ──────────────────────
+
+  function handleCtaClick(ctaId: string) {
+    handleSelectCta(ctaId);
+    const allBlocks = [
+      ...infoContentRef.current,
+      ...Object.values(navContentsRef.current).flat() as any[],
+    ];
+    const block = allBlocks.find(
+      (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
+    );
+    const action = block?.CtaAttributes?.Action;
+    if (action?.ObjectType === "WebLink" && action?.ObjectId) {
+      const frames = [
+        { frameIndex: -1 as number, blocks: infoContentRef.current },
+        ...navStackRef.current.map((pid: string, i: number) => ({
+          frameIndex: i,
+          blocks: navContentsRef.current[pid] ?? [],
+        })),
+      ];
+      let ctaFrameIndex = -1;
+      for (const { frameIndex, blocks } of frames) {
+        if (
+          blocks.some((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId)
+        ) {
+          ctaFrameIndex = frameIndex;
+          break;
+        }
+      }
+      const page = pagesRef.current.find(
+        (p: any) => p.PageId === action.ObjectId,
+      );
+      const url = page?.PageLinkStructure?.Url ?? action.ObjectUrl;
+      if (url) {
+        handleTileNavigate(action.ObjectId, ctaFrameIndex);
+        setNavUrls((prev) => ({ ...prev, [action.ObjectId]: url }));
+      }
+    }
+  }
+
+  async function handleCtaWeblinkSave(
+    ctaId: string,
+    url: string,
+    label: string,
+  ) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+    const existing = (cv.Page ?? []).find(
+      (p: any) =>
+        p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
+    );
+    if (existing) {
+      pushSnapshot();
+      handleEditCta(ctaId, {
+        CtaAction: url,
+        Action: {
+          ObjectType: "WebLink",
+          ObjectId: existing.PageId,
+          ObjectUrl: url,
+        },
+      });
+      return;
+    }
+    try {
+      const newPage = await createLinkPage({
+        appVersionId: cv.AppVersionId,
+        pageName: label || url,
+        url,
+        WWPFormId: 0,
+      });
+      if (!newPage?.PageId) throw new Error("no page");
+      pushSnapshot();
+      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      dataStore.set("Current_Version", updated);
+      setCurrentVersion(updated);
+      handleEditCta(ctaId, {
+        CtaAction: url,
+        Action: {
+          ObjectType: "WebLink",
+          ObjectId: newPage.PageId,
+          ObjectUrl: newPage.PageLinkStructure?.Url ?? url,
+        },
+      });
+    } catch {
+      handleEditCta(ctaId, { CtaAction: url });
+    }
+  }
+
   // ── Linked frames ────────────────────────────────────────────────────────
 
   const linkedFrames = buildLinkedFrames({
@@ -1005,7 +1131,7 @@ function App() {
     navUpdater,
     handleCloseFromIndex,
     handleEditTile,
-    handleSelectCta,
+    handleSelectCta: handleCtaClick,
     handleEditCta,
     handleTileDoubleClick,
     onCommitNewPage: handleCommitNewPage,
@@ -1358,7 +1484,7 @@ function App() {
             setSelectedTileId(null);
             setSelectedCtaId(null);
           }}
-          onSelectCta={handleSelectCta}
+          onSelectCta={handleCtaClick}
           onEditCta={handleEditCta}
           selectedCtaId={selectedCtaId}
           themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
@@ -1411,6 +1537,7 @@ function App() {
             selectedCta={selectedCta}
             onEditCta={handleEditCta}
             onBeforeCtaEdit={pushSnapshot}
+            onCtaWeblinkSave={handleCtaWeblinkSave}
             onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
             onEndLiveCtaLabel={() => setLiveCtaLabel(null)}
           />
