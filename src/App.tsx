@@ -63,7 +63,6 @@ function App() {
     useState<SDTAppVersion | null>(null);
   const [updateTranslationsVersion, setUpdateTranslationsVersion] =
     useState<SDTAppVersion | null>(null);
-
   useEffect(() => {
     if (isPreviewMode) return;
     getAppVersions()
@@ -114,7 +113,7 @@ function App() {
   const navContentsRef = useRef<Record<string, any[]>>({});
   const navStackRef = useRef<string[]>([]);
   const themeIdRef = useRef(selectedThemeId);
-  const pagesRef = useRef<any[]>(currentVersion?.Page ?? []);
+  const pagesRef = useRef<any[]>(currentVersion?.Pages ?? []);
   useLayoutEffect(() => {
     infoContentRef.current = infoContent;
   });
@@ -122,7 +121,7 @@ function App() {
     themeIdRef.current = selectedThemeId;
   });
   useLayoutEffect(() => {
-    pagesRef.current = currentVersion?.Page ?? [];
+    pagesRef.current = currentVersion?.Pages ?? [];
   });
 
   const {
@@ -392,13 +391,13 @@ function App() {
   } = useAnalysis({
     infoContent,
     navContents,
-    pages: currentVersion?.Page ?? [],
+    pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
     disabled: isPreviewMode,
   });
 
   const homePageId =
-    (currentVersion?.Page ?? []).find(
+    (currentVersion?.Pages ?? []).find(
       (p: any) => p.PageName?.toLowerCase() === "home",
     )?.PageId ?? "home";
 
@@ -1100,6 +1099,175 @@ function App() {
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
       />
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
+        />
+      )}
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
+        />
+      )}
+      {showPublishModal && currentVersion && (
+        <PublishModal
+          currentVersionId={currentVersion.AppVersionId}
+          currentVersionName={currentVersion.AppVersionName}
+          appVersions={appVersions}
+          issueCount={analysisIssues.length}
+          onPublished={() => setShowPublishModal(false)}
+          onClose={() => setShowPublishModal(false)}
+          onFixIssues={() => {
+            setShowPublishModal(false);
+            setAnalysisOpen(true);
+          }}
+        />
+      )}
+      {showShareModal && (
+        <ShareLinkModal
+          shareLink={dataStore.get("PreviewLink") ?? ""}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+      {showCreateModal && (
+        <CreateAppVersionModal
+          templatesCollection={templatesCollection}
+          themeColors={selectedTheme?.ThemeColors}
+          themeIcons={selectedTheme?.ThemeIcons ?? []}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async (version) => {
+            setShowCreateModal(false);
+            try {
+              await activateAppVersion(version.AppVersionId);
+              const fetched = (await getActiveAppVersion()) as any;
+              const full = {
+                ...fetched,
+                Page: fetched.Page ?? fetched.Pages ?? [],
+              };
+              dataStore.set("Current_Version", full);
+              setCurrentVersion(full);
+              setInfoContent(parseInfoContent());
+              setNavStack([]);
+              setNavContents({});
+              clearHistory();
+              setSelectedTileId(null);
+            } catch {}
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {showCreateTemplateModal && (
+        <CreateAppVersionTemplateModal
+          onClose={() => setShowCreateTemplateModal(false)}
+          onCreated={() => {
+            setShowCreateTemplateModal(false);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {showCreateTemplateModal && (
+        <CreateAppVersionTemplateModal
+          onClose={() => setShowCreateTemplateModal(false)}
+          onCreated={() => {
+            setShowCreateTemplateModal(false);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {renameVersion && (
+        <RenameAppVersionModal
+          key={renameVersion.AppVersionId}
+          versionId={renameVersion.AppVersionId}
+          currentName={renameVersion.AppVersionName}
+          currentDescription={renameVersion.AppVersionDescription}
+          onClose={() => setRenameVersion(null)}
+          onRenamed={(newName) => {
+            setAppVersions((prev) =>
+              prev.map((a) =>
+                a.AppVersionId === renameVersion.AppVersionId
+                  ? { ...a, AppVersionName: newName }
+                  : a,
+              ),
+            );
+            if (renameVersion.AppVersionId === currentVersion?.AppVersionId) {
+              const merged = { ...currentVersion, AppVersionName: newName };
+              dataStore.set("Current_Version", merged);
+              setCurrentVersion(merged);
+            }
+            setRenameVersion(null);
+          }}
+        />
+      )}
+      {trashVersion && (
+        <MoveToTrashModal
+          key={trashVersion.AppVersionId}
+          versionId={trashVersion.AppVersionId}
+          versionName={trashVersion.AppVersionName}
+          onClose={() => setTrashVersion(null)}
+          onDeleted={() => {
+            setTrashVersion(null);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {duplicateVersion && (
+        <DuplicateAppVersionModal
+          key={duplicateVersion.AppVersionId}
+          versionId={duplicateVersion.AppVersionId}
+          currentName={duplicateVersion.AppVersionName}
+          onClose={() => setDuplicateVersion(null)}
+          onDuplicated={() => {
+            setDuplicateVersion(null);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
+      {updateTranslationsVersion && (
+        <UpdateTranslationsModal
+          key={updateTranslationsVersion.AppVersionId}
+          versionId={updateTranslationsVersion.AppVersionId}
+          versionName={updateTranslationsVersion.AppVersionName}
+          baseLanguage={updateTranslationsVersion.AppVersionLanguage}
+          currentTranslateLanguages={
+            updateTranslationsVersion.AppVersionMultiLanguages
+          }
+          onClose={() => setUpdateTranslationsVersion(null)}
+          onUpdated={() => {
+            setUpdateTranslationsVersion(null);
+            getAppVersions()
+              .then(setAppVersions)
+              .catch(() => {});
+          }}
+        />
+      )}
       <EditorModals
         showPublishModal={showPublishModal}
         currentVersion={currentVersion}
@@ -1200,6 +1368,8 @@ function App() {
           liveCtaLabel={liveCtaLabel}
           analysisHighlight={analysisHighlight}
           onActiveFrameChange={handleActiveFrameChange}
+          appVersionId={currentVersion?.AppVersionId}
+          onDeletePage={handleDeletePage}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar

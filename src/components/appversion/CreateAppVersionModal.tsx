@@ -57,6 +57,16 @@ export function CreateAppVersionModal({
   const [error, setError] = useState<string | null>(null);
   const [noMood, setNoMood] = useState(false);
 
+  // Options for the translation MultiSelect — exclude the selected base language
+  const translateOptions = languages
+    .filter((l) => l.value !== versionLanguage)
+    .map((l) => ({ value: l.value, label: l.label }));
+
+  function handleLanguageChange(lang: string) {
+    setVersionLanguage(lang);
+    setTranslateLanguages((prev) => prev.filter((v) => v !== lang));
+  }
+
   const isBlank = selectedId === BLANK_ID;
 
   const activeCategory = filledCategories.find(
@@ -72,7 +82,10 @@ export function CreateAppVersionModal({
 
   function handleNext() {
     if (!selectedId) return;
-    setSelectedMoodId(selectedTemplate?.MoodId ?? null);
+    const moods: { MoodId: string }[] = dataStore.get("Moods") ?? [];
+    const templateMoodId = selectedTemplate?.MoodId ?? "";
+    const moodExists = moods.some((m) => m.MoodId === templateMoodId);
+    setSelectedMoodId(moodExists ? templateMoodId : (moods[0]?.MoodId ?? null));
     setError(null);
     if (selectedId === BLANK_ID) {
       setVersionName("");
@@ -249,7 +262,7 @@ export function CreateAppVersionModal({
                     id="cav-lang"
                     className="cav-select"
                     value={versionLanguage}
-                    onChange={(e) => setVersionLanguage(e.target.value)}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     {languages?.length === 0 && (
                       <option value="">No languages available</option>
@@ -270,10 +283,7 @@ export function CreateAppVersionModal({
                     Select additional languages for translation.
                   </p>
                   <MultiSelect
-                    options={languages.map((l) => ({
-                      value: l.value,
-                      label: l.label,
-                    }))}
+                    options={translateOptions}
                     value={translateLanguages}
                     onChange={setTranslateLanguages}
                   />
@@ -385,7 +395,7 @@ export function CreateAppVersionModal({
                     id="cav-lang"
                     className="cav-select"
                     value={versionLanguage}
-                    onChange={(e) => setVersionLanguage(e.target.value)}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     {languages?.length === 0 && (
                       <option value="">No languages available</option>
@@ -406,10 +416,7 @@ export function CreateAppVersionModal({
                     Select additional languages for translation.
                   </p>
                   <MultiSelect
-                    options={languages.map((l) => ({
-                      value: l.value,
-                      label: l.label,
-                    }))}
+                    options={translateOptions}
                     value={translateLanguages}
                     onChange={setTranslateLanguages}
                   />

@@ -9,10 +9,11 @@ import type {
 } from "../../types";
 import { dataStore } from "../../data/datastore";
 import { PhoneStatusBar } from "../phone/StatusBar";
-import { PhoneAppHeader } from "../phone/PhoneHeaders";
+import { PhoneAppHeader, PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { TileGrids } from "../tile/TileGrids";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
 import { ImageBlock } from "../phone/ImageBlock";
+import { MoodSelect } from "./MoodSelect";
 
 interface AppVersionConfigStepProps {
   template: AppVersion | null;
@@ -35,9 +36,17 @@ export function AppVersionMoodSelection1({
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [moodSelectOpen, setMoodSelectOpen] = useState(false);
 
-  const pages = template?.Pages ?? [];
+  const pages = useMemo(() => {
+    const raw = template?.Pages ?? [];
+    const homeIdx = raw.findIndex((p) => p.PageName?.toLowerCase() === "home");
+    if (homeIdx <= 0) return raw;
+    return [raw[homeIdx], ...raw.filter((_, i) => i !== homeIdx)];
+  }, [template]);
   const currentPage = pages[currentPageIndex];
+  const isHomePage =
+    !currentPage || currentPage.PageName?.toLowerCase() === "home";
   const pageContent: any[] = useMemo(() => {
     if (
       !currentPage ||
@@ -88,7 +97,15 @@ export function AppVersionMoodSelection1({
             style={{ transform: `scale(${scale.toFixed(6)})` }}
           >
             <PhoneStatusBar />
-            <PhoneAppHeader />
+            {isHomePage ? (
+              <PhoneAppHeader />
+            ) : (
+              <PhoneLinkedHeader
+                pageName={(currentPage as any)?.PageName ?? ""}
+                onBack={() => setCurrentPageIndex((i) => Math.max(0, i - 1))}
+                hideBack={false}
+              />
+            )}
             <div className="phone-screen">
               {pageContent.map((block: any) => {
                 if (block.InfoType === "TileGrid")
@@ -165,50 +182,13 @@ export function AppVersionMoodSelection1({
       {/* Right — mood picker */}
       <div className="acs-mood-col">
         <div className="acs-mood-label">Colour Theme</div>
-        <div className="acs-mood-list">
-          {moods.map((mood) => (
-            <label
-              key={mood.MoodId}
-              className={`acs-mood-item${selectedMoodId === mood.MoodId ? " acs-mood-item--active" : ""}`}
-            >
-              <input
-                type="radio"
-                name="acs-mood"
-                value={mood.MoodId}
-                checked={selectedMoodId === mood.MoodId}
-                onChange={() => onMoodChange(mood.MoodId)}
-              />
-              <span className="acs-mood-name">{mood.MoodName}</span>
-              <span className="acs-mood-swatches">
-                {(() => {
-                  const moodTheme = themes.find(
-                    (t) => t.ThemeId === mood.ThemeId,
-                  );
-                  let colorNames: string[] = [];
-                  try {
-                    colorNames = JSON.parse(mood.MoodColorNames ?? "[]");
-                  } catch {
-                    colorNames = [];
-                  }
-                  return colorNames.slice(0, 4).map((name) => (
-                    <span
-                      key={name}
-                      className="acs-swatch"
-                      style={{
-                        background:
-                          (
-                            moodTheme?.ThemeColors as
-                              | Record<string, string>
-                              | undefined
-                          )?.[name] ?? "#ccc",
-                      }}
-                    />
-                  ));
-                })()}
-              </span>
-            </label>
-          ))}
-        </div>
+        <MoodSelect
+          selectedMoodId={selectedMoodId}
+          onChange={onMoodChange}
+          open={moodSelectOpen}
+          onToggle={() => setMoodSelectOpen((v) => !v)}
+          onClose={() => setMoodSelectOpen(false)}
+        />
       </div>
     </div>
   );
