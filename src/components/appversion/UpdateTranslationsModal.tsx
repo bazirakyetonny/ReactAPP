@@ -136,5 +136,8 @@ export function UpdateTranslationsModal({
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
+  return ReactDOM.createPortal(
+    modal,
+    document.getElementById("root") ?? document.body,
+  );
 }

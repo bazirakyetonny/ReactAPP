@@ -67,7 +67,6 @@ function App() {
     useState<SDTAppVersion | null>(null);
   const [updateTranslationsVersion, setUpdateTranslationsVersion] =
     useState<SDTAppVersion | null>(null);
-
   useEffect(() => {
     getAppVersions()
       .then(setAppVersions)
@@ -116,7 +115,7 @@ function App() {
   const navContentsRef = useRef<Record<string, any[]>>({});
   const navStackRef = useRef<string[]>([]);
   const themeIdRef = useRef(selectedThemeId);
-  const pagesRef = useRef<any[]>(currentVersion?.Page ?? []);
+  const pagesRef = useRef<any[]>(currentVersion?.Pages ?? []);
   useLayoutEffect(() => {
     infoContentRef.current = infoContent;
   });
@@ -124,7 +123,7 @@ function App() {
     themeIdRef.current = selectedThemeId;
   });
   useLayoutEffect(() => {
-    pagesRef.current = currentVersion?.Page ?? [];
+    pagesRef.current = currentVersion?.Pages ?? [];
   });
 
   const {
@@ -394,12 +393,12 @@ function App() {
   } = useAnalysis({
     infoContent,
     navContents,
-    pages: currentVersion?.Page ?? [],
+    pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
   });
 
   const homePageId =
-    (currentVersion?.Page ?? []).find(
+    (currentVersion?.Pages ?? []).find(
       (p: any) => p.PageName?.toLowerCase() === "home",
     )?.PageId ?? "home";
 
@@ -1143,7 +1142,7 @@ function App() {
           versionName={updateTranslationsVersion.AppVersionName}
           baseLanguage={updateTranslationsVersion.AppVersionLanguage}
           currentTranslateLanguages={
-            updateTranslationsVersion.TranslateLanguages
+            updateTranslationsVersion.AppVersionMultiLanguages
           }
           onClose={() => setUpdateTranslationsVersion(null)}
           onUpdated={() => {
@@ -1215,6 +1214,8 @@ function App() {
           liveCtaLabel={liveCtaLabel}
           analysisHighlight={analysisHighlight}
           onActiveFrameChange={handleActiveFrameChange}
+          appVersionId={currentVersion?.AppVersionId}
+          onDeletePage={handleDeletePage}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar
