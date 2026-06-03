@@ -559,19 +559,68 @@ function App() {
     if (el) handleTileDoubleClick(selectedTileId, el.getBoundingClientRect());
   }
 
-  function handleConfirmCta(attrs: {
+  async function handleConfirmCta(attrs: {
     CtaLabel: string;
     CtaAction: string;
     CtaConnectedSupplierId?: string;
     CtaSupplierIsConnected: boolean;
   }) {
     if (!pendingCta) return;
-    pushSnapshot();
-    const ts = Date.now();
     const { blockType, insertBeforeInfoId, frameId } = pendingCta;
+    const ts = Date.now();
+    setPendingCta(null);
+
+    let finalAttrs: Record<string, any> = { ...attrs };
+
+    if (blockType === "Cta_Weblink" && attrs.CtaAction) {
+      const cv = dataStore.get("Current_Version");
+      if (cv) {
+        const url = attrs.CtaAction;
+        const existing = (cv.Page ?? []).find(
+          (p: any) =>
+            p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
+        );
+        if (existing) {
+          finalAttrs = {
+            ...attrs,
+            Action: {
+              ObjectType: "WebLink",
+              ObjectId: existing.PageId,
+              ObjectUrl: url,
+            },
+          };
+        } else {
+          try {
+            const newPage = await createLinkPage({
+              appVersionId: cv.AppVersionId,
+              pageName: attrs.CtaLabel || url,
+              url,
+              WWPFormId: 0,
+            });
+            if (newPage?.PageId) {
+              const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+              dataStore.set("Current_Version", updated);
+              setCurrentVersion(updated);
+              finalAttrs = {
+                ...attrs,
+                Action: {
+                  ObjectType: "WebLink",
+                  ObjectId: newPage.PageId,
+                  ObjectUrl: newPage.PageLinkStructure?.Url ?? url,
+                },
+              };
+            }
+          } catch {
+            // proceed without a linked page
+          }
+        }
+      }
+    }
+
+    pushSnapshot();
     if (frameId === null) {
       setInfoContent((prev) =>
-        applyAddBlock(prev, blockType, insertBeforeInfoId, ts, attrs),
+        applyAddBlock(prev, blockType, insertBeforeInfoId, ts, finalAttrs),
       );
     } else {
       setNavContents((prev) => ({
@@ -581,13 +630,26 @@ function App() {
           blockType,
           insertBeforeInfoId,
           ts,
-          attrs,
+          finalAttrs,
         ),
       }));
     }
     setSelectedCtaId(`cta-${ts}`);
     setSelectedTileId(null);
-    setPendingCta(null);
+    const linkedAction = finalAttrs.Action;
+    if (
+      linkedAction?.ObjectType === "WebLink" &&
+      linkedAction?.ObjectId &&
+      linkedAction?.ObjectUrl
+    ) {
+      const ctaParentIndex =
+        frameId === null ? -1 : navStackRef.current.indexOf(frameId);
+      handleTileNavigate(linkedAction.ObjectId, ctaParentIndex);
+      setNavUrls((prev) => ({
+        ...prev,
+        [linkedAction.ObjectId]: linkedAction.ObjectUrl,
+      }));
+    }
   }
 
   // ── Page rename ──────────────────────────────────────────────────────────
@@ -880,6 +942,22 @@ function App() {
 
     if (action.type === "direct-link" && action.linkType === "Weblink") {
       const url = action.value;
+      const searchInBlocks = (blocks: any[]) =>
+        blocks.some((b) =>
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === tileId),
+          ),
+        );
+      let parentIndex = -1;
+      if (!searchInBlocks(infoContentRef.current)) {
+        const stack = navStackRef.current;
+        for (let i = 0; i < stack.length; i++) {
+          if (searchInBlocks(navContentsRef.current[stack[i]] ?? [])) {
+            parentIndex = i;
+            break;
+          }
+        }
+      }
       const existing = (cv.Page ?? []).find(
         (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
       );
@@ -893,6 +971,9 @@ function App() {
             FormId: 0,
           },
         });
+        handleTileNavigate(existing.PageId, parentIndex);
+        setNavSourceTiles((prev) => ({ ...prev, [existing.PageId]: tileId }));
+        setNavUrls((prev) => ({ ...prev, [existing.PageId]: url }));
       } else {
         try {
           const newPage = await createLinkPage({
@@ -902,6 +983,7 @@ function App() {
             WWPFormId: 0,
           });
           if (!newPage?.PageId) throw new Error("no page");
+          const pageUrl = newPage.PageLinkStructure?.Url ?? url;
           pushSnapshot();
           const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
           dataStore.set("Current_Version", updated);
@@ -910,10 +992,13 @@ function App() {
             Action: {
               ObjectType: "WebLink",
               ObjectId: newPage.PageId,
-              ObjectUrl: newPage.PageLinkStructure?.Url ?? url,
+              ObjectUrl: pageUrl,
               FormId: 0,
             },
           });
+          handleTileNavigate(newPage.PageId, parentIndex);
+          setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+          setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
         } catch {
           pushSnapshot();
           handleEditTile(tileId, {
@@ -1074,6 +1159,22 @@ function App() {
   ) {
     const cv = dataStore.get("Current_Version");
     if (!cv) return;
+
+    const allFrames = [
+      { frameIndex: -1 as number, blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid: string, i: number) => ({
+        frameIndex: i,
+        blocks: navContentsRef.current[pid] ?? [],
+      })),
+    ];
+    let ctaFrameIndex = -1;
+    for (const { frameIndex, blocks } of allFrames) {
+      if (blocks.some((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId)) {
+        ctaFrameIndex = frameIndex;
+        break;
+      }
+    }
+
     const existing = (cv.Page ?? []).find(
       (p: any) =>
         p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
@@ -1088,6 +1189,8 @@ function App() {
           ObjectUrl: url,
         },
       });
+      handleTileNavigate(existing.PageId, ctaFrameIndex);
+      setNavUrls((prev) => ({ ...prev, [existing.PageId]: url }));
       return;
     }
     try {
@@ -1098,6 +1201,7 @@ function App() {
         WWPFormId: 0,
       });
       if (!newPage?.PageId) throw new Error("no page");
+      const pageUrl = newPage.PageLinkStructure?.Url ?? url;
       pushSnapshot();
       const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
       dataStore.set("Current_Version", updated);
@@ -1107,9 +1211,11 @@ function App() {
         Action: {
           ObjectType: "WebLink",
           ObjectId: newPage.PageId,
-          ObjectUrl: newPage.PageLinkStructure?.Url ?? url,
+          ObjectUrl: pageUrl,
         },
       });
+      handleTileNavigate(newPage.PageId, ctaFrameIndex);
+      setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
     } catch {
       handleEditCta(ctaId, { CtaAction: url });
     }
