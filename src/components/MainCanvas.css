@@ -78,6 +78,42 @@
   border-color: #9c9a9a;
 }
 
+/* Wrapper for linked frames — provides relative context for the delete button */
+.phone-frame-outer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.delete-page-btn {
+  position: absolute;
+  top: -10px;
+  right: -18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #4f6ba5;
+  background: #ffffff;
+  color: #4f6ba5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.delete-page-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  cursor: pointer;
+}
+
 .phone-status-bar {
   height: 28px;
   display: flex;
