@@ -79,6 +79,7 @@ export interface LinkedFrame {
 }
 
 interface MainCanvasProps {
+  isPreviewMode?: boolean;
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   infoContent: any[];
@@ -120,9 +121,12 @@ interface MainCanvasProps {
   analysisHighlight?: AnalysisHighlight | null;
   /** Fires whenever the visually active frame changes. null = home frame. */
   onActiveFrameChange?: (pageId: string | null) => void;
+  /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
+  statusBarExtra?: React.ReactNode;
 }
 
 export function MainCanvas({
+  isPreviewMode = false,
   themeColors,
   themeIcons,
   infoContent,
@@ -163,6 +167,7 @@ export function MainCanvas({
   liveCtaLabel,
   analysisHighlight,
   onActiveFrameChange,
+  statusBarExtra,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter((block: any) => block.InfoType === 'TileGrid');
 
@@ -270,12 +275,19 @@ export function MainCanvas({
     prevLinkedFramesRef.current = linkedFrames;
   }, [linkedFrames]);
 
+  // In preview mode: show only the current active frame
+  const showHomeFrame = !isPreviewMode || (linkedFrames?.length ?? 0) === 0;
+  const previewLinkedFrames = isPreviewMode && linkedFrames?.length
+    ? [linkedFrames[linkedFrames.length - 1]]
+    : linkedFrames;
+
   return (
     <main className="app-canvas">
       <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
+        {showHomeFrame && (
         <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef} onMouseDown={() => setManualActiveIndex(-1)}>
-          <PhoneStatusBar />
+          <PhoneStatusBar rightExtra={statusBarExtra} />
           <PhoneAppHeader />
           <DraggableScreen
             infoContent={infoContent}
@@ -324,15 +336,20 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
-            onTileMenuAction={onTileMenuAction}
+            onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
             liveTileText={liveTileText}
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
+            isPreviewMode={isPreviewMode}
           />
         </div>
+        )}
 
         {/* Linked page frames */}
-        {linkedFrames?.map((frame, i) => {
+        {previewLinkedFrames?.map((frame, i) => {
+          const frameArrayIndex = isPreviewMode
+            ? (linkedFrames?.length ?? 1) - 1
+            : i;
           const pageType = frame.page?.PageType ?? '';
           const isModulePage = MODULE_PAGE_TYPES.has(pageType);
           const isWebLink = pageType === 'WebLink' || !!frame.webLinkUrl;
@@ -340,11 +357,11 @@ export function MainCanvas({
           return (
             <div
               key={frame.pageId ?? i}
-              className={`phone-frame phone-frame--linked${activeFrameIndex === i ? ' phone-frame--active' : ' phone-frame--inactive'}`}
-              ref={(el) => { if (el) linkedFrameRefs.current.set(i, el); else linkedFrameRefs.current.delete(i); }}
-              onMouseDown={() => setManualActiveIndex(i)}
+              className={`phone-frame phone-frame--linked${activeFrameIndex === frameArrayIndex ? ' phone-frame--active' : ' phone-frame--inactive'}`}
+              ref={(el) => { if (el) linkedFrameRefs.current.set(frameArrayIndex, el); else linkedFrameRefs.current.delete(frameArrayIndex); }}
+              onMouseDown={() => setManualActiveIndex(frameArrayIndex)}
             >
-              <PhoneStatusBar />
+              <PhoneStatusBar rightExtra={statusBarExtra} />
               <PhoneLinkedHeader
                 pageName={
                   isWebLink
@@ -354,9 +371,11 @@ export function MainCanvas({
                 isNew={frame.isNew}
                 onBack={frame.isNew ? (frame.onCancelNew ?? frame.onClose) : frame.onClose}
                 onRename={
-                  frame.isNew
-                    ? frame.onCommitName
-                    : (frame.page?.PageId ? (name) => onRenamePage?.(frame.page.PageId, name) : undefined)
+                  isPreviewMode
+                    ? undefined
+                    : frame.isNew
+                      ? frame.onCommitName
+                      : (frame.page?.PageId ? (name) => onRenamePage?.(frame.page.PageId, name) : undefined)
                 }
               />
               {isWebLink ? (
@@ -373,58 +392,59 @@ export function MainCanvas({
                 themeIcons={themeIcons}
                 selectedTileId={selectedTileId}
                 onSelectTile={onSelectTile}
-                onAddColumn={frame.onAddColumn}
-                onDeleteTile={frame.onDeleteTile}
-                onEditTile={frame.onEditTile}
-                onAddTilesToColumn={frame.onAddTilesToColumn}
-                onAddStandaloneTile={frame.onAddStandaloneTile}
-                onAddBlock={frame.onAddBlock}
-                onFreeResizeRelease={frame.onFreeResizeRelease}
-                onTileDrop={frame.onTileDrop}
-                onTileDropAsNewBlock={frame.onTileDropAsNewBlock}
-                onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, i) : undefined}
-                onCollapseFromParent={onCollapseDescendants ? () => onCollapseDescendants(i) : undefined}
+                onAddColumn={isPreviewMode ? undefined : frame.onAddColumn}
+                onDeleteTile={isPreviewMode ? undefined : frame.onDeleteTile}
+                onEditTile={isPreviewMode ? undefined : frame.onEditTile}
+                onAddTilesToColumn={isPreviewMode ? undefined : frame.onAddTilesToColumn}
+                onAddStandaloneTile={isPreviewMode ? undefined : frame.onAddStandaloneTile}
+                onAddBlock={isPreviewMode ? undefined : frame.onAddBlock}
+                onFreeResizeRelease={isPreviewMode ? undefined : frame.onFreeResizeRelease}
+                onTileDrop={isPreviewMode ? undefined : frame.onTileDrop}
+                onTileDropAsNewBlock={isPreviewMode ? undefined : frame.onTileDropAsNewBlock}
+                onTileNavigate={onTileNavigate ? (pageId) => onTileNavigate(pageId, frameArrayIndex) : undefined}
+                onCollapseFromParent={isPreviewMode ? undefined : (onCollapseDescendants ? () => onCollapseDescendants(frameArrayIndex) : undefined)}
                 activeNavTileIds={activeNavTileIds}
-                sourceFrameIndex={i}
-                getAllFrameData={() => getAllFrameData(i)}
-                onCrossFrameDragPreview={setCrossFramePreview}
-                onCrossFrameTileDrop={onCrossFrameTileDrop ? (fg, fc, tid, tfi, pv) => onCrossFrameTileDrop(i, tfi, fg, fc, tid, pv) : undefined}
-                onCrossFrameTileDropToEmpty={onCrossFrameTileDropToEmpty ? (fg, fc, tid, tfi) => onCrossFrameTileDropToEmpty(i, tfi, fg, fc, tid) : undefined}
-                onCrossFrameTileDropAsNewBlock={onCrossFrameTileDropAsNewBlock ? (fg, fc, tid, tfi, bi) => onCrossFrameTileDropAsNewBlock(i, tfi, fg, fc, tid, bi) : undefined}
-                externalTileDropPreview={crossFramePreview?.frameIndex === i ? crossFramePreview.tdPreview : null}
-                externalBlockInsertPreview={crossFramePreview?.frameIndex === i ? crossFramePreview.biPreview : null}
-                isExternalDragActive={!!(crossFramePreview?.frameIndex === i && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
-                onColRef={(id, el) => registerFrameEl(i, 'col', id, el)}
-                onGridRef={(id, el) => registerFrameEl(i, 'grid', id, el)}
-                onBlockWrapperRef={(id, el) => registerFrameEl(i, 'blockWrapper', id, el)}
-                onAddDescription={frame.onAddDescription}
-                onEditDescription={frame.onEditDescription}
-                onDeleteBlock={frame.onDeleteBlock}
-                onMoveBlock={frame.onMoveBlock}
-                onCrossFrameBlockDrop={onCrossFrameBlockDrop}
-                onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
-                externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === i ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
-                isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === i}
-                onAddImage={frame.onAddImage}
-                onEditImage={frame.onEditImage}
-                onTileDoubleClick={frame.onTileDoubleClick}
-                onDeselectTile={frame.onDeselectTile}
-                onSelectCta={frame.onSelectCta}
-                onEditCta={frame.onEditCta}
+                sourceFrameIndex={frameArrayIndex}
+                getAllFrameData={() => getAllFrameData(frameArrayIndex)}
+                onCrossFrameDragPreview={isPreviewMode ? undefined : setCrossFramePreview}
+                onCrossFrameTileDrop={isPreviewMode || !onCrossFrameTileDrop ? undefined : (fg, fc, tid, tfi, pv) => onCrossFrameTileDrop(frameArrayIndex, tfi, fg, fc, tid, pv)}
+                onCrossFrameTileDropToEmpty={isPreviewMode || !onCrossFrameTileDropToEmpty ? undefined : (fg, fc, tid, tfi) => onCrossFrameTileDropToEmpty(frameArrayIndex, tfi, fg, fc, tid)}
+                onCrossFrameTileDropAsNewBlock={isPreviewMode || !onCrossFrameTileDropAsNewBlock ? undefined : (fg, fc, tid, tfi, bi) => onCrossFrameTileDropAsNewBlock(frameArrayIndex, tfi, fg, fc, tid, bi)}
+                externalTileDropPreview={crossFramePreview?.frameIndex === frameArrayIndex ? crossFramePreview.tdPreview : null}
+                externalBlockInsertPreview={crossFramePreview?.frameIndex === frameArrayIndex ? crossFramePreview.biPreview : null}
+                isExternalDragActive={!!(crossFramePreview?.frameIndex === frameArrayIndex && (crossFramePreview.tdPreview || crossFramePreview.biPreview || crossFramePreview.emptyDrop))}
+                onColRef={(id, el) => registerFrameEl(frameArrayIndex, 'col', id, el)}
+                onGridRef={(id, el) => registerFrameEl(frameArrayIndex, 'grid', id, el)}
+                onBlockWrapperRef={(id, el) => registerFrameEl(frameArrayIndex, 'blockWrapper', id, el)}
+                onAddDescription={isPreviewMode ? undefined : frame.onAddDescription}
+                onEditDescription={isPreviewMode ? undefined : frame.onEditDescription}
+                onDeleteBlock={isPreviewMode ? undefined : frame.onDeleteBlock}
+                onMoveBlock={isPreviewMode ? undefined : frame.onMoveBlock}
+                onCrossFrameBlockDrop={isPreviewMode ? undefined : onCrossFrameBlockDrop}
+                onCrossFrameBlockDragPreview={isPreviewMode ? undefined : setCrossFrameBlockPreview}
+                externalBlockDropPreview={crossFrameBlockPreview?.targetFrameIdx === frameArrayIndex ? { insertBeforeInfoId: crossFrameBlockPreview.insertBeforeInfoId } : null}
+                isExternalBlockDragActive={crossFrameBlockPreview?.targetFrameIdx === frameArrayIndex}
+                onAddImage={isPreviewMode ? undefined : frame.onAddImage}
+                onEditImage={isPreviewMode ? undefined : frame.onEditImage}
+                onTileDoubleClick={isPreviewMode ? undefined : frame.onTileDoubleClick}
+                onDeselectTile={isPreviewMode ? undefined : frame.onDeselectTile}
+                onSelectCta={isPreviewMode ? undefined : frame.onSelectCta}
+                onEditCta={isPreviewMode ? undefined : frame.onEditCta}
                 selectedCtaId={selectedCtaId}
                 themeCtaColors={themeCtaColors}
-                onTileMenuAction={onTileMenuAction}
+                onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
                 liveTileText={liveTileText}
                 liveCtaLabel={liveCtaLabel}
                 analysisHighlight={analysisHighlight}
+                isPreviewMode={isPreviewMode}
               />}
             </div>
           );
         })}
       </div>
 
-      {/* Page thumbnails */}
-      <div className="page-thumbnails">
+      {/* Page thumbnails — hidden in preview mode */}
+      {!isPreviewMode && <div className="page-thumbnails">
         <div
           className={`page-thumb-clip${activeFrameIndex === -1 ? ' page-thumb-clip--active' : ''}`}
           onClick={() => { setManualActiveIndex(-1); scrollToFrame(-1); }}
@@ -468,7 +488,7 @@ export function MainCanvas({
             </div>
           </div>
         ))}
-      </div>
+      </div>}
     </main>
   );
 }

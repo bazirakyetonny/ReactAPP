@@ -1,0 +1,25 @@
+.preview-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  background: #f0f0f0;
+}
+
+.preview-layout .app-canvas {
+  flex: 1;
+  overflow: hidden;
+}
+
+.preview-layout .canvas-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.preview-layout .phone-frame {
+  flex-shrink: 0;
+}
