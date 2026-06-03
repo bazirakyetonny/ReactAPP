@@ -1325,6 +1325,7 @@ function App() {
           />
         )}
         <MainCanvas
+          isReadOnly={isTranslationOpen}
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}

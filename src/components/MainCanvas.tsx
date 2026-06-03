@@ -182,6 +182,7 @@ export interface LinkedFrame {
 
 interface MainCanvasProps {
   isPreviewMode?: boolean;
+  isReadOnly?: boolean;
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   infoContent: any[];
@@ -280,6 +281,7 @@ interface MainCanvasProps {
 
 export function MainCanvas({
   isPreviewMode = false,
+  isReadOnly = false,
   themeColors,
   themeIcons,
   infoContent,
@@ -324,6 +326,8 @@ export function MainCanvas({
   appVersionId,
   statusBarExtra,
 }: MainCanvasProps) {
+  const interactionsLocked = isPreviewMode || isReadOnly;
+
   const tileGrids = infoContent.filter(
     (block: any) => block.InfoType === "TileGrid",
   );
@@ -596,11 +600,11 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
-            onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
+            onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
             liveTileText={liveTileText}
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
-            isPreviewMode={isPreviewMode}
+            isPreviewMode={interactionsLocked}
           />
         </div>
         )}
@@ -657,7 +661,7 @@ export function MainCanvas({
                   onRename={
                     frame.isNew
                       ? frame.onCommitName
-                      : frame.page?.PageId
+                      : frame.page?.PageId && !interactionsLocked
                         ? (name) => onRenamePage?.(frame.page.PageId, name)
                         : undefined
                   }
@@ -775,10 +779,11 @@ export function MainCanvas({
                     onEditCta={frame.onEditCta}
                     selectedCtaId={selectedCtaId}
                     themeCtaColors={themeCtaColors}
-                    onTileMenuAction={onTileMenuAction}
+                    onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
                     liveTileText={liveTileText}
                     liveCtaLabel={liveCtaLabel}
                     analysisHighlight={analysisHighlight}
+                    isPreviewMode={interactionsLocked}
                   />
                 )}
               </div>
