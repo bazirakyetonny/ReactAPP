@@ -62,7 +62,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.35),
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.6),
+    0 4px 16px rgba(0, 0, 0, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
   transition: border-color 0.18s;
@@ -89,7 +91,10 @@
   font-size: 11px;
   font-weight: 700;
   color: #111111;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -202,7 +207,10 @@
   align-items: center;
   padding: 3px;
   border-radius: 4px;
-  transition: opacity 0.15s, color 0.1s, background 0.1s;
+  transition:
+    opacity 0.15s,
+    color 0.1s,
+    background 0.1s;
 }
 
 .phone-linked-page-name-wrap--editable:hover .phone-linked-edit-btn {
@@ -266,7 +274,9 @@
 }
 
 .phone-screen--dragging .phone-tile-wrap--tile-drag-source {
-  transition: height 0.12s ease, min-height 0.12s ease;
+  transition:
+    height 0.12s ease,
+    min-height 0.12s ease;
 }
 
 .phone-screen--dragging .phone-add-row {
@@ -439,7 +449,9 @@
   align-items: center;
   justify-content: center;
   opacity: 0.9;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 3px 10px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.28),
+    0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 /* Drop slot — shown at the tile insertion point within a column */
@@ -482,12 +494,16 @@
 
 /* Nav-active tile — blue outline marks tiles whose linked page is open */
 .phone-tile-wrap--nav-active .phone-tile {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #1a3a6e;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #1a3a6e;
 }
 
 /* Selected tile border — always visible once clicked (wins over nav-active) */
 .phone-tile-wrap.selected .phone-tile {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #3d5a9e;
 }
 
 /* Analysis highlight — dashed red outline; label overlaps bottom border. */
@@ -496,7 +512,9 @@
   outline-offset: 2px;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-fullwidth {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #ef4444;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-round-wrap {
   outline: 2px solid #ef4444;
@@ -508,7 +526,9 @@
 }
 .block--analysis-highlight .phone-image-single,
 .block--analysis-highlight .phone-carousel-img {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #ef4444;
 }
 
 /* Analysis label — sits on the bottom border, half inside / half outside */
@@ -670,7 +690,10 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s;
 }
 
 .phone-add-row:hover .phone-add-btn {
@@ -708,7 +731,9 @@
   color: #374151;
   cursor: pointer;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
-  transition: background 0.15s, transform 0.1s;
+  transition:
+    background 0.15s,
+    transform 0.1s;
   z-index: 1;
 }
 
@@ -739,7 +764,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
 }
 
 .page-thumb-clip:hover {
@@ -1277,7 +1304,9 @@
   justify-content: center;
   gap: 8px;
   background: #fff;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   min-height: 110px;
   flex-shrink: 0;
 }
@@ -1619,7 +1648,9 @@
   cursor: pointer;
 }
 .phone-cta-block--selected .phone-cta-fullwidth {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #3d5a9e;
 }
 .phone-cta-block--selected .phone-cta-round-wrap {
   outline: 2px solid #3d5a9e;
