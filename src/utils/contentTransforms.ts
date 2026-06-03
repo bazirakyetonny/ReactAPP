@@ -472,6 +472,42 @@ export function applyDeleteBlock(prev: any[], infoId: string): any[] {
   return prev.filter((b: any) => b.InfoId !== infoId);
 }
 
+export function regenerateContentIds(content: any[]): any[] {
+  let seq = 0;
+  const next = (prefix: string) => `${prefix}-${Date.now() + seq++}`;
+
+  return content.map((block) => {
+    if (block.InfoType === 'TileGrid') {
+      return {
+        ...block,
+        InfoId: next('grid'),
+        Columns: (block.Columns ?? []).map((col: any) => ({
+          ...col,
+          ColId: next('col'),
+          Tiles: (col.Tiles ?? []).map((tile: any) => ({
+            ...tile,
+            Id: next('tile'),
+          })),
+        })),
+      };
+    }
+    if (block.InfoType === 'Cta') {
+      const newId = next('cta');
+      return {
+        ...block,
+        InfoId: newId,
+        CtaAttributes: block.CtaAttributes
+          ? { ...block.CtaAttributes, CtaId: newId }
+          : block.CtaAttributes,
+      };
+    }
+    if (block.InfoType === 'Image') {
+      return { ...block, InfoId: next('img') };
+    }
+    return { ...block, InfoId: next('desc') };
+  });
+}
+
 export function applyMoveBlock(prev: any[], infoId: string, insertBeforeInfoId: string | null): any[] {
   const block = prev.find((b: any) => b.InfoId === infoId);
   if (!block) return prev;
