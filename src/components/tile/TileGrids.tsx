@@ -309,44 +309,48 @@ export function TileGrids({
                             )}
                           </div>
 
-                          {interactive && !isDraggingThis && (
+                          {interactive && !isDraggingThis && (onTileOptionsClick || onDeleteTile || (canAddColumn && onAddColumn)) && (
                             <>
-                              <button
-                                className="phone-tile-options-btn"
-                                type="button"
-                                aria-label="Tile options"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onTileOptionsClick?.(tile.Id, e.currentTarget.getBoundingClientRect());
-                                }}
-                              >
-                                <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
-                                  <circle cx="1.5" cy="1.5" r="1.5" />
-                                  <circle cx="6" cy="1.5" r="1.5" />
-                                  <circle cx="10.5" cy="1.5" r="1.5" />
-                                </svg>
-                              </button>
-                              <button
-                                className="phone-tile-delete-btn"
-                                type="button"
-                                aria-label="Delete tile"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDeleteTile?.(grid.InfoId, col.ColId, tile.Id);
-                                }}
-                              >
-                                <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
-                                  <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
-                                </svg>
-                              </button>
-                              {canAddColumn && (
+                              {onTileOptionsClick && (
+                                <button
+                                  className="phone-tile-options-btn"
+                                  type="button"
+                                  aria-label="Tile options"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onTileOptionsClick(tile.Id, e.currentTarget.getBoundingClientRect());
+                                  }}
+                                >
+                                  <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
+                                    <circle cx="1.5" cy="1.5" r="1.5" />
+                                    <circle cx="6" cy="1.5" r="1.5" />
+                                    <circle cx="10.5" cy="1.5" r="1.5" />
+                                  </svg>
+                                </button>
+                              )}
+                              {onDeleteTile && (
+                                <button
+                                  className="phone-tile-delete-btn"
+                                  type="button"
+                                  aria-label="Delete tile"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteTile(grid.InfoId, col.ColId, tile.Id);
+                                  }}
+                                >
+                                  <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
+                                    <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
+                                  </svg>
+                                </button>
+                              )}
+                              {canAddColumn && onAddColumn && (
                                 <button
                                   className="phone-tile-add-btn"
                                   type="button"
                                   aria-label="Add column to right"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onAddColumn?.(grid.InfoId, col.ColId);
+                                    onAddColumn(grid.InfoId, col.ColId);
                                   }}
                                 >
                                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
@@ -387,29 +391,33 @@ export function TileGrids({
                 );
               })}
             </div>
-            {isAddRowDropActive && <div className="block-drop-zone" />}
-            <div className={interactive ? [
-              'phone-add-row',
-              isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
-            ].filter(Boolean).join(' ') : 'phone-add-row'}>
-              {interactive && (
-                <button
-                  className="phone-add-btn"
-                  type="button"
-                  aria-label="Add content"
-                  onClick={(e) => onAddBtnClick?.(e,
-                    overrideAddBtnInsertBeforeInfoId !== undefined
-                      ? overrideAddBtnInsertBeforeInfoId
-                      : tileGrids[gridIdx + 1]?.InfoId ?? null
+            {(isAddRowDropActive || isDraggingTile || (interactive && !!onAddBtnClick)) && (
+              <>
+                {isAddRowDropActive && <div className="block-drop-zone" />}
+                <div className={[
+                  'phone-add-row',
+                  isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
+                ].filter(Boolean).join(' ')}>
+                  {interactive && onAddBtnClick && (
+                    <button
+                      className="phone-add-btn"
+                      type="button"
+                      aria-label="Add content"
+                      onClick={(e) => onAddBtnClick(e,
+                        overrideAddBtnInsertBeforeInfoId !== undefined
+                          ? overrideAddBtnInsertBeforeInfoId
+                          : tileGrids[gridIdx + 1]?.InfoId ?? null
+                      )}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </button>
                   )}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </button>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         );
       })}

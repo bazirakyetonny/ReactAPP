@@ -20,6 +20,8 @@ export function createWidget(
   Moods: any[],
   TemplatesCollection: any[],
   BC_Trn_TemplateCollection: any[],
+  Mode: string,
+  PreviewLink: string,
 ) {
   dataStore.set("themes", themes);
   dataStore.set("Suppliers", Suppliers);
@@ -37,6 +39,8 @@ export function createWidget(
   dataStore.set("Moods", Moods);
   dataStore.set("TemplatesCollection", TemplatesCollection);
   dataStore.set("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
+  dataStore.set("Mode", Mode);
+  dataStore.set("PreviewLink", PreviewLink);
 
   // console.log("Suppliers", Suppliers);
   // console.log("SDT_ProductServiceCollection", SDT_ProductServiceCollection);
@@ -45,7 +49,7 @@ export function createWidget(
   // console.log("CurrentThemeId", CurrentThemeId);
   // console.log("Current_Version", Current_Version);
   // console.log("OrganisationLogo", OrganisationLogo);
-  console.log("Current_Language", Current_Language);
+  // console.log("Current_Language", Current_Language);
   // console.log("HasMultiLingualSupport", HasMultiLingualSupport);
   // console.log("SupportedLanguages", SupportedLanguages);
   // console.log("UserRoles", UserRoles);
@@ -54,6 +58,8 @@ export function createWidget(
   // console.log("Themes", themes);
   // console.log("TemplatesCollection", TemplatesCollection);
   // console.log("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
+  // console.log("Mode", Mode);
+  // console.log("Previewlink", Previewlink);
 
   return createRoot(document.getElementById("root")!).render(
     <StrictMode>

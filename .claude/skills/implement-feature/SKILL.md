@@ -17,6 +17,20 @@ feature (e.g. no new API call → skip D/E). When in doubt, include it.
 
 ---
 
+## Phase 0 — Identify relevant skills
+
+Before writing any code, scan the feature description and ask the user whether to invoke any of
+available skills:
+
+
+Ask: **"This feature looks like it may also need the `[skill-name]` skill. Should I invoke it as
+part of the implementation?"** Invoke the skill if the user agrees, or proceed with the phase-based
+guide below if it doesn't apply.
+
+
+
+---
+
 ## Phase 1 — Understand before writing
 
 Before touching any file:
@@ -185,10 +199,16 @@ For every file you touched, confirm it is under 400 lines. If not, extract befor
 
 ---
 
-## No test runner
+## Phase 9 — Tests
 
-There is no test runner configured in this project. Do **not** invoke the `write-tests` skill —
-it will find nothing to run.
+**Q. Write tests with the `write-tests` skill**
+After the feature is working and verified, invoke the `write-tests` skill to add coverage for the
+new behaviour. Hand it the list of files you created or modified and a one-line description of the
+feature so it can write focused, meaningful tests.
+
+If there is no test runner configured in the project, the `write-tests` skill will flag this — ask
+the user whether to set one up (e.g. Vitest, which integrates naturally with Vite) before writing
+tests.
 
 ---
 
