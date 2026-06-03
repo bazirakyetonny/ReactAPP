@@ -6,18 +6,12 @@ import {
   activateAppVersion,
   type SDTAppVersion,
 } from "./services/appVersionsApi";
+import { getBaseUrl } from "./services/apiClient";
 import { updateAppVersionTheme } from "./services/themeApi";
-import { CreateAppVersionModal } from "./components/appversion/CreateAppVersionModal";
-import { RenameAppVersionModal } from "./components/appversion/RenameAppVersionModal";
-import { MoveToTrashModal } from "./components/appversion/MoveToTrashModal";
-import { DuplicateAppVersionModal } from "./components/appversion/DuplicateAppVersionModal";
-import { UpdateTranslationsModal } from "./components/appversion/UpdateTranslationsModal";
-import { CreateAppVersionTemplateModal } from "./components/appversion/CreateAppVersionTemplateModal";
-import { PublishModal } from "./components/appversion/PublishModal";
-import { ShareLinkModal } from "./components/appversion/ShareLinkModal";
 import { NavBar } from "./components/NavBar";
 import { MainCanvas } from "./components/MainCanvas";
-import { AddCtaModal } from "./components/phone/AddCtaModal";
+import { EditorModals } from "./components/EditorModals";
+import { PreviewLayout } from "./components/PreviewLayout";
 import { SidebarRight } from "./components/SidebarRight";
 import { TemplateSidebar } from "./components/TemplateSidebar";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
@@ -44,9 +38,11 @@ import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
-import { TileImageModal } from "./components/phone/TileImageModal";
 
 function App() {
+  const isPreviewMode =
+    (dataStore.get("Mode") ?? "EditorMode") === "PreviewMode";
+
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
@@ -68,9 +64,11 @@ function App() {
   const [updateTranslationsVersion, setUpdateTranslationsVersion] =
     useState<SDTAppVersion | null>(null);
   useEffect(() => {
+    if (isPreviewMode) return;
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
@@ -395,6 +393,7 @@ function App() {
     navContents,
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
+    disabled: isPreviewMode,
   });
 
   const homePageId =
@@ -660,6 +659,104 @@ function App() {
     });
   }
 
+  // ── Modal handlers (used by EditorModals) ────────────────────────────────
+
+  async function handleVersionCreated(version: any) {
+    setShowCreateModal(false);
+    try {
+      await activateAppVersion(version.AppVersionId);
+      const fetched = (await getActiveAppVersion()) as any;
+      const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+      dataStore.set("Current_Version", full);
+      setCurrentVersion(full);
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      clearHistory();
+      setSelectedTileId(null);
+    } catch {}
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }
+
+  function handleTemplateCreated() {
+    setShowCreateTemplateModal(false);
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }
+
+  function handleVersionRenamed(newName: string) {
+    if (!renameVersion) return;
+    setAppVersions((prev) =>
+      prev.map((a) =>
+        a.AppVersionId === renameVersion.AppVersionId
+          ? { ...a, AppVersionName: newName }
+          : a,
+      ),
+    );
+    if (renameVersion.AppVersionId === currentVersion?.AppVersionId) {
+      const merged = { ...currentVersion, AppVersionName: newName };
+      dataStore.set("Current_Version", merged);
+      setCurrentVersion(merged);
+    }
+    setRenameVersion(null);
+  }
+
+  function handleVersionDeleted() {
+    setTrashVersion(null);
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }
+
+  function handleVersionDuplicated() {
+    setDuplicateVersion(null);
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }
+
+  function handleTranslationsUpdated() {
+    setUpdateTranslationsVersion(null);
+    getAppVersions().then(setAppVersions).catch(() => {});
+  }
+
+  // ── Preview tile navigation (no selection, no sidebar) ───────────────────
+
+  function handlePreviewTileSelect(id: string) {
+    const frames = [
+      { frameIndex: -1 as number, blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid, idx) => ({
+        frameIndex: idx,
+        blocks: navContentsRef.current[pid] ?? [],
+      })),
+    ];
+    let tileFrameIndex = -1;
+    let tileAction: any = null;
+    outer: for (const { frameIndex, blocks } of frames) {
+      for (const block of blocks) {
+        if (block.InfoType !== "TileGrid") continue;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Id === id) {
+              tileFrameIndex = frameIndex;
+              tileAction = tile.Action ?? null;
+              break outer;
+            }
+          }
+        }
+      }
+    }
+    if (
+      tileAction?.ObjectType === "WebLink" ||
+      tileAction?.ObjectType === "DynamicForm"
+    ) {
+      const frameKey = tileAction.ObjectId || `form-frame-${id}`;
+      const page = pagesRef.current.find(
+        (p: any) => p.PageId === tileAction.ObjectId,
+      );
+      const url = page?.PageLinkStructure?.Url ?? tileAction.ObjectUrl;
+      if (!url) return;
+      handleTileNavigate(frameKey, tileFrameIndex);
+      setNavSourceTiles((prev) => ({ ...prev, [frameKey]: id }));
+      setNavUrls((prev) => ({ ...prev, [frameKey]: url }));
+    }
+  }
+
   // ── Tile select ──────────────────────────────────────────────────────────
 
   const PAGE_NAV_TYPES = new Set([
@@ -917,6 +1014,24 @@ function App() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
+  if (isPreviewMode) {
+    return (
+      <PreviewLayout
+        infoContent={infoContent}
+        linkedFrames={linkedFrames}
+        homePageId={homePageId}
+        themeColors={selectedTheme?.ThemeColors}
+        themeIcons={selectedTheme?.ThemeIcons ?? []}
+        themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
+        onSelectTile={handlePreviewTileSelect}
+        onTileNavigate={handleTileNavigate}
+        onCollapseDescendants={handleCollapseDescendants}
+        activeNavTileIds={activeNavTileIds}
+        onActiveFrameChange={handleActiveFrameChange}
+      />
+    );
+  }
+
   return (
     <>
       <NavBar
@@ -1153,6 +1268,45 @@ function App() {
           }}
         />
       )}
+      <EditorModals
+        showPublishModal={showPublishModal}
+        currentVersion={currentVersion}
+        appVersions={appVersions}
+        analysisIssueCount={analysisIssues.length}
+        onPublished={() => setShowPublishModal(false)}
+        onClosePublish={() => setShowPublishModal(false)}
+        onFixIssues={() => { setShowPublishModal(false); setAnalysisOpen(true); }}
+        showShareModal={showShareModal}
+        shareLink={currentVersion?.AppVersionId ? `${getBaseUrl()}/wp_applicationdesign_preview?AppVersionId=${currentVersion.AppVersionId}` : ""}
+        onCloseShare={() => setShowShareModal(false)}
+        showCreateModal={showCreateModal}
+        templatesCollection={templatesCollection}
+        themeColors={selectedTheme?.ThemeColors}
+        themeIcons={selectedTheme?.ThemeIcons ?? []}
+        onCloseCreate={() => setShowCreateModal(false)}
+        onVersionCreated={handleVersionCreated}
+        showCreateTemplateModal={showCreateTemplateModal}
+        onCloseCreateTemplate={() => setShowCreateTemplateModal(false)}
+        onTemplateCreated={handleTemplateCreated}
+        renameVersion={renameVersion}
+        onCloseRename={() => setRenameVersion(null)}
+        onVersionRenamed={handleVersionRenamed}
+        trashVersion={trashVersion}
+        onCloseTrash={() => setTrashVersion(null)}
+        onVersionDeleted={handleVersionDeleted}
+        duplicateVersion={duplicateVersion}
+        onCloseDuplicate={() => setDuplicateVersion(null)}
+        onVersionDuplicated={handleVersionDuplicated}
+        updateTranslationsVersion={updateTranslationsVersion}
+        onCloseUpdateTranslations={() => setUpdateTranslationsVersion(null)}
+        onTranslationsUpdated={handleTranslationsUpdated}
+        tileImageModal={tileImageModal}
+        onTileImageConfirm={handleTileImageConfirm}
+        onCloseTileImage={() => setTileImageModal(null)}
+        pendingCta={pendingCta}
+        onConfirmCta={handleConfirmCta}
+        onCancelCta={() => setPendingCta(null)}
+      />
       <div className="app-body">
         {treeOpen && (
           <PageBubbleTree
@@ -1262,23 +1416,6 @@ function App() {
           />
         )}
       </div>
-      {tileImageModal && (
-        <TileImageModal
-          tileWidth={tileImageModal.tileWidth}
-          tileHeight={tileImageModal.tileHeight}
-          initialOriginalUrl={tileImageModal.initialOriginalUrl}
-          initialOpacity={tileImageModal.initialOpacity}
-          onConfirm={handleTileImageConfirm}
-          onCancel={() => setTileImageModal(null)}
-        />
-      )}
-      {pendingCta && (
-        <AddCtaModal
-          ctaType={pendingCta.blockType.slice(4)}
-          onConfirm={handleConfirmCta}
-          onCancel={() => setPendingCta(null)}
-        />
-      )}
     </>
   );
 }

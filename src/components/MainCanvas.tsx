@@ -181,6 +181,7 @@ export interface LinkedFrame {
 }
 
 interface MainCanvasProps {
+  isPreviewMode?: boolean;
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   infoContent: any[];
@@ -273,9 +274,12 @@ interface MainCanvasProps {
   onActiveFrameChange?: (pageId: string | null) => void;
   onDeletePage?: (pageId: string) => void;
   appVersionId?: string;
+  /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
+  statusBarExtra?: React.ReactNode;
 }
 
 export function MainCanvas({
+  isPreviewMode = false,
   themeColors,
   themeIcons,
   infoContent,
@@ -318,6 +322,7 @@ export function MainCanvas({
   onActiveFrameChange,
   onDeletePage,
   appVersionId,
+  statusBarExtra,
 }: MainCanvasProps) {
   const tileGrids = infoContent.filter(
     (block: any) => block.InfoType === "TileGrid",
@@ -481,16 +486,19 @@ export function MainCanvas({
     prevLinkedFramesRef.current = linkedFrames;
   }, [linkedFrames]);
 
+  // In preview mode: show only the current active frame
+  const showHomeFrame = !isPreviewMode || (linkedFrames?.length ?? 0) === 0;
+  const previewLinkedFrames = isPreviewMode && linkedFrames?.length
+    ? [linkedFrames[linkedFrames.length - 1]]
+    : linkedFrames;
+
   return (
     <main className="app-canvas">
       <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
-        <div
-          className={`phone-frame${activeFrameIndex === -1 ? " phone-frame--active" : " phone-frame--inactive"}`}
-          ref={mainPhoneFrameRef}
-          onMouseDown={() => setManualActiveIndex(-1)}
-        >
-          <PhoneStatusBar />
+        {showHomeFrame && (
+        <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef} onMouseDown={() => setManualActiveIndex(-1)}>
+          <PhoneStatusBar rightExtra={statusBarExtra} />
           <PhoneAppHeader />
           <DraggableScreen
             infoContent={infoContent}
@@ -588,16 +596,21 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
-            onTileMenuAction={onTileMenuAction}
+            onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
             liveTileText={liveTileText}
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
+            isPreviewMode={isPreviewMode}
           />
         </div>
+        )}
 
         {/* Linked page frames */}
-        {linkedFrames?.map((frame, i) => {
-          const pageType = frame.page?.PageType ?? "";
+        {previewLinkedFrames?.map((frame, i) => {
+          const frameArrayIndex = isPreviewMode
+            ? (linkedFrames?.length ?? 1) - 1
+            : i;
+          const pageType = frame.page?.PageType ?? '';
           const isModulePage = MODULE_PAGE_TYPES.has(pageType);
           const isWebLink = pageType === "WebLink" || !!frame.webLinkUrl;
           const frameTileGrids =
@@ -786,8 +799,8 @@ export function MainCanvas({
         />
       )}
 
-      {/* Page thumbnails */}
-      <div className="page-thumbnails">
+     {/* Page thumbnails — hidden in preview mode */}
+     {!isPreviewMode && <div className="page-thumbnails">
         <div
           className={`page-thumb-clip${activeFrameIndex === -1 ? " page-thumb-clip--active" : ""}`}
           onClick={() => {
@@ -861,7 +874,7 @@ export function MainCanvas({
             </div>
           </div>
         ))}
-      </div>
+      </div>}
     </main>
   );
 }

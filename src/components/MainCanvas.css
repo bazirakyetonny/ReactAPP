@@ -134,11 +134,36 @@
   letter-spacing: 0.02em;
 }
 
+.phone-status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .phone-status-icons {
   display: flex;
   align-items: center;
   gap: 10px;
   color: #575b5d;
+}
+
+.preview-status-lang-select {
+  font-size: 9px;
+  font-weight: 700;
+  color: #111;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+/* Gap between content blocks in preview mode (replaces phone-add-row spacing) */
+.phone-screen--preview > * + * {
+  margin-top: 8px;
 }
 
 .phone-app-header {

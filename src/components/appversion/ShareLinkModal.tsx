@@ -41,15 +41,8 @@ export function ShareLinkModal({ shareLink, onClose }: ShareLinkModalProps) {
             <a
               className="slm-link-anchor"
               href={shareLink}
-              onClick={(e) => {
-                e.preventDefault();
-                const url = /^https?:\/\//i.test(shareLink)
-                  ? shareLink
-                  : /^localhost|^127\.0\.0\.1/i.test(shareLink)
-                  ? `http://${shareLink}`
-                  : `https://${shareLink}`;
-                window.open(url, "_blank", "noopener,noreferrer");
-              }}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               {shareLink}
             </a>
