@@ -1,5 +1,7 @@
 import { DateTime } from "i18n-js";
 
+export type AppMode = "EditorMode" | "PreviewMode";
+
 export interface ActionPage {
   PageId: string;
   PageName: string;
