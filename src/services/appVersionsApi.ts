@@ -1,6 +1,7 @@
 import { apiGet, apiPost } from "./apiClient";
 
 export interface SDTAppVersion {
+  AppVersionMultiLanguages: string;
   AppVersionId: string;
   AppVersionName: string;
   AppVersionDescription: string;
