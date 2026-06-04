@@ -600,11 +600,11 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
-            onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
+            onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
             liveTileText={liveTileText}
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
-            isPreviewMode={interactionsLocked}
+            isPreviewMode={isPreviewMode}
           />
         </div>
         )}
