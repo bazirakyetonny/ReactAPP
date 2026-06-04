@@ -207,7 +207,7 @@ export function useContentHandlers({
   }
 
   function handleEditTile(tileId: string, patch: Record<string, any>) {
-    console.log("handleEditTile", tileId, patch);
+    // console.log("handleEditTile", tileId, patch);
     const keys = Object.keys(patch);
     const isHeightOnly = keys.length === 1 && "Height" in patch;
     const isOpacityOnly = keys.length === 1 && "Opacity" in patch;
