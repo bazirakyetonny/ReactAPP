@@ -1,0 +1,140 @@
+/* ── Overlay ─────────────────────────────────────────────────── */
+.bm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10003;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Modal shell ─────────────────────────────────────────────── */
+.bm-modal {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  width: 460px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.bm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bm-header-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.bm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+.bm-body {
+  padding: 20px;
+}
+
+.bm-message {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.bm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bm-footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+.bm-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bm-btn-ghost:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.bm-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bm-btn-secondary:hover {
+  background: #f9fafb;
+}
+
+.bm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #ffffff;
+  background: #1a3a6e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bm-btn-primary:hover:not(:disabled) {
+  background: #142d56;
+}
+
+.bm-btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

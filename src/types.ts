@@ -63,7 +63,12 @@ export interface CtaAttributes {
   CtaButtonIcon?: string;
   CtaSupplierIsConnected?: boolean;
   CtaConnectedSupplierId?: string;
-  Action?: {};
+  Action?: {
+    ObjectType?: string;
+    ObjectId?: string;
+    ObjectUrl?: string;
+    FormId?: number;
+  };
 }
 
 export interface DebugResults {
@@ -299,7 +304,7 @@ export interface Page {
   PageName: string;
   IsPredefined: boolean;
   PageStructure: string; // JSON string representation
-  PageType: "Information" | "Calendar" | "MyActivity" | "Map" | "BulletinBoard";
+  PageType: "Information" | "Calendar" | "MyActivity" | "Map" | "BulletinBoard" | "WebLink" | "DynamicForm";
   PageThumbnailUrl: string;
   PageInfoStructure: PageInfoStructure;
 }

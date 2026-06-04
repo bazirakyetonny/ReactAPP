@@ -222,6 +222,7 @@ export function SidebarRight({
   selectedCta,
   onEditCta,
   onBeforeCtaEdit,
+  onCtaWeblinkSave,
   onLiveCtaLabel,
   onEndLiveCtaLabel,
   moodId,
@@ -241,6 +242,7 @@ export function SidebarRight({
   selectedCta?: any;
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
+  onCtaWeblinkSave?: (ctaId: string, url: string, label: string) => void;
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
   moodId?: string;
@@ -288,6 +290,9 @@ export function SidebarRight({
           palette={ctaColors}
           onEditCta={onEditCta}
           onBeforeCtaEdit={onBeforeCtaEdit}
+          onWeblinkSave={(url, label) =>
+            onCtaWeblinkSave?.(selectedCta?.InfoId, url, label)
+          }
           onLiveCtaLabel={onLiveCtaLabel}
           onEndLiveCtaLabel={onEndLiveCtaLabel}
         />

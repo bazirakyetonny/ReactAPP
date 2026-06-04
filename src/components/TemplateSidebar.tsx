@@ -3,6 +3,7 @@ import "./TemplateSidebar.css";
 import { MultiSelect } from "./widgets/MultiSelect";
 import type { MultiSelectOption } from "./widgets/MultiSelect";
 import type { TrnPageTemplate } from "../types";
+import { regenerateContentIds } from "../utils/contentTransforms";
 
 const CATEGORY_OPTIONS: MultiSelectOption[] = [
   { value: "Basic", label: "Basic" },
@@ -30,7 +31,7 @@ export function TemplateSidebar({
   function handleSelect(template: TrnPageTemplate) {
     try {
       const parsed = JSON.parse(template.TemplateContent);
-      onApply(parsed.InfoContent ?? []);
+      onApply(regenerateContentIds(parsed.InfoContent ?? []));
     } catch {
       // malformed TemplateContent — skip silently
     }
