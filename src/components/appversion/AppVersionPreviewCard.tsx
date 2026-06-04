@@ -61,50 +61,56 @@ export function AppVersionPreviewCard({
       className={`cav-card${isSelected ? " cav-card--selected" : ""}`}
       onClick={onClick}
     >
-      <div className="avc-clip" ref={clipRef}>
-        <div
-          className="phone-frame avc-frame"
-          ref={frameRef}
-          style={{ transform: `scale(${scale.toFixed(6)})` }}
-        >
-          <PhoneStatusBar />
-          <PhoneAppHeader />
-          <div className="phone-screen">
-            {infoContent.map((block: any) => {
-              if (block.InfoType === "TileGrid")
-                return (
-                  <TileGrids
-                    key={block.InfoId}
-                    tileGrids={[block]}
-                    themeColors={themeColors}
-                    themeIcons={themeIcons ?? []}
-                    interactive={false}
-                  />
-                );
-              if (block.InfoType === "Description")
-                return (
-                  <DescriptionBlock
-                    key={block.InfoId}
-                    block={block}
-                    interactive={false}
-                  />
-                );
-              if (block.InfoType === "Images")
-                return (
-                  <ImageBlock
-                    key={block.InfoId}
-                    block={block}
-                    interactive={false}
-                  />
-                );
-              return null;
-            })}
+      {version === null ? (
+        <div className="avc-clip avc-clip--blank" ref={clipRef} />
+      ) : (
+        <div className="avc-clip" ref={clipRef}>
+          <div
+            className="phone-frame avc-frame"
+            ref={frameRef}
+            style={{ transform: `scale(${scale.toFixed(6)})` }}
+          >
+            <PhoneStatusBar />
+            <PhoneAppHeader />
+            <div className="phone-screen">
+              {infoContent.map((block: any) => {
+                if (block.InfoType === "TileGrid")
+                  return (
+                    <TileGrids
+                      key={block.InfoId}
+                      tileGrids={[block]}
+                      themeColors={themeColors}
+                      themeIcons={themeIcons ?? []}
+                      interactive={false}
+                    />
+                  );
+                if (block.InfoType === "Description")
+                  return (
+                    <DescriptionBlock
+                      key={block.InfoId}
+                      block={block}
+                      interactive={false}
+                    />
+                  );
+                if (block.InfoType === "Images")
+                  return (
+                    <ImageBlock
+                      key={block.InfoId}
+                      block={block}
+                      interactive={false}
+                    />
+                  );
+                return null;
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="cav-card-name">{name}</div>
-      {description && <div className="cav-card-desc">{description}</div>}
+      <div className="cav-card-footer">
+        <div className="cav-card-name">{name}</div>
+        {description && <div className="cav-card-desc">{description}</div>}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { ThemeIcon } from "../../types";
 import "./TileIconSelector.css";
 
@@ -90,6 +90,21 @@ export function TileIconSelector({
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (isSearching) return;
+    const iconId = selectedTile?.IconId;
+    const iconName = selectedTile?.Icon as string | undefined;
+    const match = themeIcons.find(
+      (i) =>
+        (iconId && i.IconId === iconId) ||
+        (iconName &&
+          (i.IconCodeName?.toLowerCase() === iconName.toLowerCase() ||
+            i.IconName?.toLowerCase() === iconName.toLowerCase())),
+    );
+    if (match) setCategory(match.IconCategory);
+  }, [selectedTile?.IconId, selectedTile?.Icon]);
 
   const categories = useMemo(
     () => Array.from(new Set(themeIcons.map((i) => i.IconCategory))).sort(),
@@ -109,6 +124,10 @@ export function TileIconSelector({
       (i) => !activeCategory || i.IconCategory === activeCategory,
     );
   }, [themeIcons, activeCategory, search, isSearching]);
+
+  useEffect(() => {
+    activeButtonRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedTile?.IconId, selectedTile?.Icon, visibleIcons]);
 
   function openSearch() {
     setIsSearching(true);
@@ -190,13 +209,14 @@ export function TileIconSelector({
           return (
             <button
               key={icon.IconId}
+              ref={isActive ? activeButtonRef : null}
               className={`sr-icon-cell${isActive ? " sr-icon-cell--active" : ""}`}
               type="button"
               title={icon.IconName}
               onClick={() =>
                 selectedTile &&
                 onEditTile?.(selectedTile.Id, {
-                  Icon: icon.IconName,
+                  Icon: icon.IconCodeName,
                   IconSVG: icon.IconSVG,
                   IconId: icon.IconId,
                 })

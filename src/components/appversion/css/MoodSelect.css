@@ -1,0 +1,115 @@
+.mds-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* ── Trigger button ──────────────────────────────────────────── */
+.mds-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  transition: border-color 0.15s;
+  white-space: nowrap;
+}
+
+.mds-trigger:hover {
+  border-color: #9ca3af;
+}
+
+
+.mds-trigger-swatches {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Dropdown panel ──────────────────────────────────────────── */
+.mds-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 8px;
+}
+
+/* ── 2-column mood grid ──────────────────────────────────────── */
+.mds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.mds-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.mds-item:hover {
+  background: #f3f4f6;
+}
+
+.mds-item--active {
+  background: #f0f4fb;
+}
+
+.mds-item input[type="radio"] {
+  display: none;
+}
+
+.mds-item-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Radio dot rendered via CSS */
+.mds-item-name::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid #9ca3af;
+  flex-shrink: 0;
+  background: #ffffff;
+}
+
+.mds-item--active .mds-item-name::before {
+  border-color: #1a3a6e;
+  background: radial-gradient(circle, #1a3a6e 45%, #ffffff 45%);
+}
+
+.mds-item-swatches {
+  display: flex;
+  gap: 3px;
+  padding-left: 19px;
+}
+
+/* ── Shared swatch ───────────────────────────────────────────── */
+.mds-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}

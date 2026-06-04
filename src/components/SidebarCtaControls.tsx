@@ -98,11 +98,12 @@ const CTA_BUTTON_TYPES = [
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCtaEdit, onLiveCtaLabel, onEndLiveCtaLabel }: {
+export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCtaEdit, onWeblinkSave, onLiveCtaLabel, onEndLiveCtaLabel }: {
   selectedCta: any;
   palette: ThemeCtaColor[];
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
+  onWeblinkSave?: (url: string, label: string) => void;
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
 }) {
@@ -208,7 +209,15 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
             value={ctaAction}
             onFocus={() => onBeforeCtaEdit?.()}
             onChange={e => setCtaAction(e.target.value)}
-            onBlur={() => { if (ctaAction !== (attrs.CtaAction ?? '')) patch({ CtaAction: ctaAction }); }}
+            onBlur={() => {
+              if (ctaAction !== (attrs.CtaAction ?? '')) {
+                if (attrs.CtaType === 'Weblink') {
+                  onWeblinkSave?.(ctaAction, ctaLabel);
+                } else {
+                  patch({ CtaAction: ctaAction });
+                }
+              }
+            }}
           />
         )}
       </div>
