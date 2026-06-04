@@ -1,0 +1,49 @@
+.mpv-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #eef1f4;
+  width: 400px;
+  justify-content: center;
+  align-items: center;
+}
+
+.mpv-clip {
+  width: 200px;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.mpv-frame {
+  width: 280px;
+  background: #ffffff;
+  border-radius: 20px;
+  /* border: 5px solid #373737; */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transform-origin: top left;
+  pointer-events: none;
+  user-select: none;
+  height: 720px;
+}
+
+.mpv-screen {
+  flex: 1;
+  background: #f9fafb;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mpv-screen::-webkit-scrollbar {
+  display: none;
+}

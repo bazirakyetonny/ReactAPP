@@ -320,12 +320,20 @@ export function TileGrids({
                         }
                       }
 
+                      const allColsSingleTile =
+                        cols.length > 1 &&
+                        cols.every((c: any) => (c.Tiles ?? []).length === 1);
+                      const colHasMultipleTiles =
+                        (col.Tiles ?? []).length > 1;
+
                       const height = previewResetHeight
                         ? `${TILE_H}px`
                         : col.ColId === previewLongColId &&
                             previewLongHeight !== null
                           ? `${previewLongHeight}px`
-                          : (derivedLongTileHeight ?? `${tile.Height || 80}px`);
+                          : (allColsSingleTile && !isDraggingThis) || colHasMultipleTiles
+                            ? `${TILE_H}px`
+                            : (derivedLongTileHeight ?? `${tile.Height || 80}px`);
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost =
                         isFreeResizeOppCol &&

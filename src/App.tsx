@@ -1484,6 +1484,7 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
             moodId={currentVersion?.MoodId}
+            selectedThemeId={selectedThemeId}
             selectedTile={selectedTile}
             onEditTile={handleEditTile}
             onOpenTileImage={handleOpenTileImageFromSidebar}
