@@ -9,34 +9,68 @@ interface MoodSelectProps {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
+  baseThemeColors?: Record<string, string>;
 }
 
-function getSwatches(mood: Mood, themes: Theme[]): string[] {
-  const moodTheme = themes.find((t) => t.ThemeId === mood.ThemeId);
+function getSwatches(
+  mood: Mood,
+  themes: Theme[],
+  baseThemeColors?: Record<string, string>,
+): string[] {
   let colorNames: string[] = [];
-  try { colorNames = JSON.parse(mood.MoodColorNames ?? "[]"); } catch { /* */ }
-  return colorNames.slice(0, 4).map(
-    (name) => (moodTheme?.ThemeColors as unknown as Record<string, string> | undefined)?.[name] ?? "#ccc"
-  );
+  try {
+    colorNames = JSON.parse(mood.MoodColorNames ?? "[]");
+  } catch {
+    /* */
+  }
+  const source =
+    baseThemeColors ??
+    (themes.find((t) => t.ThemeId === mood.ThemeId)?.ThemeColors as unknown as
+      | Record<string, string>
+      | undefined);
+  return colorNames.slice(0, 4).map((name) => source?.[name] ?? "#ccc");
 }
 
 function ChevronIcon({ up }: { up: boolean }) {
   return (
-    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"
-      style={{ transform: up ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5"
-        strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="10"
+      height="6"
+      viewBox="0 0 10 6"
+      fill="none"
+      aria-hidden="true"
+      style={{
+        transform: up ? "rotate(180deg)" : "none",
+        transition: "transform 0.15s",
+      }}
+    >
+      <path
+        d="M1 1L5 5L9 1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-export function MoodSelect({ selectedMoodId, onChange, open, onToggle, onClose }: MoodSelectProps) {
+export function MoodSelect({
+  selectedMoodId,
+  onChange,
+  open,
+  onToggle,
+  onClose,
+  baseThemeColors,
+}: MoodSelectProps) {
   const moods: Mood[] = dataStore.get("Moods") ?? [];
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const selectedMood = moods.find((m) => m.MoodId === selectedMoodId) ?? null;
-  const triggerSwatches = selectedMood ? getSwatches(selectedMood, themes) : [];
+  const triggerSwatches = selectedMood
+    ? getSwatches(selectedMood, themes, baseThemeColors)
+    : [];
 
   useEffect(() => {
     if (!open) return;
@@ -53,7 +87,11 @@ export function MoodSelect({ selectedMoodId, onChange, open, onToggle, onClose }
       <button className="mds-trigger" type="button" onClick={onToggle}>
         <span className="mds-trigger-swatches">
           {triggerSwatches.map((color, i) => (
-            <span key={i} className="mds-swatch" style={{ background: color }} />
+            <span
+              key={i}
+              className="mds-swatch"
+              style={{ background: color }}
+            />
           ))}
         </span>
         <ChevronIcon up={open} />
@@ -64,7 +102,7 @@ export function MoodSelect({ selectedMoodId, onChange, open, onToggle, onClose }
         <div className="mds-dropdown">
           <div className="mds-grid">
             {moods.map((mood) => {
-              const swatches = getSwatches(mood, themes);
+              const swatches = getSwatches(mood, themes, baseThemeColors);
               const isActive = mood.MoodId === selectedMoodId;
               return (
                 <label
@@ -76,12 +114,19 @@ export function MoodSelect({ selectedMoodId, onChange, open, onToggle, onClose }
                     name="mds-mood"
                     value={mood.MoodId}
                     checked={isActive}
-                    onChange={() => { onChange(mood.MoodId); onClose(); }}
+                    onChange={() => {
+                      onChange(mood.MoodId);
+                      onClose();
+                    }}
                   />
                   <span className="mds-item-name">{mood.MoodName}</span>
                   <span className="mds-item-swatches">
                     {swatches.map((color, i) => (
-                      <span key={i} className="mds-swatch" style={{ background: color }} />
+                      <span
+                        key={i}
+                        className="mds-swatch"
+                        style={{ background: color }}
+                      />
                     ))}
                   </span>
                 </label>
