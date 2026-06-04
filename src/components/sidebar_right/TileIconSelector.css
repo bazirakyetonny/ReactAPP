@@ -93,6 +93,25 @@
   max-height: 400px;
   overflow-y: auto;
   align-content: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.sr-icon-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sr-icon-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sr-icon-grid::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.sr-icon-grid::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .sr-icon-grid--single {

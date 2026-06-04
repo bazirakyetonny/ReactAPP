@@ -402,9 +402,9 @@ function App() {
     )?.PageId ?? "home";
 
   const isActivePageBlank =
-    activePageId === homePageId
-      ? infoContent.length === 0
-      : (navContents[activePageId] ?? []).length === 0;
+    activePageId !== homePageId &&
+    activePage?.PageType === "Information" &&
+    (navContents[activePageId] ?? []).length === 0;
 
   function handleApplyTemplate(content: any[]) {
     pushSnapshot();
