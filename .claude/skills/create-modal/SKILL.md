@@ -1,11 +1,9 @@
 ---
-name: create-modal
-description: >
-  How to create a popup modal dialog in this ReactAPP project. Use this skill whenever the user says
-  "create a modal", "add a popup", "make a dialog", "add a confirmation dialog", "build a form modal",
-  or asks to build any overlay / popup UI — even if they don't use the word "modal". Also trigger
-  when the user asks to add a new app-version action (rename, duplicate, delete, etc.) that needs a
-  focused dialog, or when a feature needs to collect input from the user via an overlay.
+noteId: "a0c73af05f5b11f18816c530166be5ee"
+tags: []
+name: "create-modal"
+description: "How to create a popup modal dialog in this ReactAPP project. Use this skill whenever the user says \"create a modal\", \"add a popup\", \"make a dialog\", \"add a confirmation dialog\", \"build a form modal\", or asks to build any overlay / popup UI — even if they don't use the word \"modal\". Also trigger when the user asks to add a new app-version action (rename, duplicate, delete, etc.) that needs a focused dialog, or when a feature needs to collect input from the user via an overlay.\n"
+
 ---
 
 # Creating a Popup Modal

@@ -38,10 +38,14 @@ import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
+import { BusyModal } from "./components/BusyModal";
 
 function App() {
+  const isBusy: boolean = dataStore.get("isBusy") ?? false;
+  const [reviewOnly, setReviewOnly] = useState(false);
+
   const isPreviewMode =
-    (dataStore.get("Mode") ?? "EditorMode") === "PreviewMode";
+    reviewOnly || (dataStore.get("Mode") ?? "EditorMode") === "PreviewMode";
 
   const themes: Theme[] = dataStore.get("themes") ?? [];
   const templatesCollection: CategoryTemplates[] =
@@ -1416,6 +1420,9 @@ function App() {
           />
         )}
       </div>
+      {isBusy && !reviewOnly && (
+        <BusyModal onReviewOnly={() => setReviewOnly(true)} />
+      )}
     </>
   );
 }

@@ -66,8 +66,6 @@ export function ColorPalette({
     };
   });
 
-  console.log("moodColors", moods);
-  console.log("themeColors", themes);
   const activeMoodName = activeMood?.MoodName;
   const [showMoods, setShowMoods] = useState(!!activeMoodName);
 

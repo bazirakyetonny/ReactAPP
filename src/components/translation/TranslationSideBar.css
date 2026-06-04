@@ -85,6 +85,13 @@
   cursor: not-allowed;
 }
 
+/* ── Tile appearance in translation sidebar ─────────────────────────────────── */
+
+.ts-phone-frame .phone-tile {
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
 /* ── Click-to-edit ──────────────────────────────────────────────────────────── */
 
 /* Editable spans: dashed underline hint on hover */

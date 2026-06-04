@@ -81,7 +81,7 @@ interface CtaBlockProps {
 
 export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, liveLabel, isAnalysisHighlight = false, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
-  const label = liveLabel !== undefined ? liveLabel : (attrs.CtaLabel || 'Button');
+  const label = liveLabel !== undefined ? liveLabel : (attrs.CtaLabel || (onLabelClick ? '' : 'Button'));
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
   const color = attrs.CtaColor || '#ffffff';
   const type = attrs.CtaButtonType || 'Image';
