@@ -100,6 +100,18 @@
 .ap-current-detail {
   color: #6b7280;
 }
+.ap-current-lang {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
 
 /* Rerun + close icon buttons */
 .ap-icon-btn {

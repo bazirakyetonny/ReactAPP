@@ -7,6 +7,7 @@ import {
   type AnalysisIssue,
 } from '../utils/analysisUtils';
 import { checkLink } from '../utils/linkChecker';
+import { getTranslatedPage } from '../services/translationApi';
 
 interface UseAnalysisParams {
   infoContent: any[];
@@ -14,13 +15,18 @@ interface UseAnalysisParams {
   pages: any[];
   versionId?: string;
   disabled?: boolean;
+  /** Non-base translation languages to scan for long-text issues */
+  translationLanguages?: string[];
+  /** Increment to trigger a re-check of translated page text (e.g. after sidebar save) */
+  translationRevision?: number;
 }
 
-export function useAnalysis({ infoContent, navContents, pages, versionId, disabled }: UseAnalysisParams) {
+export function useAnalysis({ infoContent, navContents, pages, versionId, disabled, translationLanguages, translationRevision }: UseAnalysisParams) {
   // Sync issues (text length, etc.) update quickly; URL issues update after network checks.
   // Separating them lets the count reflect content changes immediately without waiting for HTTP.
   const [syncIssues, setSyncIssues] = useState<AnalysisIssue[]>([]);
   const [urlIssues, setUrlIssues] = useState<AnalysisIssue[]>([]);
+  const [translatedTextIssues, setTranslatedTextIssues] = useState<AnalysisIssue[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const fastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,9 +41,11 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
   const infoContentRef = useRef(infoContent);
   const navContentsRef = useRef(navContents);
   const pagesRef = useRef(pages);
+  const translationLanguagesRef = useRef(translationLanguages ?? []);
   infoContentRef.current = infoContent;
   navContentsRef.current = navContents;
   pagesRef.current = pages;
+  translationLanguagesRef.current = translationLanguages ?? [];
 
   const PAGE_LINK_TYPES = new Set(['Information', 'BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
 
@@ -147,6 +155,33 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
     setUrlIssues(issues);
   }
 
+  async function runTranslatedTextChecks() {
+    const langs = translationLanguagesRef.current;
+    if (langs.length === 0) return;
+    const { homeId, homeName } = homeInfo();
+    const pageEntries = [
+      { pageId: homeId, pageName: homeName },
+      ...reachablePages().map(p => ({ pageId: p.pageId, pageName: p.pageName })),
+    ];
+    const results = await Promise.all(
+      langs.flatMap(lang =>
+        pageEntries.map(async ({ pageId, pageName }) => {
+          try {
+            const result = await getTranslatedPage(pageId, lang);
+            const blocks: any[] = (result as any)?.SDT_TranslatedPage?.PageStructure?.InfoContent ?? [];
+            return [
+              ...checkTileText(blocks, pageId, pageName, lang),
+              ...checkCtaText(blocks, pageId, pageName, lang),
+            ];
+          } catch {
+            return [];
+          }
+        })
+      )
+    );
+    if (!cancelRef.current) setTranslatedTextIssues(results.flat());
+  }
+
   // Slow path: async URL checks. Only fetches URLs not already in urlCacheRef.
   // Pass force=true (rerun) to clear the cache and re-check everything.
   async function runUrlChecks(force = false) {
@@ -175,18 +210,20 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
 
       if (cancelRef.current) return;
       rebuildUrlIssues(candidates);
+      await runTranslatedTextChecks();
       firstUrlDoneRef.current = true;
     } finally {
       if (!cancelRef.current) setIsAnalyzing(false);
     }
   }
 
-  // On version switch, clear stale URL issues and cache so the new version is fully re-scanned.
+  // On version switch, clear stale issues and cache so the new version is fully re-scanned.
   useEffect(() => {
     if (disabled) return;
     urlCacheRef.current.clear();
     firstUrlDoneRef.current = false;
     setUrlIssues([]);
+    setTranslatedTextIssues([]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versionId, disabled]);
 
@@ -252,10 +289,29 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlFingerprint, versionId, disabled]);
 
+  // Re-check translated text whenever a sidebar save completes (translationRevision bumped).
+  // Skips on the initial value (0 / undefined) so it doesn't double-run on mount.
+  const translRevTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (disabled || !translationRevision) return;
+    if (translRevTimerRef.current) clearTimeout(translRevTimerRef.current);
+    translRevTimerRef.current = setTimeout(() => {
+      cancelRef.current = false;
+      runTranslatedTextChecks();
+    }, 300);
+    return () => { if (translRevTimerRef.current) clearTimeout(translRevTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [translationRevision, disabled]);
+
   function rerun() {
     setSyncIssues(runSyncChecks());
+    setTranslatedTextIssues([]);
     runUrlChecks(true);
   }
 
-  return { issues: firstUrlDoneRef.current ? [...urlIssues, ...syncIssues] : [], isAnalyzing, rerun };
+  return {
+    issues: firstUrlDoneRef.current ? [...urlIssues, ...syncIssues, ...translatedTextIssues] : [],
+    isAnalyzing,
+    rerun,
+  };
 }

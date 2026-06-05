@@ -24,6 +24,11 @@ export function TranslationSideBar({
   themeColors,
   themeIcons,
   ctaColors,
+  highlightBlockId,
+  highlightTileId,
+  highlightLanguage,
+  highlightMessage,
+  onSaved,
 }: {
   pageName?: string;
   appVersionId: string;
@@ -33,6 +38,11 @@ export function TranslationSideBar({
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   ctaColors?: ThemeCtaColor[];
+  highlightBlockId?: string;
+  highlightTileId?: string;
+  highlightLanguage?: string;
+  highlightMessage?: string;
+  onSaved?: () => void;
 }) {
   const displayLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
@@ -90,6 +100,14 @@ export function TranslationSideBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When an analysis issue points to a specific language, switch to it automatically
+  useEffect(() => {
+    if (highlightLanguage && displayLanguages.includes(highlightLanguage)) {
+      setSelectedLang(highlightLanguage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightLanguage]);
+
   // On language change or active page change (skip first render)
   useEffect(() => {
     if (isFirstRender.current) {
@@ -114,7 +132,9 @@ export function TranslationSideBar({
   // ── Save helpers ─────────────────────────────────────────────────────────────
 
   function saveNow(next: any) {
-    updateTranslatedPage(activePageId, selectedLang, next);
+    updateTranslatedPage(activePageId, selectedLang, next)
+      .then(() => onSaved?.())
+      .catch(() => {});
   }
 
   function handlePageNameSave(value: string) {
@@ -178,12 +198,17 @@ export function TranslationSideBar({
                   }
                   const tileHeight =
                     derivedHeight ?? `${tile.Height || TILE_H}px`;
+                  const isTileHighlighted =
+                    highlightBlockId === block.InfoId && highlightTileId === tile.Id;
                   return (
                     <div
                       key={tile.Id}
-                      className="phone-tile-wrap"
+                      className={`phone-tile-wrap${isTileHighlighted ? ' phone-tile-wrap--analysis' : ''}`}
                       style={{ height: tileHeight }}
                     >
+                      {isTileHighlighted && highlightMessage && (
+                        <div className="phone-tile-analysis-label">{highlightMessage}</div>
+                      )}
                       <div
                         className="phone-tile"
                         style={{
@@ -289,32 +314,42 @@ export function TranslationSideBar({
           <div key={row[0].block.InfoId} className="phone-round-cta-row">
             {row.map(({ block: rb, bi: rbi }) => {
               const ctaKey = `cta-${rbi}`;
+              const isCtaHighlighted = highlightBlockId === rb.InfoId && !highlightTileId;
               return (
-                <CtaBlock
-                  key={rb.InfoId}
-                  block={rb}
-                  ctaColors={ctaColors}
-                  interactive={false}
-                  editableLabel={editingKey === ctaKey}
-                  onLabelClick={() => setEditingKey(ctaKey)}
-                  onLabelBlur={(value) => handleCtaBlur(rbi, value)}
-                />
+                <div key={rb.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+                  {isCtaHighlighted && highlightMessage && (
+                    <div className="block-analysis-label">{highlightMessage}</div>
+                  )}
+                  <CtaBlock
+                    block={rb}
+                    ctaColors={ctaColors}
+                    interactive={false}
+                    editableLabel={editingKey === ctaKey}
+                    onLabelClick={() => setEditingKey(ctaKey)}
+                    onLabelBlur={(value) => handleCtaBlur(rbi, value)}
+                  />
+                </div>
               );
             })}
           </div>,
         );
       } else if (block.InfoType === "Cta") {
         const ctaKey = `cta-${bi}`;
+        const isCtaHighlighted = highlightBlockId === block.InfoId && !highlightTileId;
         out.push(
-          <CtaBlock
-            key={block.InfoId}
-            block={block}
-            ctaColors={ctaColors}
-            interactive={false}
-            editableLabel={editingKey === ctaKey}
-            onLabelClick={() => setEditingKey(ctaKey)}
-            onLabelBlur={(value) => handleCtaBlur(bi, value)}
-          />,
+          <div key={block.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+            {isCtaHighlighted && highlightMessage && (
+              <div className="block-analysis-label">{highlightMessage}</div>
+            )}
+            <CtaBlock
+              block={block}
+              ctaColors={ctaColors}
+              interactive={false}
+              editableLabel={editingKey === ctaKey}
+              onLabelClick={() => setEditingKey(ctaKey)}
+              onLabelBlur={(value) => handleCtaBlur(bi, value)}
+            />
+          </div>,
         );
         i++;
       } else {

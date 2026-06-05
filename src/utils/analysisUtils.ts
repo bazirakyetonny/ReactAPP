@@ -12,6 +12,8 @@ export interface AnalysisIssue {
   location: string;
   detail: string;
   value: string;
+  /** Language code when the issue is in a translated page; undefined = main language */
+  language?: string;
 }
 
 /** Passed to the canvas to draw a red highlight on the current analysis issue */
@@ -138,6 +140,7 @@ export function checkCtaText(
   blocks: any[],
   pageId: string,
   pageName: string,
+  language?: string,
 ): AnalysisIssue[] {
   const issues: AnalysisIssue[] = [];
   let i = 0;
@@ -160,7 +163,7 @@ export function checkCtaText(
         if (label.length > maxChars) {
           const preview = label.length > 20 ? `${label.slice(0, 20)}…` : label;
           issues.push({
-            id: `cta-text-${b.InfoId}`,
+            id: `cta-text-${b.InfoId}${language ? `-${language}` : ''}`,
             category: 2,
             subcategory: 'long-text',
             pageId,
@@ -169,6 +172,7 @@ export function checkCtaText(
             location: `Round CTA '${preview}'`,
             detail: `Label (${label.length} chars) exceeds ${maxChars}-char limit for a ${rowSize}-button row`,
             value: label,
+            language,
           });
         }
       }
@@ -178,7 +182,7 @@ export function checkCtaText(
       if (label.length > maxChars) {
         const preview = label.length > 20 ? `${label.slice(0, 20)}…` : label;
         issues.push({
-          id: `cta-text-${block.InfoId}`,
+          id: `cta-text-${block.InfoId}${language ? `-${language}` : ''}`,
           category: 2,
           subcategory: 'long-text',
           pageId,
@@ -187,6 +191,7 @@ export function checkCtaText(
           location: `${type} CTA '${preview}'`,
           detail: `Label (${label.length} chars) exceeds ${maxChars}-char limit for ${type} button`,
           value: label,
+          language,
         });
       }
       i++;
@@ -199,6 +204,7 @@ export function checkTileText(
   blocks: any[],
   pageId: string,
   pageName: string,
+  language?: string,
 ): AnalysisIssue[] {
   const issues: AnalysisIssue[] = [];
   for (const block of blocks) {
@@ -214,7 +220,7 @@ export function checkTileText(
         if (text.length > maxChars) {
           const preview = text.length > 20 ? `${text.slice(0, 20)}…` : text;
           issues.push({
-            id: `text-${tile.Id}`,
+            id: `text-${tile.Id}${language ? `-${language}` : ''}`,
             category: 2,
             subcategory: 'long-text',
             pageId,
@@ -224,6 +230,7 @@ export function checkTileText(
             location: `Tile '${preview}'`,
             detail: `Text (${text.length} chars) exceeds ${maxChars}-char limit for ${colCount}-column, ${tileCount}-tile column`,
             value: text,
+            language,
           });
         }
       }
