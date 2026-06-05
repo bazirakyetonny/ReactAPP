@@ -86,6 +86,7 @@ interface CtaBlockProps {
   liveLabel?: string;
   /** Highlight this block with a red analysis outline */
   isAnalysisHighlight?: boolean;
+  isMultiSelected?: boolean;
   /** Translation sidebar: show label as an editable input */
   editableLabel?: boolean;
   /** Translation sidebar: fire when label span is clicked (to enter edit mode) */
@@ -94,7 +95,7 @@ interface CtaBlockProps {
   onLabelBlur?: (value: string) => void;
 }
 
-export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, liveLabel, isAnalysisHighlight = false, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
+export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, liveLabel, isAnalysisHighlight = false, isMultiSelected = false, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
   const label = liveLabel !== undefined ? liveLabel : (attrs.CtaLabel || (onLabelClick ? '' : 'Button'));
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
@@ -122,11 +123,13 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
 
   return (
     <div
+      data-cta-id={block.InfoId}
       className={[
         'phone-cta-block',
         interactive ? 'phone-cta-block--interactive' : '',
         isDragging ? 'phone-cta-block--dragging' : '',
         isSelected ? 'phone-cta-block--selected' : '',
+        isMultiSelected ? 'phone-cta-block--multi-selected' : '',
         isAnalysisHighlight ? 'phone-cta-block--analysis' : '',
       ].filter(Boolean).join(' ')}
       onMouseDown={interactive && onDragStart

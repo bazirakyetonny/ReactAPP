@@ -70,6 +70,7 @@ interface TileGridsProps {
   liveTileText?: { id: string; text: string } | null;
   analysisHighlightTileId?: string;
   analysisHighlightMessage?: string;
+  multiSelectedTileIds?: Set<string>;
 }
 
 function getColsForRender(
@@ -166,6 +167,7 @@ export function TileGrids({
   liveTileText,
   analysisHighlightTileId,
   analysisHighlightMessage,
+  multiSelectedTileIds,
 }: TileGridsProps) {
   return (
     <>
@@ -399,6 +401,9 @@ export function TileGrids({
                           className={[
                             "phone-tile-wrap",
                             isSelected ? "selected" : "",
+                            multiSelectedTileIds?.has(tile.Id)
+                              ? "phone-tile-wrap--multi-selected"
+                              : "",
                             isAnalysisHighlight
                               ? "phone-tile-wrap--analysis"
                               : "",
