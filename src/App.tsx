@@ -42,6 +42,7 @@ import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
 import { useMultiSelect } from "./hooks/useMultiSelect";
 import { BusyModal } from "./components/BusyModal";
+import { usePageGraph } from "./components/tree/usePageGraph";
 
 function App() {
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
@@ -328,6 +329,7 @@ function App() {
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
   const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
+  const pageGraph = usePageGraph(allPages, infoContent, navContents);
   let activePageId = navStack[navStack.length - 1];
   let activePage = allPages.find((p) => p.PageId === activePageId);
   if (!activePage) {
@@ -387,13 +389,31 @@ function App() {
     : null;
 
   const activeNavTileIds = useMemo(() => {
-    const pageSet = new Set(navStack);
+    if (navStack.length === 0) return new Set<string>();
     const ids = new Set<string>();
-    for (const [pageId, tileId] of Object.entries(navSourceTiles)) {
-      if (pageSet.has(pageId)) ids.add(tileId);
+    for (const [pageId, sourceTileId] of Object.entries(navSourceTiles)) {
+      const pageIdx = navStack.indexOf(pageId);
+      if (pageIdx === -1) continue;
+      // Resolve the parent frame content (the frame that contains the source tile)
+      const parentPageId = pageIdx > 0 ? navStack[pageIdx - 1] : null;
+      const parentContent: any[] = parentPageId !== null
+        ? (navContents[parentPageId] ?? [])
+        : infoContent;
+      // Clear nav-active when a DIFFERENT tile is selected in the same frame
+      const otherTileInParent = !!selectedTileId && selectedTileId !== sourceTileId &&
+        parentContent.some((b: any) =>
+          b.InfoType === 'TileGrid' &&
+          (b.Columns ?? []).some((c: any) =>
+            (c.Tiles ?? []).some((t: any) => t.Id === selectedTileId)
+          )
+        );
+      // Clear nav-active when any CTA is selected in the same frame
+      const ctaInParent = !!selectedCtaId &&
+        parentContent.some((b: any) => b.InfoId === selectedCtaId);
+      if (!otherTileInParent && !ctaInParent) ids.add(sourceTileId);
     }
     return ids;
-  }, [navStack, navSourceTiles]);
+  }, [navStack, navSourceTiles, navContents, infoContent, selectedTileId, selectedCtaId]);
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
@@ -640,11 +660,54 @@ function App() {
     }
   }
 
+  function buildNavSourceTilesForPath(pageIds: string[]): Record<string, string> {
+    const cv = dataStore.get("Current_Version");
+    const allPagesStore: any[] = cv?.Pages ?? cv?.Page ?? [];
+    function getContent(pageId: string): any[] {
+      if (navContents[pageId]) return navContents[pageId];
+      const page = allPagesStore.find((p: any) => p.PageId === pageId);
+      try { return JSON.parse(page?.PageStructure ?? '{}').InfoContent ?? []; } catch { return []; }
+    }
+    const result: Record<string, string> = {};
+    for (let i = 0; i < pageIds.length; i++) {
+      const parentContent = i === 0 ? infoContent : getContent(pageIds[i - 1]);
+      for (const block of parentContent) {
+        if (block.InfoType !== 'TileGrid') continue;
+        let found = false;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Action?.ObjectId === pageIds[i]) {
+              result[pageIds[i]] = tile.Id;
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+        if (found) break;
+      }
+    }
+    return result;
+  }
+
   function goToAnalysisIssue(idx: number) {
     const issue = analysisIssues[idx];
     if (!issue) return;
     setAnalysisIndex(idx);
-    if (issue.pageId !== homePageId) handleNavigateToPath([issue.pageId]);
+    if (issue.pageId !== homePageId) {
+      const path = pageGraph.getPath(issue.pageId);
+      const sourceTiles = buildNavSourceTilesForPath(path);
+      handleNavigateToPath(path);
+      setNavSourceTiles(prev => ({ ...prev, ...sourceTiles }));
+      setSelectedTileId(null);
+      setSelectedCtaId(null);
+      requestAnimationFrame(() => {
+        for (const tileId of Object.values(sourceTiles)) {
+          const el = document.querySelector(`[data-tile-id="${tileId}"]`);
+          el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
     if (issue.language) {
       setTranslationPageId(issue.pageId);
       setIsTranslationOpen(true);
@@ -1689,6 +1752,9 @@ function App() {
             onClose={() => setTreeOpen(false)}
             onNavigateToPath={(pageIds) => {
               handleNavigateToPath(pageIds);
+              setNavSourceTiles(prev => ({ ...prev, ...buildNavSourceTilesForPath(pageIds) }));
+              setSelectedTileId(null);
+              setSelectedCtaId(null);
               setTreeOpen(false);
             }}
             onDeletePage={handleDeletePage}

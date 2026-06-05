@@ -364,7 +364,7 @@ export function TranslationSideBar({
               const ctaKey = `cta-${rbi}`;
               const isCtaHighlighted = highlightBlockId === rb.InfoId && !highlightTileId;
               return (
-                <div key={rb.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+                <div key={rb.InfoId} style={{ position: 'relative' }}>
                   {isCtaHighlighted && highlightMessage && (
                     <div className="block-analysis-label">{highlightMessage}</div>
                   )}
@@ -372,6 +372,7 @@ export function TranslationSideBar({
                     block={rb}
                     ctaColors={ctaColors}
                     interactive={false}
+                    isAnalysisHighlight={isCtaHighlighted}
                     editableLabel={editingKey === ctaKey}
                     onLabelClick={() => setEditingKey(ctaKey)}
                     onLabelBlur={(value) => handleCtaBlur(rbi, value)}
@@ -385,7 +386,7 @@ export function TranslationSideBar({
         const ctaKey = `cta-${bi}`;
         const isCtaHighlighted = highlightBlockId === block.InfoId && !highlightTileId;
         out.push(
-          <div key={block.InfoId} data-block-id={block.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+          <div key={block.InfoId} data-block-id={block.InfoId} style={{ position: 'relative' }}>
             {isCtaHighlighted && highlightMessage && (
               <div className="block-analysis-label">{highlightMessage}</div>
             )}
@@ -393,6 +394,7 @@ export function TranslationSideBar({
               block={block}
               ctaColors={ctaColors}
               interactive={false}
+              isAnalysisHighlight={isCtaHighlighted}
               editableLabel={editingKey === ctaKey}
               onLabelClick={() => setEditingKey(ctaKey)}
               onLabelBlur={(value) => handleCtaBlur(bi, value)}
