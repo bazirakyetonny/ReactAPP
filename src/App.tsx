@@ -458,6 +458,13 @@ function App() {
       setIsTranslationOpen(false);
       setTranslationHighlight(null);
     }
+    requestAnimationFrame(() => {
+      const selector = issue.subItemId
+        ? `[data-tile-id="${issue.subItemId}"]`
+        : `[data-block-id="${issue.blockId}"]`;
+      const el = document.querySelector(selector);
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
   }
 
   function handleAnalysisPrev() {
