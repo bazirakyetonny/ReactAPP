@@ -550,6 +550,38 @@ export function applyEditImageSelection(
   );
 }
 
+export function applyPasteBlocks(
+  prev: any[],
+  blocks: any[],
+  insertBeforeInfoId: string | null,
+  ts = Date.now()
+): any[] {
+  const freshBlocks = blocks.map((block: any, i: number) => {
+    if (block.InfoType === 'TileGrid') {
+      return {
+        ...block,
+        InfoId: `grid-p${ts}${i}`,
+        Columns: (block.Columns ?? []).map((col: any, ci: number) => ({
+          ...col,
+          ColId: `col-p${ts}${i}${ci}`,
+          Tiles: (col.Tiles ?? []).map((tile: any, ti: number) => ({
+            ...tile,
+            Id: `tile-p${ts}${i}${ci}${ti}`,
+          })),
+        })),
+      };
+    }
+    if (block.InfoType === 'Images') return { ...block, InfoId: `img-p${ts}${i}` };
+    if (block.InfoType === 'Description') return { ...block, InfoId: `desc-p${ts}${i}` };
+    return { ...block, InfoId: `cta-p${ts}${i}` };
+  });
+  let content = prev;
+  for (const blk of freshBlocks) {
+    content = applyInsertBlock(content, blk, insertBeforeInfoId);
+  }
+  return content;
+}
+
 export function applyCopyTile(prev: any[], tileId: string, ts = Date.now()): any[] {
   return prev.map((block: any) => {
     if (block.InfoType !== 'TileGrid') return block;

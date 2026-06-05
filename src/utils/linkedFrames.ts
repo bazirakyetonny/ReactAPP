@@ -2,7 +2,7 @@ import {
   applyAddColumn, applyDeleteTile, applyAddStandaloneTile, applyAddBlock,
   applyAddTilesToColumn, applyFreeResizeRelease, applyTileDrop, applyTileDropAsNewBlock,
   applyAddDescription, applyEditDescription, applyDeleteBlock, applyMoveBlock,
-  applyAddImage, applyEditImageSelection,
+  applyAddImage, applyEditImageSelection, applyPasteBlocks,
 } from './contentTransforms';
 import type { TileDropPreview } from '../components/MainCanvas';
 
@@ -25,6 +25,7 @@ interface BuildLinkedFramesParams {
   handleSelectCta: (ctaId: string) => void;
   handleEditCta: (ctaId: string, patch: Record<string, any>) => void;
   handleTileDoubleClick: (tileId: string, rect: DOMRect) => void;
+  getClipboard: () => any[];
   onCommitNewPage?: (name: string) => void;
   onCancelNewPage?: () => void;
 }
@@ -35,6 +36,7 @@ export function buildLinkedFrames({
   selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
   navUpdater, handleCloseFromIndex,
   handleEditTile, handleSelectCta, handleEditCta, handleTileDoubleClick,
+  getClipboard,
   onCommitNewPage, onCancelNewPage,
 }: BuildLinkedFramesParams) {
   return navStack
@@ -92,6 +94,12 @@ export function buildLinkedFrames({
         } else {
           update(prev => applyAddBlock(prev, blockType, insertBeforeInfoId));
         }
+      },
+      onPasteBlocks: (insertBeforeInfoId: string | null) => {
+        const items = getClipboard();
+        if (items.length === 0) return;
+        pushSnapshot();
+        update(prev => applyPasteBlocks(prev, items, insertBeforeInfoId));
       },
       onAddTilesToColumn: (gridId: string, colId: string, count: number) => {
         if (!isResizingRef.current) pushSnapshot();

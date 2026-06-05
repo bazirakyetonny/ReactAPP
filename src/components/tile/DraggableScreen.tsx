@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SelectionOverlay } from './SelectionOverlay';
 import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../../types';
 import { TILE_H, TILE_GAP } from '../../constants';
 import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
@@ -134,6 +135,12 @@ export interface DraggableScreenProps {
   isPreviewMode?: boolean;
   multiSelectedTileIds?: Set<string>;
   multiSelectedCtaIds?: Set<string>;
+  multiSelectedImageIds?: Set<string>;
+  multiSelectedDescriptionIds?: Set<string>;
+  onCopySelected?: (sourceBlocks: any[]) => void;
+  onCutSelected?: (sourceBlocks: any[]) => void;
+  hasPaste?: boolean;
+  onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
 }
 
 export function DraggableScreen({
@@ -190,7 +197,15 @@ export function DraggableScreen({
   isPreviewMode = false,
   multiSelectedTileIds,
   multiSelectedCtaIds,
+  multiSelectedImageIds,
+  multiSelectedDescriptionIds,
+  onCopySelected,
+  onCutSelected,
+  hasPaste,
+  onPasteBlocks,
 }: DraggableScreenProps) {
+
+  const screenRef = useRef<HTMLDivElement>(null);
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
   const [tileMenu, setTileMenu] = useState<{ tileId: string; pos: { x: number; y: number } } | null>(null);
@@ -839,11 +854,14 @@ export function DraggableScreen({
 
   return (
     <>
-      <div className={[
-        'phone-screen',
-        isPreviewMode ? 'phone-screen--preview' : '',
-        (isDraggingAnything || isExternalDragActive) ? 'phone-screen--dragging' : '',
-      ].filter(Boolean).join(' ')}>
+      <div
+        ref={screenRef}
+        className={[
+          'phone-screen',
+          isPreviewMode ? 'phone-screen--preview' : '',
+          (isDraggingAnything || isExternalDragActive) ? 'phone-screen--dragging' : '',
+        ].filter(Boolean).join(' ')}
+      >
         {!isPreviewMode && (
           <div className={[
             'phone-add-row',
@@ -1001,6 +1019,7 @@ export function DraggableScreen({
                     block={block}
                     interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
+                    isMultiSelected={multiSelectedDescriptionIds?.has(block.InfoId)}
                     onEdit={isPreviewMode ? undefined : (infoId) => setEditorState({ mode: 'edit', infoId, currentHtml: block.InfoValue ?? '' })}
                     onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
@@ -1039,6 +1058,7 @@ export function DraggableScreen({
                     block={block}
                     interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
+                    isMultiSelected={multiSelectedImageIds?.has(block.InfoId)}
                     onEdit={isPreviewMode ? undefined : (infoId) => setImageEditorState({ mode: 'edit', infoId, currentImages: block.Images ?? [] })}
                     onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
@@ -1113,6 +1133,16 @@ export function DraggableScreen({
           }
           return null;
         })}
+
+        <SelectionOverlay
+          containerRef={screenRef}
+          multiSelectedTileIds={multiSelectedTileIds}
+          multiSelectedCtaIds={multiSelectedCtaIds}
+          multiSelectedImageIds={multiSelectedImageIds}
+          multiSelectedDescriptionIds={multiSelectedDescriptionIds}
+          onCopy={() => onCopySelected?.(infoContent)}
+          onCut={() => onCutSelected?.(infoContent)}
+        />
       </div>
 
       {addMenu && !isPreviewMode && (
@@ -1120,6 +1150,8 @@ export function DraggableScreen({
           pos={addMenu.pos}
           onSelect={handleMenuSelect}
           onClose={() => setAddMenu(null)}
+          hasPaste={hasPaste}
+          onPaste={() => { onPasteBlocks?.(addMenu.insertBeforeInfoId); setAddMenu(null); }}
         />
       )}
 

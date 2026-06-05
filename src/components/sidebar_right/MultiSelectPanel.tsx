@@ -38,6 +38,26 @@ function BoltIcon() {
   );
 }
 
+function AlignLeftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <line x1="1" y1="3"  x2="13" y2="3"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="6"  x2="9"  y2="6"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="9"  x2="13" y2="9"  stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="12" x2="7"  y2="12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AlignCenterIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="12.7" height="14.626" viewBox="0 0 12.7 14.626" aria-hidden="true">
+      <path d="M5.863,1.868V3.736L5.031,2.9,4.2,2.073l-.336.341-.336.342,1.411,1.41L6.35,5.577,7.758,4.17,9.165,2.762l-.333-.333L8.5,2.1l-.831.817-.83.817V0H5.863V1.868M0,7.313v.794H12.7V6.519H0v.794m4.937,3.149-1.4,1.4.333.333.334.333.83-.816.831-.817v3.729h.974V10.89l.832.832.831.832.336-.342.336-.341L7.766,10.465c-.773-.773-1.41-1.406-1.416-1.406s-.642.631-1.413,1.4"
+        fillRule="evenodd" fill="#696969" />
+    </svg>
+  );
+}
+
 function ImagePlaceholderIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -157,8 +177,30 @@ export function MultiSelectPanel({
                 <SquareFilledIcon />
               </button>
             </div>
+            <div className="sr-text-color-group">
+              <button
+                className="sr-tool-btn sr-tool-btn--in-group"
+                type="button"
+                title="Left align"
+                onClick={() => onBulkEditTiles?.({ Align: "left" })}
+              >
+                <AlignLeftIcon />
+              </button>
+              <button
+                className="sr-tool-btn sr-tool-btn--in-group"
+                type="button"
+                title="Center align"
+                onClick={() => onBulkEditTiles?.({ Align: "center" })}
+              >
+                <AlignCenterIcon />
+              </button>
+            </div>
           </div>
         </>
+      )}
+
+      {tileCount > 0 && ctaCount > 0 && (
+        <hr className="sr-multi-select-divider" />
       )}
 
       {ctaCount > 0 && (

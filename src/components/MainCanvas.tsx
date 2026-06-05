@@ -134,6 +134,7 @@ export interface LinkedFrame {
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddStandaloneTile?: () => void;
   onAddBlock?: (blockType: string, insertBeforeInfoId: string | null) => void;
+  onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onFreeResizeRelease?: (
     gridId: string,
@@ -278,10 +279,16 @@ interface MainCanvasProps {
   /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
   statusBarExtra?: React.ReactNode;
   isMultiSelectMode?: boolean;
-  onSelectionChange?: (tileIds: Set<string>, ctaIds: Set<string>) => void;
+  onSelectionChange?: (tileIds: Set<string>, ctaIds: Set<string>, imageIds: Set<string>, descIds: Set<string>) => void;
   multiSelectedTileIds?: Set<string>;
   multiSelectedCtaIds?: Set<string>;
+  multiSelectedImageIds?: Set<string>;
+  multiSelectedDescriptionIds?: Set<string>;
   onExitMultiSelectMode?: () => void;
+  onCopySelected?: (sourceBlocks: any[]) => void;
+  onCutSelected?: (sourceBlocks: any[]) => void;
+  hasClipboard?: boolean;
+  onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
 }
 
 export function MainCanvas({
@@ -334,7 +341,13 @@ export function MainCanvas({
   onSelectionChange,
   multiSelectedTileIds,
   multiSelectedCtaIds,
+  multiSelectedImageIds,
+  multiSelectedDescriptionIds,
   onExitMultiSelectMode,
+  onCopySelected,
+  onCutSelected,
+  hasClipboard,
+  onPasteBlocks,
 }: MainCanvasProps) {
   const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
 
@@ -407,7 +420,31 @@ export function MainCanvas({
       }
     });
 
-    onSelectionChange?.(tileIds, ctaIds);
+    const imageIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-image-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (elLeft < selRight && elRight > selLeft && elTop < selBottom && elBottom > selTop) {
+        imageIds.add(el.dataset.imageId!);
+      }
+    });
+
+    const descIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-description-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (elLeft < selRight && elRight > selLeft && elTop < selBottom && elBottom > selTop) {
+        descIds.add(el.dataset.descriptionId!);
+      }
+    });
+
+    onSelectionChange?.(tileIds, ctaIds, imageIds, descIds);
     marqueeOriginRef.current = null;
     setMarquee(null);
   }
@@ -702,13 +739,19 @@ export function MainCanvas({
             onEditCta={onEditCta}
             selectedCtaId={selectedCtaId}
             themeCtaColors={themeCtaColors}
-            onTileMenuAction={isPreviewMode ? undefined : onTileMenuAction}
+            onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
             liveTileText={liveTileText}
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
-            isPreviewMode={isPreviewMode}
+            isPreviewMode={interactionsLocked}
             multiSelectedTileIds={multiSelectedTileIds}
             multiSelectedCtaIds={multiSelectedCtaIds}
+            multiSelectedImageIds={multiSelectedImageIds}
+            multiSelectedDescriptionIds={multiSelectedDescriptionIds}
+            onCopySelected={onCopySelected}
+            onCutSelected={onCutSelected}
+            hasPaste={hasClipboard}
+            onPasteBlocks={onPasteBlocks}
           />
         </div>
         )}
@@ -890,6 +933,12 @@ export function MainCanvas({
                     isPreviewMode={interactionsLocked}
                     multiSelectedTileIds={multiSelectedTileIds}
                     multiSelectedCtaIds={multiSelectedCtaIds}
+                    multiSelectedImageIds={multiSelectedImageIds}
+                    multiSelectedDescriptionIds={multiSelectedDescriptionIds}
+                    onCopySelected={onCopySelected}
+                    onCutSelected={onCutSelected}
+                    hasPaste={hasClipboard}
+                    onPasteBlocks={frame.onPasteBlocks}
                   />
                 )}
               </div>

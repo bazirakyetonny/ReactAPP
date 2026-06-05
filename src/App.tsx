@@ -24,6 +24,8 @@ import {
   applyEditTile,
   applyAddBlock,
   applyCopyTile,
+  applyDeleteTile,
+  applyPasteBlocks,
 } from "./utils/contentTransforms";
 import {
   createInfoPage,
@@ -420,11 +422,17 @@ function App() {
     isMultiSelectMode,
     selectedTileIds,
     selectedCtaIds,
+    selectedImageIds,
+    selectedDescriptionIds,
     toggleMultiSelectMode,
     exitMultiSelectMode,
     setSelectedTileIds,
     setSelectedCtaIds,
+    setSelectedImageIds,
+    setSelectedDescriptionIds,
   } = useMultiSelect();
+
+  const [clipboard, setClipboard] = useState<any[]>([]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -470,6 +478,100 @@ function App() {
       }
       return next;
     });
+  }
+
+  function collectClipboardItems(sourceBlocks: any[]): any[] {
+    const items: any[] = [];
+    const seen = new Set<string>();
+    for (const block of sourceBlocks) {
+      if (block.InfoType === "TileGrid") {
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (selectedTileIds.has(tile.Id) && !seen.has(tile.Id)) {
+              seen.add(tile.Id);
+              items.push({
+                InfoId: `grid-clip-${tile.Id}`,
+                InfoType: "TileGrid",
+                Columns: [{ ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] }],
+              });
+            }
+          }
+        }
+      } else if (block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      } else if (block.InfoType === "Images" && selectedImageIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      } else if (block.InfoType === "Description" && selectedDescriptionIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      }
+    }
+    return items;
+  }
+
+  function handleCopySelected(sourceBlocks: any[]) {
+    const items = collectClipboardItems(sourceBlocks);
+    if (items.length > 0) setClipboard(items);
+    exitMultiSelectMode();
+  }
+
+  function handleCutSelected(sourceBlocks: any[]) {
+    const items = collectClipboardItems(sourceBlocks);
+    if (items.length > 0) setClipboard(items);
+
+    const applyTileDelete = (blocks: any[]) => {
+      let content = blocks;
+      for (const tileId of selectedTileIds) {
+        for (const block of content) {
+          if (block.InfoType !== "TileGrid") continue;
+          for (const col of block.Columns ?? []) {
+            if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) {
+              content = applyDeleteTile(content, block.InfoId, col.ColId, tileId);
+              break;
+            }
+          }
+        }
+      }
+      return content;
+    };
+    const applyCtaDelete = (blocks: any[]) =>
+      selectedCtaIds.size > 0
+        ? blocks.filter(
+            (b: any) => !(b.InfoType === "Cta" && selectedCtaIds.has(b.InfoId)),
+          )
+        : blocks;
+    const applyImageDelete = (blocks: any[]) =>
+      selectedImageIds.size > 0
+        ? blocks.filter((b: any) => !(b.InfoType === "Images" && selectedImageIds.has(b.InfoId)))
+        : blocks;
+    const applyDescDelete = (blocks: any[]) =>
+      selectedDescriptionIds.size > 0
+        ? blocks.filter((b: any) => !(b.InfoType === "Description" && selectedDescriptionIds.has(b.InfoId)))
+        : blocks;
+    const applyDeletes = (blocks: any[]) => applyDescDelete(applyImageDelete(applyCtaDelete(applyTileDelete(blocks))));
+
+    if (sourceBlocks === infoContent) {
+      setInfoContent((prev: any[]) => applyDeletes(prev));
+    } else {
+      const targetPageId = Object.keys(navContents as Record<string, any[]>).find(
+        (key) => (navContents as Record<string, any[]>)[key] === sourceBlocks,
+      );
+      if (targetPageId) {
+        setNavContents((prev: Record<string, any[]>) => ({
+          ...prev,
+          [targetPageId]: applyDeletes(prev[targetPageId]),
+        }));
+      }
+    }
+    exitMultiSelectMode();
+  }
+
+  function handlePasteToHome(insertBeforeInfoId: string | null) {
+    if (clipboard.length === 0) return;
+    pushSnapshot();
+    setInfoContent((prev: any[]) => applyPasteBlocks(prev, clipboard, insertBeforeInfoId));
   }
 
   const homePageId =
@@ -686,7 +788,7 @@ function App() {
               WWPFormId: 0,
             });
             if (newPage?.PageId) {
-              const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+              const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
               dataStore.set("Current_Version", updated);
               setCurrentVersion(updated);
               finalAttrs = {
@@ -771,7 +873,7 @@ function App() {
       const newPage: any = Array.isArray(raw) ? raw[0] : raw;
       if (!newPage?.PageId) return;
       pendingNewPageTileRef.current = null;
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       setNavStack((prev) =>
@@ -1073,7 +1175,7 @@ function App() {
           if (!newPage?.PageId) throw new Error("no page");
           const pageUrl = newPage.PageLinkStructure?.Url ?? url;
           pushSnapshot();
-          const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+          const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
           dataStore.set("Current_Version", updated);
           setCurrentVersion(updated);
           handleEditTile(tileId, {
@@ -1145,7 +1247,7 @@ function App() {
         if (!newPage?.PageId) throw new Error("no page");
         const url = newPage.PageLinkStructure?.Url ?? "";
         pushSnapshot();
-        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
         dataStore.set("Current_Version", updated);
         setCurrentVersion(updated);
         handleEditTile(tileId, {
@@ -1291,7 +1393,7 @@ function App() {
       if (!newPage?.PageId) throw new Error("no page");
       const pageUrl = newPage.PageLinkStructure?.Url ?? url;
       pushSnapshot();
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       handleEditCta(ctaId, {
@@ -1328,6 +1430,7 @@ function App() {
     handleSelectCta: handleCtaClick,
     handleEditCta,
     handleTileDoubleClick,
+    getClipboard: () => clipboard,
     onCommitNewPage: handleCommitNewPage,
     onCancelNewPage: handleCancelNewPage,
   });
@@ -1542,13 +1645,21 @@ function App() {
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
           isMultiSelectMode={isMultiSelectMode}
-          onSelectionChange={(tileIds, ctaIds) => {
+          onSelectionChange={(tileIds, ctaIds, imageIds, descIds) => {
             setSelectedTileIds(tileIds);
             setSelectedCtaIds(ctaIds);
+            setSelectedImageIds(imageIds);
+            setSelectedDescriptionIds(descIds);
           }}
           onExitMultiSelectMode={exitMultiSelectMode}
           multiSelectedTileIds={selectedTileIds}
           multiSelectedCtaIds={selectedCtaIds}
+          multiSelectedImageIds={selectedImageIds}
+          multiSelectedDescriptionIds={selectedDescriptionIds}
+          onCopySelected={handleCopySelected}
+          onCutSelected={handleCutSelected}
+          hasClipboard={clipboard.length > 0}
+          onPasteBlocks={handlePasteToHome}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar

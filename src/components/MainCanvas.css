@@ -162,7 +162,7 @@
 }
 
 /* Gap between content blocks in preview mode (replaces phone-add-row spacing) */
-.phone-screen--preview > * + * {
+.phone-screen--preview > * + *:not(.selection-outline-container) {
   margin-top: 8px;
 }
 
@@ -318,6 +318,7 @@
 }
 
 .phone-screen {
+  position: relative;
   flex: 1;
   background: #f9fafb;
   overflow-y: auto;
@@ -1036,6 +1037,11 @@
   opacity: 0.3;
   pointer-events: none;
 }
+.phone-desc-block--multi-selected > .phone-desc-content {
+  border: 2px solid #3d5a9e;
+  border-radius: 4px;
+  padding: 1px;
+}
 
 /* ── Block drag ghost & drop zone ─────────────────────────────────────────── */
 .phone-block-ghost {
@@ -1197,6 +1203,10 @@
 .phone-image-block--dragging {
   opacity: 0.3;
   pointer-events: none;
+}
+.phone-image-block--multi-selected > img {
+  border: 2px solid #3d5a9e;
+  border-radius: 4px;
 }
 .phone-image-single {
   max-height: 156px;
