@@ -358,7 +358,9 @@ function App() {
     }
   })();
 
-  const baseLanguage: string = (currentVersion?.AppVersionLanguage ?? "").toLowerCase();
+  const baseLanguage: string = (
+    currentVersion?.AppVersionLanguage ?? ""
+  ).toLowerCase();
   const translationLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== baseLanguage,
   );
@@ -467,7 +469,10 @@ function App() {
     const applyCtaPatch = (blocks: any[]) =>
       blocks.map((block: any) =>
         block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId)
-          ? { ...block, CtaAttributes: { ...(block.CtaAttributes ?? {}), ...patch } }
+          ? {
+              ...block,
+              CtaAttributes: { ...(block.CtaAttributes ?? {}), ...patch },
+            }
           : block,
       );
     setInfoContent((prev: any[]) => applyCtaPatch(prev));
@@ -492,18 +497,32 @@ function App() {
               items.push({
                 InfoId: `grid-clip-${tile.Id}`,
                 InfoType: "TileGrid",
-                Columns: [{ ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] }],
+                Columns: [
+                  { ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] },
+                ],
               });
             }
           }
         }
-      } else if (block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+      } else if (
+        block.InfoType === "Cta" &&
+        selectedCtaIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
         seen.add(block.InfoId);
         items.push({ ...block });
-      } else if (block.InfoType === "Images" && selectedImageIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+      } else if (
+        block.InfoType === "Images" &&
+        selectedImageIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
         seen.add(block.InfoId);
         items.push({ ...block });
-      } else if (block.InfoType === "Description" && selectedDescriptionIds.has(block.InfoId) && !seen.has(block.InfoId)) {
+      } else if (
+        block.InfoType === "Description" &&
+        selectedDescriptionIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
         seen.add(block.InfoId);
         items.push({ ...block });
       }
@@ -528,7 +547,12 @@ function App() {
           if (block.InfoType !== "TileGrid") continue;
           for (const col of block.Columns ?? []) {
             if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) {
-              content = applyDeleteTile(content, block.InfoId, col.ColId, tileId);
+              content = applyDeleteTile(
+                content,
+                block.InfoId,
+                col.ColId,
+                tileId,
+              );
               break;
             }
           }
@@ -544,18 +568,32 @@ function App() {
         : blocks;
     const applyImageDelete = (blocks: any[]) =>
       selectedImageIds.size > 0
-        ? blocks.filter((b: any) => !(b.InfoType === "Images" && selectedImageIds.has(b.InfoId)))
+        ? blocks.filter(
+            (b: any) =>
+              !(b.InfoType === "Images" && selectedImageIds.has(b.InfoId)),
+          )
         : blocks;
     const applyDescDelete = (blocks: any[]) =>
       selectedDescriptionIds.size > 0
-        ? blocks.filter((b: any) => !(b.InfoType === "Description" && selectedDescriptionIds.has(b.InfoId)))
+        ? blocks.filter(
+            (b: any) =>
+              !(
+                b.InfoType === "Description" &&
+                selectedDescriptionIds.has(b.InfoId)
+              ),
+          )
         : blocks;
-    const applyDeletes = (blocks: any[]) => applyDescDelete(applyImageDelete(applyCtaDelete(applyTileDelete(blocks))));
+    const applyDeletes = (blocks: any[]) =>
+      applyDescDelete(
+        applyImageDelete(applyCtaDelete(applyTileDelete(blocks))),
+      );
 
     if (sourceBlocks === infoContent) {
       setInfoContent((prev: any[]) => applyDeletes(prev));
     } else {
-      const targetPageId = Object.keys(navContents as Record<string, any[]>).find(
+      const targetPageId = Object.keys(
+        navContents as Record<string, any[]>,
+      ).find(
         (key) => (navContents as Record<string, any[]>)[key] === sourceBlocks,
       );
       if (targetPageId) {
@@ -571,7 +609,9 @@ function App() {
   function handlePasteToHome(insertBeforeInfoId: string | null) {
     if (clipboard.length === 0) return;
     pushSnapshot();
-    setInfoContent((prev: any[]) => applyPasteBlocks(prev, clipboard, insertBeforeInfoId));
+    setInfoContent((prev: any[]) =>
+      applyPasteBlocks(prev, clipboard, insertBeforeInfoId),
+    );
   }
 
   const homePageId =
@@ -636,14 +676,17 @@ function App() {
     analysisOpen && analysisIssues.length > 0
       ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
       : null;
-  const analysisHighlight = currentAnalysisIssue && !currentAnalysisIssue.language
-    ? {
-        blockId: currentAnalysisIssue.blockId,
-        tileId: currentAnalysisIssue.subItemId,
-        message:
-          currentAnalysisIssue.category === 1 ? "Invalid URL" : "Text too long",
-      }
-    : null;
+  const analysisHighlight =
+    currentAnalysisIssue && !currentAnalysisIssue.language
+      ? {
+          blockId: currentAnalysisIssue.blockId,
+          tileId: currentAnalysisIssue.subItemId,
+          message:
+            currentAnalysisIssue.category === 1
+              ? "Invalid URL"
+              : "Text too long",
+        }
+      : null;
 
   // ── Data persistence ─────────────────────────────────────────────────────
 
@@ -788,7 +831,11 @@ function App() {
               WWPFormId: 0,
             });
             if (newPage?.PageId) {
-              const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
+              const updated = {
+                ...cv,
+                Page: [...(cv.Page ?? []), newPage],
+                Pages: [...(cv.Pages ?? []), newPage],
+              };
               dataStore.set("Current_Version", updated);
               setCurrentVersion(updated);
               finalAttrs = {
@@ -873,7 +920,11 @@ function App() {
       const newPage: any = Array.isArray(raw) ? raw[0] : raw;
       if (!newPage?.PageId) return;
       pendingNewPageTileRef.current = null;
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
+      const updated = {
+        ...cv,
+        Page: [...(cv.Page ?? []), newPage],
+        Pages: [...(cv.Pages ?? []), newPage],
+      };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       setNavStack((prev) =>
@@ -1186,7 +1237,11 @@ function App() {
           if (!newPage?.PageId) throw new Error("no page");
           const pageUrl = newPage.PageLinkStructure?.Url ?? url;
           pushSnapshot();
-          const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
+          const updated = {
+            ...cv,
+            Page: [...(cv.Page ?? []), newPage],
+            Pages: [...(cv.Pages ?? []), newPage],
+          };
           dataStore.set("Current_Version", updated);
           setCurrentVersion(updated);
           handleEditTile(tileId, {
@@ -1258,7 +1313,11 @@ function App() {
         if (!newPage?.PageId) throw new Error("no page");
         const url = newPage.PageLinkStructure?.Url ?? "";
         pushSnapshot();
-        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
+        const updated = {
+          ...cv,
+          Page: [...(cv.Page ?? []), newPage],
+          Pages: [...(cv.Pages ?? []), newPage],
+        };
         dataStore.set("Current_Version", updated);
         setCurrentVersion(updated);
         handleEditTile(tileId, {
@@ -1403,7 +1462,11 @@ function App() {
       if (!newPage?.PageId) throw new Error("no page");
       const pageUrl = newPage.PageLinkStructure?.Url ?? url;
       pushSnapshot();
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage], Pages: [...(cv.Pages ?? []), newPage] };
+      const updated = {
+        ...cv,
+        Page: [...(cv.Page ?? []), newPage],
+        Pages: [...(cv.Pages ?? []), newPage],
+      };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       handleEditCta(ctaId, {
@@ -1528,7 +1591,10 @@ function App() {
         )}
         onAnalysisPrev={handleAnalysisPrev}
         onAnalysisNext={handleAnalysisNext}
-        onAnalysisClose={() => { setAnalysisOpen(false); setTranslationHighlight(null); }}
+        onAnalysisClose={() => {
+          setAnalysisOpen(false);
+          setTranslationHighlight(null);
+        }}
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
@@ -1583,12 +1649,19 @@ function App() {
         showTrashModal={showTrashModal}
         onCloseTrashModal={() => setShowTrashModal(false)}
         onTrashChanged={() => {
-          getAppVersions().then(setAppVersions).catch(() => {});
-          getActiveAppVersion().then((fetched: any) => {
-            const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
-            dataStore.set("Current_Version", full);
-            setCurrentVersion(full);
-          }).catch(() => {});
+          getAppVersions()
+            .then(setAppVersions)
+            .catch(() => {});
+          getActiveAppVersion()
+            .then((fetched: any) => {
+              const full = {
+                ...fetched,
+                Page: fetched.Page ?? fetched.Pages ?? [],
+              };
+              dataStore.set("Current_Version", full);
+              setCurrentVersion(full);
+            })
+            .catch(() => {});
         }}
         tileImageModal={tileImageModal}
         onTileImageConfirm={handleTileImageConfirm}

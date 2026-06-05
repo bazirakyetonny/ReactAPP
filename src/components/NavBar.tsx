@@ -545,7 +545,12 @@ export function NavBar({
         >
           <HistoryIcon active={isHistoryOpen} />
         </button>
-        <button className="navbar-icon-btn" type="button" title="Trash" onClick={onTrashClick}>
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title="Trash"
+          onClick={onTrashClick}
+        >
           <TrashIcon />
         </button>
         <div className="navbar-separator" role="separator" />
