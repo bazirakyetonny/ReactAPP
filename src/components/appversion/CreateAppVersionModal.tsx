@@ -16,6 +16,7 @@ import {
   createAppVersion,
   type SDTAppVersion,
 } from "../../services/appVersionsApi";
+import { applyMoodColorRemapToPages } from "../../utils/contentTransforms";
 import { AppVersionPreviewCard } from "./AppVersionPreviewCard";
 
 interface CreateAppVersionModalProps {
@@ -102,8 +103,14 @@ export function CreateAppVersionModal({
   }
 
   function handleBlankNext() {
-    if (!versionName.trim()) { setError("Version name is required."); return; }
-    if (!versionLanguage) { setError("Please select a base language."); return; }
+    if (!versionName.trim()) {
+      setError("Version name is required.");
+      return;
+    }
+    if (!versionLanguage) {
+      setError("Please select a base language.");
+      return;
+    }
     setError(null);
     setStep(3);
   }
@@ -117,15 +124,31 @@ export function CreateAppVersionModal({
     setLoading(true);
     setError(null);
     try {
+      const moods: { MoodId: string; MoodColorNames?: string }[] =
+        dataStore.get("Moods") ?? [];
+      const templatePages = selectedTemplate?.Pages ?? [];
+      let pages = templatePages;
+      if (!isBlank && selectedTemplate?.MoodId && selectedMoodId &&
+          selectedMoodId !== selectedTemplate.MoodId) {
+        const originalMood = moods.find((m) => m.MoodId === selectedTemplate.MoodId);
+        const selectedMood = moods.find((m) => m.MoodId === selectedMoodId);
+        let originalNames: string[] = [];
+        let selectedNames: string[] = [];
+        try { originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]"); } catch { /* */ }
+        try { selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]"); } catch { /* */ }
+        pages = applyMoodColorRemapToPages(templatePages, originalNames, selectedNames);
+      }
       const result = await createAppVersion({
         AppVersionName: name,
         AppVersionLanguage: versionLanguage,
         TranslateLanguages: translateLanguages,
         MoodId: isBlank
-            ? (noMood ? undefined : selectedMoodId ?? undefined)
-            : (selectedMoodId ?? selectedTemplate?.MoodId),
+          ? noMood
+            ? undefined
+            : (selectedMoodId ?? undefined)
+          : (selectedMoodId ?? selectedTemplate?.MoodId),
         ThemeId: selectedTemplate?.ThemeId,
-        VersionTemplatePagesCollection: selectedTemplate?.Pages ?? [],
+        VersionTemplatePagesCollection: pages,
         TemplateCategoryId: selectedTemplate?.TemplateCategoryId,
       });
       onCreated(result);
@@ -336,117 +359,118 @@ export function CreateAppVersionModal({
               </div>
             </>
           )
+        ) : isBlank ? (
+          /* Blank flow — step 3: mood grid */
+          <>
+            <AppVersionMoodSelection2
+              selectedMoodId={selectedMoodId}
+              onMoodChange={setSelectedMoodId}
+              noMood={noMood}
+              onNoMoodChange={setNoMood}
+            />
+            <div className="cav-footer">
+              <button
+                className="cav-btn-secondary"
+                type="button"
+                onClick={() => setStep(2)}
+                disabled={loading}
+              >
+                ← Back
+              </button>
+              <button
+                className="cav-btn-primary"
+                type="button"
+                disabled={loading}
+                onClick={handleCreate}
+              >
+                {loading ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </>
         ) : (
-          isBlank ? (
-            /* Blank flow — step 3: mood grid */
-            <>
-              <AppVersionMoodSelection2
-                selectedMoodId={selectedMoodId}
-                onMoodChange={setSelectedMoodId}
-                noMood={noMood}
-                onNoMoodChange={setNoMood}
-              />
-              <div className="cav-footer">
-                <button
-                  className="cav-btn-secondary"
-                  type="button"
-                  onClick={() => setStep(2)}
-                  disabled={loading}
-                >
-                  ← Back
-                </button>
-                <button
-                  className="cav-btn-primary"
-                  type="button"
-                  disabled={loading}
-                  onClick={handleCreate}
-                >
-                  {loading ? "Creating…" : "Create"}
-                </button>
+          /* Non-blank flow — step 3: version details */
+          <>
+            <div className="cav-body">
+              <div className="cav-field">
+                <label className="cav-label" htmlFor="cav-name">
+                  Version name <span className="cav-required">*</span>
+                </label>
+                <input
+                  id="cav-name"
+                  className="cav-input"
+                  type="text"
+                  maxLength={100}
+                  placeholder="e.g. Summer Campaign"
+                  value={versionName}
+                  onChange={(e) => setVersionName(e.target.value)}
+                  autoFocus
+                />
               </div>
-            </>
-          ) : (
-            /* Non-blank flow — step 3: version details */
-            <>
-              <div className="cav-body">
-                <div className="cav-field">
-                  <label className="cav-label" htmlFor="cav-name">
-                    Version name <span className="cav-required">*</span>
-                  </label>
-                  <input
-                    id="cav-name"
-                    className="cav-input"
-                    type="text"
-                    maxLength={100}
-                    placeholder="e.g. Summer Campaign"
-                    value={versionName}
-                    onChange={(e) => setVersionName(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <div className="cav-field">
-                  <label className="cav-label" htmlFor="cav-lang">
-                    Base language <span className="cav-required">*</span>
-                  </label>
-                  <p className="cav-field-hint">
-                    Select the base language for the app's translations.
-                  </p>
-                  <select
-                    id="cav-lang"
-                    className="cav-select"
-                    value={versionLanguage}
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                  >
-                    {languages?.length === 0 && (
-                      <option value="">No languages available</option>
-                    )}
-                    {languages?.map((lang) => (
-                      <option key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="cav-field">
-                  <label className="cav-label" htmlFor="cav-translate">
-                    Translation languages{" "}
-                    <span className="cav-optional">(optional)</span>
-                  </label>
-                  <p className="cav-field-hint">
-                    Select additional languages for translation.
-                  </p>
-                  <MultiSelect
-                    options={translateOptions}
-                    value={translateLanguages}
-                    onChange={setTranslateLanguages}
-                  />
-                </div>
-                {error && <div className="cav-error">{error}</div>}
-              </div>
-              <div className="cav-footer">
-                <button
-                  className="cav-btn-secondary"
-                  type="button"
-                  onClick={() => setStep(2)}
-                  disabled={loading}
+              <div className="cav-field">
+                <label className="cav-label" htmlFor="cav-lang">
+                  Base language <span className="cav-required">*</span>
+                </label>
+                <p className="cav-field-hint">
+                  Select the base language for the app's translations.
+                </p>
+                <select
+                  id="cav-lang"
+                  className="cav-select"
+                  value={versionLanguage}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                 >
-                  ← Back
-                </button>
-                <button
-                  className="cav-btn-primary"
-                  type="button"
-                  disabled={loading || !versionName.trim() || !versionLanguage}
-                  onClick={handleCreate}
-                >
-                  {loading ? "Creating…" : "Create"}
-                </button>
+                  {languages?.length === 0 && (
+                    <option value="">No languages available</option>
+                  )}
+                  {languages?.map((lang) => (
+                    <option key={lang.value} value={lang.value}>
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </>
-          )
+              <div className="cav-field">
+                <label className="cav-label" htmlFor="cav-translate">
+                  Translation languages{" "}
+                  <span className="cav-optional">(optional)</span>
+                </label>
+                <p className="cav-field-hint">
+                  Select additional languages for translation.
+                </p>
+                <MultiSelect
+                  options={translateOptions}
+                  value={translateLanguages}
+                  onChange={setTranslateLanguages}
+                />
+              </div>
+              {error && <div className="cav-error">{error}</div>}
+            </div>
+            <div className="cav-footer">
+              <button
+                className="cav-btn-secondary"
+                type="button"
+                onClick={() => setStep(2)}
+                disabled={loading}
+              >
+                ← Back
+              </button>
+              <button
+                className="cav-btn-primary"
+                type="button"
+                disabled={loading || !versionName.trim() || !versionLanguage}
+                onClick={handleCreate}
+              >
+                {loading ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
+  return ReactDOM.createPortal(
+    modal,
+    document.getElementById("root") ?? document.body,
+  );
 }

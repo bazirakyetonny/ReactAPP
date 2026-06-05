@@ -61,7 +61,7 @@ export function createWidget(
   // console.log("BC_Trn_TemplateCollection", BC_Trn_TemplateCollection);
   // console.log("Mode", Mode);
   // console.log("Previewlink", Previewlink);
-  console.log("IsBusy", isBusy);
+  // console.log("IsBusy", isBusy);
 
   return createRoot(document.getElementById("root")!).render(
     <StrictMode>

@@ -4,15 +4,39 @@
   height: 450px;
   flex-shrink: 0;
   overflow: hidden;
-  border-radius: 12px;
-  background: #0d0d0d;
+  border-radius: 18px;
 }
 
-/* Phone frame inside the clip — same as .page-thumb-frame in MainCanvas.css */
+/* Phone frame inside the clip — independent of MainCanvas phone-frame */
 .avc-frame {
+  width: 280px;
+  height: 720px;
+  background: #ffffff;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   transform-origin: top left;
   pointer-events: none;
   user-select: none;
+}
+
+/* Scrollable content area inside the phone frame */
+.avc-screen {
+  flex: 1;
+  background: #f9fafb;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avc-screen::-webkit-scrollbar {
+  display: none;
 }
 
 /* Blank version — show empty.png centred on a light background */
@@ -21,4 +45,5 @@
   background-image: url("../../../assets/empty.png");
   background-repeat: no-repeat;
   background-position: center;
+  background-size: cover;
 }
