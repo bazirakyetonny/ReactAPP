@@ -999,36 +999,44 @@
 .phone-desc-edit-btn,
 .phone-desc-delete-btn {
   position: absolute;
-  top: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -5px;
+  background: none;
   border: none;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
 }
 .phone-desc-edit-btn {
-  right: 28px;
-  background: #374151;
-  color: #fff;
+  right: 38px;
 }
 .phone-desc-delete-btn {
-  right: 4px;
-  background: #ef4444;
-  color: #fff;
+  right: 5px;
 }
 .phone-desc-block:hover .phone-desc-edit-btn,
 .phone-desc-block:hover .phone-desc-delete-btn {
   opacity: 1;
 }
+.phone-desc-delete-btn:hover circle,
+.phone-desc-edit-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-desc-delete-btn:hover path,
+.phone-desc-edit-btn:hover path {
+  stroke: #fff;
+}
 .phone-desc-block--interactive {
   cursor: grab;
+}
+.phone-desc-block--interactive:hover {
+  outline: 1.5px dashed #9ca3af;
+  outline-offset: -10px;
+  border-radius: 4px;
 }
 .phone-desc-block--interactive:active {
   cursor: grabbing;
@@ -1227,33 +1235,36 @@
 .phone-image-edit-btn,
 .phone-image-delete-btn {
   position: absolute;
-  top: 6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -5px;
+  background: none;
   border: none;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
 }
 .phone-image-edit-btn {
-  right: 30px;
-  background: #374151;
-  color: #fff;
+  right: 38px;
 }
 .phone-image-delete-btn {
-  right: 6px;
-  background: #ef4444;
-  color: #fff;
+  right: 5px;
 }
 .phone-image-block:hover .phone-image-edit-btn,
 .phone-image-block:hover .phone-image-delete-btn {
   opacity: 1;
+}
+.phone-image-delete-btn:hover circle,
+.phone-image-edit-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-image-delete-btn:hover path,
+.phone-image-edit-btn:hover path {
+  stroke: #fff;
 }
 
 /* Carousel */
@@ -1325,7 +1336,7 @@
   background: #fff;
   border-radius: 14px;
   padding: 50px;
-  width: 740px;
+  width: 900px;
   max-width: 96vw;
   max-height: 90vh;
   display: flex;
@@ -1475,11 +1486,11 @@
   cursor: pointer;
   user-select: none;
 }
-.media-select-all-label input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #5068a8;
-  cursor: pointer;
+.media-select-all-label .select-media-checkbox {
+  position: static;
+  top: unset;
+  left: unset;
+  opacity: 1;
 }
 
 /* Image grid */
@@ -1533,20 +1544,16 @@
 }
 .media-item-delete {
   position: absolute;
-  top: 0;
-  right: 0;
-  transform: translate(30%, -30%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -15px;
+  right: 5px;
+  background: none;
   border: none;
-  background: #ef4444;
-  color: #fff;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
@@ -1554,8 +1561,20 @@
 .media-item:hover .media-item-delete {
   opacity: 1;
 }
+.select-media-checkbox {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 2;
+}
+.media-item-delete:hover circle {
+  fill: #5068a8;
+}
+.media-item-delete:hover path {
+  stroke: #fff;
+}
 .media-item-delete:disabled {
-  background: #9ca3af;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .media-item-checkbox {
@@ -1780,7 +1799,7 @@
 }
 .phone-cta-fullwidth {
   width: 100%;
-  height: 75px;
+  height: 85px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1832,51 +1851,46 @@
   position: relative;
   flex-shrink: 0;
   display: inline-flex;
-  width: 56px;
-  height: 56px;
-  overflow: hidden;
-  border-radius: 6px;
+  overflow: visible;
+  width: 70px;
+  height: 65px;
+  border-radius: 8px;
 }
 .phone-cta-img {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 65px;
   object-fit: cover;
   display: block;
   flex-shrink: 0;
+  border-radius: 8px;
 }
 .phone-cta-img-placeholder {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 65px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: 8px;
   color: inherit;
 }
 .phone-cta-img-edit {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 18px;
-  height: 18px;
-  background: rgba(0, 0, 0, 0.62);
+  top: -10px;
+  right: -10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #ffffff;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
 }
 .phone-cta-img-wrap:hover .phone-cta-img-edit {
   opacity: 1;
-}
-.phone-cta-img-edit:hover {
-  background: rgba(0, 0, 0, 0.88);
 }
 .phone-cta-icon {
   font-size: 22px;
@@ -1900,8 +1914,8 @@
 }
 .phone-cta-actions {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: -10px;
+  right: 5px;
   display: none;
   gap: 4px;
 }
@@ -1914,4 +1928,21 @@
   background: rgba(74, 144, 217, 0.15);
   pointer-events: none;
   z-index: 100;
+}
+
+.phone-cta-actions .phone-block-action-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-cta-actions .phone-block-action-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-cta-actions .phone-block-action-btn:hover path {
+  stroke: #fff;
 }
