@@ -277,6 +277,11 @@ interface MainCanvasProps {
   appVersionId?: string;
   /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
   statusBarExtra?: React.ReactNode;
+  isMultiSelectMode?: boolean;
+  onSelectionChange?: (tileIds: Set<string>, ctaIds: Set<string>) => void;
+  multiSelectedTileIds?: Set<string>;
+  multiSelectedCtaIds?: Set<string>;
+  onExitMultiSelectMode?: () => void;
 }
 
 export function MainCanvas({
@@ -325,8 +330,87 @@ export function MainCanvas({
   onDeletePage,
   appVersionId,
   statusBarExtra,
+  isMultiSelectMode = false,
+  onSelectionChange,
+  multiSelectedTileIds,
+  multiSelectedCtaIds,
+  onExitMultiSelectMode,
 }: MainCanvasProps) {
-  const interactionsLocked = isPreviewMode || isReadOnly;
+  const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
+
+  const [marquee, setMarquee] = useState<{
+    x1: number; y1: number; x2: number; y2: number;
+  } | null>(null);
+  const marqueeOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  function handleCanvasMouseDown(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    marqueeOriginRef.current = { x, y };
+    setMarquee({ x1: x, y1: y, x2: x, y2: y });
+  }
+
+  function handleCanvasMouseMove(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode || !marqueeOriginRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMarquee({ x1: marqueeOriginRef.current.x, y1: marqueeOriginRef.current.y, x2: x, y2: y });
+  }
+
+  function handleCanvasMouseUp(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode || !marqueeOriginRef.current) return;
+    const canvasEl = e.currentTarget;
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const endX = e.clientX - canvasRect.left;
+    const endY = e.clientY - canvasRect.top;
+
+    const isDrag =
+      Math.abs(endX - marqueeOriginRef.current.x) > 5 ||
+      Math.abs(endY - marqueeOriginRef.current.y) > 5;
+
+    if (!isDrag) {
+      onExitMultiSelectMode?.();
+      marqueeOriginRef.current = null;
+      setMarquee(null);
+      return;
+    }
+
+    const selLeft = Math.min(marqueeOriginRef.current.x, endX);
+    const selTop = Math.min(marqueeOriginRef.current.y, endY);
+    const selRight = Math.max(marqueeOriginRef.current.x, endX);
+    const selBottom = Math.max(marqueeOriginRef.current.y, endY);
+
+    const tileIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-tile-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (elLeft < selRight && elRight > selLeft && elTop < selBottom && elBottom > selTop) {
+        tileIds.add(el.dataset.tileId!);
+      }
+    });
+
+    const ctaIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-cta-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (elLeft < selRight && elRight > selLeft && elTop < selBottom && elBottom > selTop) {
+        ctaIds.add(el.dataset.ctaId!);
+      }
+    });
+
+    onSelectionChange?.(tileIds, ctaIds);
+    marqueeOriginRef.current = null;
+    setMarquee(null);
+  }
 
   const tileGrids = infoContent.filter(
     (block: any) => block.InfoType === "TileGrid",
@@ -496,8 +580,26 @@ export function MainCanvas({
     ? [linkedFrames[linkedFrames.length - 1]]
     : linkedFrames;
 
+  const marqueeStyle = marquee
+    ? {
+        left: Math.min(marquee.x1, marquee.x2),
+        top: Math.min(marquee.y1, marquee.y2),
+        width: Math.abs(marquee.x2 - marquee.x1),
+        height: Math.abs(marquee.y2 - marquee.y1),
+      }
+    : null;
+
   return (
-    <main className="app-canvas">
+    <main
+      className="app-canvas"
+      style={isMultiSelectMode ? { cursor: "crosshair" } : undefined}
+      onMouseDown={handleCanvasMouseDown}
+      onMouseMove={handleCanvasMouseMove}
+      onMouseUp={handleCanvasMouseUp}
+    >
+      {marqueeStyle && (
+        <div className="marquee-selection" style={{ position: "absolute", ...marqueeStyle }} />
+      )}
       <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
         {showHomeFrame && (
@@ -605,6 +707,8 @@ export function MainCanvas({
             liveCtaLabel={liveCtaLabel}
             analysisHighlight={analysisHighlight}
             isPreviewMode={isPreviewMode}
+            multiSelectedTileIds={multiSelectedTileIds}
+            multiSelectedCtaIds={multiSelectedCtaIds}
           />
         </div>
         )}
@@ -784,6 +888,8 @@ export function MainCanvas({
                     liveCtaLabel={liveCtaLabel}
                     analysisHighlight={analysisHighlight}
                     isPreviewMode={interactionsLocked}
+                    multiSelectedTileIds={multiSelectedTileIds}
+                    multiSelectedCtaIds={multiSelectedCtaIds}
                   />
                 )}
               </div>

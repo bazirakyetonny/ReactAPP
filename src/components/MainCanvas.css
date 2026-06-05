@@ -11,6 +11,7 @@
   min-width: 0;
   padding: 0 16px 8px;
   height: 83vh;
+  user-select: none;
 }
 
 .canvas-menu-label {
@@ -557,6 +558,11 @@
   box-shadow:
     0 0 0 2px #ffffff,
     0 0 0 4px #1a3a6e;
+}
+
+/* Multi-selected tile — teal border */
+.phone-tile-wrap--multi-selected .phone-tile {
+  border: 2px solid #3d5a9e;
 }
 
 /* Selected tile border — always visible once clicked (wins over nav-active) */
@@ -1717,6 +1723,15 @@
   outline-offset: 4px;
   border-radius: 6px;
 }
+
+/* Multi-selected CTA — teal border */
+.phone-cta-block--multi-selected .phone-cta-fullwidth {
+  border: 2px solid #3d5a9e;
+}
+.phone-cta-block--multi-selected .phone-cta-round-wrap {
+  border: 2px solid #3d5a9e;
+  border-radius: 6px;
+}
 .phone-cta-block--dragging {
   opacity: 0.3;
   pointer-events: none;
@@ -1882,4 +1897,11 @@
 }
 .phone-cta-block--interactive:hover .phone-cta-actions {
   display: flex;
+}
+
+.marquee-selection {
+  border: 1px solid #4a90d9;
+  background: rgba(74, 144, 217, 0.15);
+  pointer-events: none;
+  z-index: 100;
 }

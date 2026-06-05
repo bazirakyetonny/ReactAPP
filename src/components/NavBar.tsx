@@ -43,6 +43,8 @@ interface NavBarProps {
   onHistoryToggle?: () => void;
   onShareClick?: () => void;
   onTrashClick?: () => void;
+  isMultiSelectMode?: boolean;
+  onMultiSelectToggle?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -368,6 +370,8 @@ export function NavBar({
   onHistoryToggle,
   onShareClick,
   onTrashClick,
+  isMultiSelectMode = false,
+  onMultiSelectToggle,
 }: NavBarProps) {
   const safeIndex = Math.min(
     analysisCurrentIndex,
@@ -430,7 +434,12 @@ export function NavBar({
         >
           <ShareIcon />
         </button>
-        <button className="navbar-icon-btn" type="button" title="Select frame">
+        <button
+          className={`navbar-icon-btn${isMultiSelectMode ? " navbar-icon-btn--active" : ""}`}
+          type="button"
+          title="Select frame"
+          onClick={onMultiSelectToggle}
+        >
           <FrameIcon />
         </button>
         {(isSaving || saveError || savedVisible) && (

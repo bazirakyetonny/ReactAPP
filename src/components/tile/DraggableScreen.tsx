@@ -132,6 +132,8 @@ export interface DraggableScreenProps {
   liveCtaLabel?: { id: string; label: string } | null;
   analysisHighlight?: import('../../utils/analysisUtils').AnalysisHighlight | null;
   isPreviewMode?: boolean;
+  multiSelectedTileIds?: Set<string>;
+  multiSelectedCtaIds?: Set<string>;
 }
 
 export function DraggableScreen({
@@ -186,6 +188,8 @@ export function DraggableScreen({
   liveCtaLabel,
   analysisHighlight,
   isPreviewMode = false,
+  multiSelectedTileIds,
+  multiSelectedCtaIds,
 }: DraggableScreenProps) {
 
   const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
@@ -897,6 +901,7 @@ export function DraggableScreen({
                         interactive={!isPreviewMode}
                         isDragging={blockDragId === block.InfoId}
                         isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                        isMultiSelected={multiSelectedCtaIds?.has(block.InfoId)}
                         onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                         onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
                         onDragStart={isPreviewMode ? undefined : handleBlockDragStart}
@@ -979,6 +984,7 @@ export function DraggableScreen({
                   liveTileText={liveTileText}
                   analysisHighlightTileId={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.tileId : undefined}
                   analysisHighlightMessage={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.message : undefined}
+                  multiSelectedTileIds={multiSelectedTileIds}
                 />
                 {(tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
               </React.Fragment>
@@ -1073,6 +1079,7 @@ export function DraggableScreen({
                     interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
                     isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                    isMultiSelected={multiSelectedCtaIds?.has(block.InfoId)}
                     onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                     onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
                     onDragStart={isPreviewMode ? undefined : handleBlockDragStart}

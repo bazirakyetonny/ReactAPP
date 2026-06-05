@@ -38,6 +38,7 @@ import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
+import { useMultiSelect } from "./hooks/useMultiSelect";
 import { BusyModal } from "./components/BusyModal";
 
 function App() {
@@ -400,6 +401,62 @@ function App() {
     versionId: currentVersion?.AppVersionId,
     disabled: isPreviewMode,
   });
+
+  const {
+    isMultiSelectMode,
+    selectedTileIds,
+    selectedCtaIds,
+    toggleMultiSelectMode,
+    exitMultiSelectMode,
+    setSelectedTileIds,
+    setSelectedCtaIds,
+  } = useMultiSelect();
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && isMultiSelectMode) exitMultiSelectMode();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isMultiSelectMode, exitMultiSelectMode]);
+
+  function handleBulkEditTiles(patch: Record<string, any>) {
+    setInfoContent((prev: any[]) => {
+      let content = prev;
+      selectedTileIds.forEach((tileId) => {
+        content = applyEditTile(content, tileId, patch);
+      });
+      return content;
+    });
+    setNavContents((prev: Record<string, any[]>) => {
+      const next = { ...prev };
+      for (const [pageId, blocks] of Object.entries(prev)) {
+        let content = blocks;
+        selectedTileIds.forEach((tileId) => {
+          content = applyEditTile(content, tileId, patch);
+        });
+        next[pageId] = content;
+      }
+      return next;
+    });
+  }
+
+  function handleBulkEditCtas(patch: Record<string, any>) {
+    const applyCtaPatch = (blocks: any[]) =>
+      blocks.map((block: any) =>
+        block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId)
+          ? { ...block, CtaAttributes: { ...(block.CtaAttributes ?? {}), ...patch } }
+          : block,
+      );
+    setInfoContent((prev: any[]) => applyCtaPatch(prev));
+    setNavContents((prev: Record<string, any[]>) => {
+      const next = { ...prev };
+      for (const pageId of Object.keys(prev)) {
+        next[pageId] = applyCtaPatch(prev[pageId]);
+      }
+      return next;
+    });
+  }
 
   const homePageId =
     (currentVersion?.Pages ?? []).find(
@@ -1336,6 +1393,14 @@ function App() {
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
+        isMultiSelectMode={isMultiSelectMode}
+        onMultiSelectToggle={() => {
+          if (!isMultiSelectMode) {
+            setSelectedTileId(null);
+            setSelectedCtaId(null);
+          }
+          toggleMultiSelectMode();
+        }}
       />
       <EditorModals
         showPublishModal={showPublishModal}
@@ -1450,6 +1515,14 @@ function App() {
           onActiveFrameChange={handleActiveFrameChange}
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
+          isMultiSelectMode={isMultiSelectMode}
+          onSelectionChange={(tileIds, ctaIds) => {
+            setSelectedTileIds(tileIds);
+            setSelectedCtaIds(ctaIds);
+          }}
+          onExitMultiSelectMode={exitMultiSelectMode}
+          multiSelectedTileIds={selectedTileIds}
+          multiSelectedCtaIds={selectedCtaIds}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar
@@ -1494,6 +1567,10 @@ function App() {
             onCtaWeblinkSave={handleCtaWeblinkSave}
             onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
             onEndLiveCtaLabel={() => setLiveCtaLabel(null)}
+            selectedTileIds={selectedTileIds}
+            selectedCtaIds={selectedCtaIds}
+            onBulkEditTiles={handleBulkEditTiles}
+            onBulkEditCtas={handleBulkEditCtas}
           />
         )}
       </div>

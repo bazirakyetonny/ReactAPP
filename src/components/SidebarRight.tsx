@@ -4,6 +4,7 @@ import type { ThemeColors, ThemeCtaColor, ThemeIcon } from "../types";
 import { SidebarCtaControls } from "./SidebarCtaControls";
 import { ColorPalette } from "./sidebar_right/ColorPalette";
 import { TileIconSelector } from "./sidebar_right/TileIconSelector";
+import { MultiSelectPanel } from "./sidebar_right/MultiSelectPanel";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -226,6 +227,10 @@ export function SidebarRight({
   onLiveCtaLabel,
   onEndLiveCtaLabel,
   moodId,
+  selectedTileIds,
+  selectedCtaIds,
+  onBulkEditTiles,
+  onBulkEditCtas,
 }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
@@ -246,6 +251,10 @@ export function SidebarRight({
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
   moodId?: string;
+  selectedTileIds?: Set<string>;
+  selectedCtaIds?: Set<string>;
+  onBulkEditTiles?: (patch: Record<string, any>) => void;
+  onBulkEditCtas?: (patch: Record<string, any>) => void;
 }) {
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
@@ -278,7 +287,17 @@ export function SidebarRight({
       {/* 1. Page name */}
       <div className="sr-page-name">{(pageName ?? "").toUpperCase()}</div>
 
-      {!selectedTile && !selectedCta && (
+      {/* Multi-select bulk-edit panel */}
+      <MultiSelectPanel
+        selectedTileIds={selectedTileIds}
+        selectedCtaIds={selectedCtaIds}
+        moodId={moodId}
+        ctaColors={ctaColors}
+        onBulkEditTiles={onBulkEditTiles}
+        onBulkEditCtas={onBulkEditCtas}
+      />
+
+      {!selectedTile && !selectedCta && (selectedTileIds?.size ?? 0) === 0 && (selectedCtaIds?.size ?? 0) === 0 && (
         <div className="sr-empty-state">
           Select a tile or button to edit its properties
         </div>
