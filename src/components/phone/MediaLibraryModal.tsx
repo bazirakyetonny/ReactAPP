@@ -57,7 +57,6 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,9 +83,6 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
   const allSelected = mediaList.length > 0 && mediaList.every((m) => selectedIds.has(m.MediaId));
   const someSelected = !allSelected && mediaList.some((m) => selectedIds.has(m.MediaId));
 
-  useEffect(() => {
-    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
-  }, [someSelected]);
 
   function toggleAll() {
     setSelectedIds(allSelected ? new Set() : new Set(mediaList.map((m) => m.MediaId)));
@@ -242,11 +238,24 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
         {!singleSelect && (
           <div className="media-select-all-row">
             <label className="media-select-all-label">
-              <input
-                ref={selectAllRef}
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
+              <span
+                role="checkbox"
+                aria-checked={allSelected}
+                aria-label="Select all images"
+                tabIndex={0}
+                title="Select all images"
+                className={`select-media-checkbox fa-regular ${allSelected ? 'fa-square-check' : someSelected ? 'fa-square-minus' : 'fa-square'}`}
+                onClick={toggleAll}
+                onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll(); } }}
+                style={{
+                  fontSize: '25px',
+                  lineHeight: 0.8,
+                  backgroundColor: 'rgb(255, 255, 255)',
+                  color: 'rgb(80, 104, 168)',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  marginLeft: '2px',
+                }}
               />
               Select Images
             </label>
@@ -281,12 +290,24 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
                 }}
               >
                 {!singleSelect && (
-                <input
-                  type="checkbox"
-                  className="media-item-checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleSelect(item.MediaId)}
-                  onClick={(e) => e.stopPropagation()}
+                <span
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  aria-label="Select image"
+                  tabIndex={0}
+                  title="Select image"
+                  className={`select-media-checkbox fa-regular ${isSelected ? 'fa-square-check' : 'fa-square'}`}
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(item.MediaId); }}
+                  onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSelect(item.MediaId); } }}
+                  style={{
+                    fontSize: '25px',
+                    lineHeight: 0.8,
+                    backgroundColor: 'rgb(255, 255, 255)',
+                    color: 'rgb(80, 104, 168)',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    marginLeft: '2px',
+                  }}
                 />
                 )}
                 <button
@@ -297,15 +318,22 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
                   aria-label="Delete image"
                 >
                   {deletingId === item.MediaId ? (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <circle cx="6" cy="6" r="4" stroke="#fff" strokeWidth="1.5" strokeDasharray="6 6" />
+                    <svg width="33" height="33" viewBox="0 0 33 33" fill="none">
+                      <circle cx="16.5" cy="16.5" r="16" stroke="#5068a8" strokeWidth="1" fill="#fff" />
+                      <circle cx="16.5" cy="16.5" r="4" stroke="#5068a8" strokeWidth="1.5" strokeDasharray="6 6" />
                     </svg>
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-1 14H6L5 6" />
-                      <path d="M10 11v6M14 11v6" />
-                      <path d="M9 6V4h6v2" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="33" height="33" viewBox="0 0 33 33">
+                      <g fill="#fff" stroke="#5068a8" strokeWidth="1">
+                        <circle cx="16.5" cy="16.5" r="16.5" stroke="none" />
+                        <circle cx="16.5" cy="16.5" r="16" fill="none" />
+                      </g>
+                      <g transform="translate(9.75 9)">
+                        <path d="M4.5,9H18" transform="translate(-4.5 -6)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+                        <path d="M18.572,6V16.5A1.542,1.542,0,0,1,16.99,18H9.082A1.542,1.542,0,0,1,7.5,16.5V6M9.872,6V4.5A1.542,1.542,0,0,1,11.454,3h3.163A1.542,1.542,0,0,1,16.2,4.5V6" transform="translate(-6.286 -3)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+                        <path d="M15,16.5v3.643" transform="translate(-9.75 -9.199)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+                        <path d="M21,16.5v3.643" transform="translate(-12.75 -9.199)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+                      </g>
                     </svg>
                   )}
                 </button>

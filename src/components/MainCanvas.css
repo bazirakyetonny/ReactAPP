@@ -62,9 +62,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.6),
-    0 4px 16px rgba(0, 0, 0, 0.35),
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
   transition: border-color 0.18s;
@@ -100,10 +98,7 @@
   cursor: pointer;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .delete-page-btn:hover {
@@ -126,10 +121,7 @@
   font-size: 11px;
   font-weight: 700;
   color: #111111;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -267,10 +259,7 @@
   align-items: center;
   padding: 3px;
   border-radius: 4px;
-  transition:
-    opacity 0.15s,
-    color 0.1s,
-    background 0.1s;
+  transition: opacity 0.15s, color 0.1s, background 0.1s;
 }
 
 .phone-linked-page-name-wrap--editable:hover .phone-linked-edit-btn {
@@ -334,9 +323,7 @@
 }
 
 .phone-screen--dragging .phone-tile-wrap--tile-drag-source {
-  transition:
-    height 0.12s ease,
-    min-height 0.12s ease;
+  transition: height 0.12s ease, min-height 0.12s ease;
 }
 
 .phone-screen--dragging .phone-add-row {
@@ -509,9 +496,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0.9;
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.28),
-    0 3px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 /* Drop slot — shown at the tile insertion point within a column */
@@ -554,16 +539,12 @@
 
 /* Nav-active tile — blue outline marks tiles whose linked page is open */
 .phone-tile-wrap--nav-active .phone-tile {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #1a3a6e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #1a3a6e;
 }
 
 /* Selected tile border — always visible once clicked (wins over nav-active) */
 .phone-tile-wrap.selected .phone-tile {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #3d5a9e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }
 
 /* Analysis highlight — dashed red outline; label overlaps bottom border. */
@@ -572,9 +553,7 @@
   outline-offset: 2px;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-fullwidth {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #ef4444;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-round-wrap {
   outline: 2px solid #ef4444;
@@ -586,9 +565,7 @@
 }
 .block--analysis-highlight .phone-image-single,
 .block--analysis-highlight .phone-carousel-img {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #ef4444;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
 }
 
 /* Analysis label — sits on the bottom border, half inside / half outside */
@@ -750,10 +727,7 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition:
-    opacity 0.15s,
-    background 0.15s,
-    color 0.15s;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
 .phone-add-row:hover .phone-add-btn {
@@ -791,9 +765,7 @@
   color: #374151;
   cursor: pointer;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
-  transition:
-    background 0.15s,
-    transform 0.1s;
+  transition: background 0.15s, transform 0.1s;
   z-index: 1;
 }
 
@@ -824,9 +796,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   flex-shrink: 0;
-  transition:
-    border-color 0.18s,
-    box-shadow 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .page-thumb-clip:hover {
@@ -992,36 +962,44 @@
 .phone-desc-edit-btn,
 .phone-desc-delete-btn {
   position: absolute;
-  top: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -5px;
+  background: none;
   border: none;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
 }
 .phone-desc-edit-btn {
-  right: 28px;
-  background: #374151;
-  color: #fff;
+  right: 38px;
 }
 .phone-desc-delete-btn {
-  right: 4px;
-  background: #ef4444;
-  color: #fff;
+  right: 5px;
 }
 .phone-desc-block:hover .phone-desc-edit-btn,
 .phone-desc-block:hover .phone-desc-delete-btn {
   opacity: 1;
 }
+.phone-desc-delete-btn:hover circle,
+.phone-desc-edit-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-desc-delete-btn:hover path,
+.phone-desc-edit-btn:hover path {
+  stroke: #fff;
+}
 .phone-desc-block--interactive {
   cursor: grab;
+}
+.phone-desc-block--interactive:hover {
+  outline: 1.5px dashed #9ca3af;
+  outline-offset: -10px;
+  border-radius: 4px;
 }
 .phone-desc-block--interactive:active {
   cursor: grabbing;
@@ -1211,33 +1189,36 @@
 .phone-image-edit-btn,
 .phone-image-delete-btn {
   position: absolute;
-  top: 6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -5px;
+  background: none;
   border: none;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
 }
 .phone-image-edit-btn {
-  right: 30px;
-  background: #374151;
-  color: #fff;
+  right: 38px;
 }
 .phone-image-delete-btn {
-  right: 6px;
-  background: #ef4444;
-  color: #fff;
+  right: 5px;
 }
 .phone-image-block:hover .phone-image-edit-btn,
 .phone-image-block:hover .phone-image-delete-btn {
   opacity: 1;
+}
+.phone-image-delete-btn:hover circle,
+.phone-image-edit-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-image-delete-btn:hover path,
+.phone-image-edit-btn:hover path {
+  stroke: #fff;
 }
 
 /* Carousel */
@@ -1309,7 +1290,7 @@
   background: #fff;
   border-radius: 14px;
   padding: 50px;
-  width: 740px;
+  width: 900px;
   max-width: 96vw;
   max-height: 90vh;
   display: flex;
@@ -1364,9 +1345,7 @@
   justify-content: center;
   gap: 8px;
   background: #fff;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   min-height: 110px;
   flex-shrink: 0;
 }
@@ -1459,11 +1438,11 @@
   cursor: pointer;
   user-select: none;
 }
-.media-select-all-label input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #5068a8;
-  cursor: pointer;
+.media-select-all-label .select-media-checkbox {
+  position: static;
+  top: unset;
+  left: unset;
+  opacity: 1;
 }
 
 /* Image grid */
@@ -1517,20 +1496,16 @@
 }
 .media-item-delete {
   position: absolute;
-  top: 0;
-  right: 0;
-  transform: translate(30%, -30%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  top: -15px;
+  right: 5px;
+  background: none;
   border: none;
-  background: #ef4444;
-  color: #fff;
+  padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
   z-index: 2;
@@ -1538,8 +1513,20 @@
 .media-item:hover .media-item-delete {
   opacity: 1;
 }
+.select-media-checkbox {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 2;
+}
+.media-item-delete:hover circle {
+  fill: #5068a8;
+}
+.media-item-delete:hover path {
+  stroke: #fff;
+}
 .media-item-delete:disabled {
-  background: #9ca3af;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .media-item-checkbox {
@@ -1708,9 +1695,7 @@
   cursor: pointer;
 }
 .phone-cta-block--selected .phone-cta-fullwidth {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #3d5a9e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }
 .phone-cta-block--selected .phone-cta-round-wrap {
   outline: 2px solid #3d5a9e;
@@ -1755,7 +1740,7 @@
 }
 .phone-cta-fullwidth {
   width: 100%;
-  height: 75px;
+  height: 85px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1807,51 +1792,46 @@
   position: relative;
   flex-shrink: 0;
   display: inline-flex;
-  width: 56px;
-  height: 56px;
-  overflow: hidden;
-  border-radius: 6px;
+  overflow: visible;
+  width: 70px;
+  height: 65px;
+  border-radius: 8px;
 }
 .phone-cta-img {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 65px;
   object-fit: cover;
   display: block;
   flex-shrink: 0;
+  border-radius: 8px;
 }
 .phone-cta-img-placeholder {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 65px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: 8px;
   color: inherit;
 }
 .phone-cta-img-edit {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 18px;
-  height: 18px;
-  background: rgba(0, 0, 0, 0.62);
+  top: -10px;
+  right: -10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #ffffff;
-  padding: 0;
   opacity: 0;
   transition: opacity 0.15s;
 }
 .phone-cta-img-wrap:hover .phone-cta-img-edit {
   opacity: 1;
-}
-.phone-cta-img-edit:hover {
-  background: rgba(0, 0, 0, 0.88);
 }
 .phone-cta-icon {
   font-size: 22px;
@@ -1875,11 +1855,27 @@
 }
 .phone-cta-actions {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: -10px;
+  right: 5px;
   display: none;
   gap: 4px;
 }
 .phone-cta-block--interactive:hover .phone-cta-actions {
   display: flex;
+}
+.phone-cta-actions .phone-block-action-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-cta-actions .phone-block-action-btn:hover circle {
+  fill: #5068a8;
+}
+.phone-cta-actions .phone-block-action-btn:hover path {
+  stroke: #fff;
 }

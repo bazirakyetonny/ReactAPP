@@ -1,3 +1,5 @@
+import React from 'react';
+
 interface DescriptionBlockProps {
   block: { InfoId: string; InfoValue?: string };
   interactive?: boolean;
@@ -9,16 +11,29 @@ interface DescriptionBlockProps {
 
 function PencilIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-      <path d="M7.5 1.5l2 2L3 10H1v-2L7.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 33 33" aria-hidden="true">
+      <g fill="#fff" stroke="#5068a8" strokeWidth="1">
+        <circle cx="16.5" cy="16.5" r="16.5" stroke="none" />
+        <circle cx="16.5" cy="16.5" r="16" fill="none" />
+      </g>
+      <path d="M12.834,3.8a1.854,1.854,0,0,1,2.622,2.622L6.606,15.274,3,16.257l.983-3.606Z" transform="translate(7 6.742)" fill="#fff" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
     </svg>
   );
 }
 
 function TrashIcon() {
   return (
-    <svg width="10" height="11" viewBox="0 0 10 11" fill="none" aria-hidden="true">
-      <path d="M1 3h8M4 3V2h2v1M2 3l.5 6h5L8 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 33 33" aria-hidden="true">
+      <g fill="#fff" stroke="#5068a8" strokeWidth="1">
+        <circle cx="16.5" cy="16.5" r="16.5" stroke="none" />
+        <circle cx="16.5" cy="16.5" r="16" fill="none" />
+      </g>
+      <g transform="translate(9.75 9)">
+        <path d="M4.5,9H18" transform="translate(-4.5 -6)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+        <path d="M18.572,6V16.5A1.542,1.542,0,0,1,16.99,18H9.082A1.542,1.542,0,0,1,7.5,16.5V6M9.872,6V4.5A1.542,1.542,0,0,1,11.454,3h3.163A1.542,1.542,0,0,1,16.2,4.5V6" transform="translate(-6.286 -3)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+        <path d="M15,16.5v3.643" transform="translate(-9.75 -9.199)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+        <path d="M21,16.5v3.643" transform="translate(-12.75 -9.199)" fill="none" stroke="#5068a8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" />
+      </g>
     </svg>
   );
 }
