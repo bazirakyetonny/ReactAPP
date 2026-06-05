@@ -463,7 +463,7 @@ function App() {
         ? `[data-tile-id="${issue.subItemId}"]`
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
-      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
   }
 
