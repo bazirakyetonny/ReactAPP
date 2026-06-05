@@ -310,25 +310,59 @@
   flex-shrink: 0;
 }
 
-/* ── Confirmation strip ───────────────────────────────────────── */
-.tm-confirm {
-  border-top: 1px solid #e5e7eb;
-  padding: 14px 20px;
+/* ── Confirmation modal ───────────────────────────────────────── */
+.tm-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10003;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tm-confirm-modal {
   background: #ffffff;
-  flex-shrink: 0;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  width: 380px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tm-confirm-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tm-confirm-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.tm-confirm-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .tm-confirm-msg {
   font-size: 13px;
   color: #374151;
-  margin: 0 0 12px;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.5;
 }
 
-.tm-confirm-btns {
+.tm-confirm-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .tm-btn-secondary {

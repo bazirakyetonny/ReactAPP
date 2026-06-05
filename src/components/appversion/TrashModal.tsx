@@ -239,47 +239,80 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
           )}
         </div>
 
-        {confirmAction && (
-          <div className="tm-confirm">
-            {error && <div className="tm-error-msg">{error}</div>}
-            <p className="tm-confirm-msg">{confirmLabels[confirmAction]}</p>
-            <div className="tm-confirm-btns">
-              <button
-                className="tm-btn-secondary"
-                type="button"
-                disabled={acting}
-                onClick={() => {
-                  setConfirmAction(null);
-                  setError(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className={
-                  confirmAction === "restore"
-                    ? "tm-btn-primary"
-                    : "tm-btn-danger"
-                }
-                type="button"
-                disabled={acting}
-                onClick={handleConfirm}
-              >
-                {acting
-                  ? "…"
-                  : confirmAction === "restore"
-                    ? "Restore"
-                    : "Delete Forever"}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
-  return ReactDOM.createPortal(
-    modal,
-    document.getElementById("root") ?? document.body,
+
+  const root = document.getElementById("root") ?? document.body;
+  return (
+    <>
+      {ReactDOM.createPortal(modal, root)}
+      {confirmAction &&
+        ReactDOM.createPortal(
+          <ConfirmModal
+            message={confirmLabels[confirmAction]}
+            isDestructive={confirmAction !== "restore"}
+            confirmLabel={confirmAction === "restore" ? "Restore" : "Delete Forever"}
+            acting={acting}
+            error={error}
+            onCancel={() => { setConfirmAction(null); setError(null); }}
+            onConfirm={handleConfirm}
+          />,
+          root,
+        )}
+    </>
+  );
+}
+
+interface ConfirmModalProps {
+  message: string;
+  isDestructive: boolean;
+  confirmLabel: string;
+  acting: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function ConfirmModal({
+  message,
+  isDestructive,
+  confirmLabel,
+  acting,
+  error,
+  onCancel,
+  onConfirm,
+}: ConfirmModalProps) {
+  return (
+    <div className="tm-confirm-overlay" onMouseDown={onCancel}>
+      <div className="tm-confirm-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="tm-confirm-header">
+          <span className="tm-confirm-title">{confirmLabel}</span>
+        </div>
+        <div className="tm-confirm-body">
+          <p className="tm-confirm-msg">{message}</p>
+          {error && <div className="tm-error-msg">{error}</div>}
+        </div>
+        <div className="tm-confirm-footer">
+          <button
+            className="tm-btn-secondary"
+            type="button"
+            disabled={acting}
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            className={isDestructive ? "tm-btn-danger" : "tm-btn-primary"}
+            type="button"
+            disabled={acting}
+            onClick={onConfirm}
+          >
+            {acting ? "…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

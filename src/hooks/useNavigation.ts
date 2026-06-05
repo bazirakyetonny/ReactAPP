@@ -14,6 +14,10 @@ export function useNavigation() {
   }
 
   function handleTileNavigate(pageId: string, parentIndex: number) {
+    const cv = dataStore.get("Current_Version");
+    const pageExists = (cv?.Pages ?? []).some((p: any) => p.PageId === pageId);
+    if (!pageExists) return;
+
     const insertAt = parentIndex + 1;
     setNavStack((prev) =>
       prev[insertAt] === pageId
@@ -22,16 +26,9 @@ export function useNavigation() {
     );
     setNavContents((prev) => {
       if (prev[pageId] !== undefined) return prev;
-      const page = (dataStore.get("Current_Version")?.Pages ?? []).find(
-        (p: any) => p.PageId === pageId
-      );
-      console.log(">>>", prev);
+      const page = (cv?.Pages ?? []).find((p: any) => p.PageId === pageId);
       if (!page?.PageStructure) return prev;
       try {
-        console.log(">>>>", {
-          ...prev,
-          [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [],
-        });
         return {
           ...prev,
           [pageId]: JSON.parse(page.PageStructure).InfoContent ?? [],
@@ -77,6 +74,7 @@ export function useNavigation() {
     dataStore.set("Current_Version", {
       ...cv,
       Page: (cv.Page ?? []).filter((p: any) => p.PageId !== pageId),
+      Pages: (cv.Pages ?? []).filter((p: any) => p.PageId !== pageId),
     });
     setNavStack((prev) => prev.filter((id) => id !== pageId));
     setNavContents((prev) => {

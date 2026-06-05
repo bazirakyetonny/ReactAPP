@@ -1371,7 +1371,14 @@ function App() {
         onTranslationsUpdated={handleTranslationsUpdated}
         showTrashModal={showTrashModal}
         onCloseTrashModal={() => setShowTrashModal(false)}
-        onTrashChanged={() => getAppVersions().then(setAppVersions).catch(() => {})}
+        onTrashChanged={() => {
+          getAppVersions().then(setAppVersions).catch(() => {});
+          getActiveAppVersion().then((fetched: any) => {
+            const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+            dataStore.set("Current_Version", full);
+            setCurrentVersion(full);
+          }).catch(() => {});
+        }}
         tileImageModal={tileImageModal}
         onTileImageConfirm={handleTileImageConfirm}
         onCloseTileImage={() => setTileImageModal(null)}
