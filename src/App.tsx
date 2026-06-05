@@ -84,9 +84,16 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [translationRevision, setTranslationRevision] = useState(0);
   const [translationPageId, setTranslationPageId] = useState<string | null>(
     null,
   );
+  const [translationHighlight, setTranslationHighlight] = useState<{
+    blockId: string;
+    tileId?: string;
+    language: string;
+    message: string;
+  } | null>(null);
   const [tileImageModal, setTileImageModal] = useState<{
     tileId: string;
     tileWidth: number;
@@ -349,6 +356,11 @@ function App() {
     }
   })();
 
+  const baseLanguage: string = (currentVersion?.AppVersionLanguage ?? "").toLowerCase();
+  const translationLanguages = appVersionMultiLanguages.filter(
+    (l) => l.toLowerCase() !== baseLanguage,
+  );
+
   const allTiles = [
     ...infoContent.flatMap((b: any) =>
       (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []),
@@ -400,6 +412,8 @@ function App() {
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
     disabled: isPreviewMode,
+    translationLanguages,
+    translationRevision,
   });
 
   const {
@@ -479,9 +493,8 @@ function App() {
 
   function openAnalysis() {
     setAnalysisOpen(true);
-    setAnalysisIndex(0);
-    if (analysisIssues.length > 0 && analysisIssues[0].pageId !== homePageId) {
-      handleNavigateToPath([analysisIssues[0].pageId]);
+    if (analysisIssues.length > 0) {
+      goToAnalysisIssue(0);
     }
   }
 
@@ -490,6 +503,19 @@ function App() {
     if (!issue) return;
     setAnalysisIndex(idx);
     if (issue.pageId !== homePageId) handleNavigateToPath([issue.pageId]);
+    if (issue.language) {
+      setTranslationPageId(issue.pageId);
+      setIsTranslationOpen(true);
+      setTranslationHighlight({
+        blockId: issue.blockId,
+        tileId: issue.subItemId,
+        language: issue.language,
+        message: issue.category === 1 ? "Invalid URL" : "Text too long",
+      });
+    } else {
+      setIsTranslationOpen(false);
+      setTranslationHighlight(null);
+    }
   }
 
   function handleAnalysisPrev() {
@@ -508,7 +534,7 @@ function App() {
     analysisOpen && analysisIssues.length > 0
       ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
       : null;
-  const analysisHighlight = currentAnalysisIssue
+  const analysisHighlight = currentAnalysisIssue && !currentAnalysisIssue.language
     ? {
         blockId: currentAnalysisIssue.blockId,
         tileId: currentAnalysisIssue.subItemId,
@@ -1389,7 +1415,7 @@ function App() {
         )}
         onAnalysisPrev={handleAnalysisPrev}
         onAnalysisNext={handleAnalysisNext}
-        onAnalysisClose={() => setAnalysisOpen(false)}
+        onAnalysisClose={() => { setAnalysisOpen(false); setTranslationHighlight(null); }}
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
@@ -1540,6 +1566,11 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
+            highlightBlockId={translationHighlight?.blockId}
+            highlightTileId={translationHighlight?.tileId}
+            highlightLanguage={translationHighlight?.language}
+            highlightMessage={translationHighlight?.message}
+            onSaved={() => setTranslationRevision((v) => v + 1)}
           />
         ) : isActivePageBlank ? (
           <TemplateSidebar

@@ -108,6 +108,19 @@
   border-bottom-color: rgba(255, 255, 255, 0.55);
 }
 
+/* ── Analysis highlight ─────────────────────────────────────────────────────── */
+
+.phone-tile-wrap--analysis .phone-tile {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+.ts-block--analysis {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* Shared input base — resets browser styles, underline shows edit mode */
 .ts-editable-input {
   all: unset;
