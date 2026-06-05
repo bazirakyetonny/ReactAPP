@@ -334,7 +334,6 @@ export function DraggableScreen({
     ghostImages: Image[];
   } | null>(null);
   const allFramesBlockRectsRef = useRef<Map<string, { rect: DOMRect; frameIndex: number }>>(new Map());
-  const screenRef = useRef<HTMLDivElement>(null);
 
   const SCROLL_ZONE = 60;
   const SCROLL_SPEED = 8;
