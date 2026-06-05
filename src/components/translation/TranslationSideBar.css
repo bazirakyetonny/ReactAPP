@@ -132,3 +132,140 @@
   padding: 0 1px;
   cursor: text;
 }
+
+/* ── Description click-to-edit wrapper ─────────────────────────────────────── */
+
+.ts-desc-clickable {
+  cursor: text;
+  position: relative;
+}
+
+.ts-desc-clickable::after {
+  content: "Click to edit";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #6b7280;
+  background: rgba(249, 250, 251, 0.7);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.ts-desc-clickable:hover::after {
+  opacity: 1;
+}
+
+/* ── Inline Quill description editor ────────────────────────────────────────── */
+
+.ts-desc-editor {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin: 4px 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Compact Quill toolbar */
+.ts-desc-editor .ql-toolbar.ql-snow {
+  padding: 2px 4px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ts-desc-editor .ql-toolbar.ql-snow .ql-formats {
+  margin-right: 4px;
+}
+
+.ts-desc-editor .ql-toolbar.ql-snow button {
+  width: 20px;
+  height: 20px;
+  padding: 1px;
+}
+
+.ts-desc-editor .ql-toolbar.ql-snow button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Editor content area */
+.ts-desc-editor .ql-container.ql-snow {
+  border: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ts-desc-editor .ql-editor {
+  min-height: 80px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 6px 10px;
+  color: #1a2340;
+}
+
+.ts-desc-editor .ql-editor p {
+  margin: 0 0 4px;
+}
+
+.ts-desc-editor .ql-editor p:last-child {
+  margin-bottom: 0;
+}
+
+/* Footer row: char count + buttons */
+.ts-desc-editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.ts-desc-char {
+  font-size: 10px;
+  color: #9ca3af;
+  flex: 1;
+}
+
+.ts-desc-char--over {
+  font-size: 10px;
+  color: #ef4444;
+  flex: 1;
+}
+
+.ts-desc-cancel-btn,
+.ts-desc-save-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.ts-desc-cancel-btn {
+  background: #fff;
+  color: #374151;
+}
+
+.ts-desc-cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+.ts-desc-save-btn {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.ts-desc-save-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.ts-desc-save-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

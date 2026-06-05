@@ -37,7 +37,11 @@ export function buildLinkedFrames({
   handleEditTile, handleSelectCta, handleEditCta, handleTileDoubleClick,
   onCommitNewPage, onCancelNewPage,
 }: BuildLinkedFramesParams) {
-  return navStack.map((pageId, index) => {
+  return navStack
+    .filter((pageId) =>
+      pageId === NEW_PAGE_SENTINEL || allPages.some((p: any) => p.PageId === pageId)
+    )
+    .map((pageId, index) => {
     const isNew = pageId === NEW_PAGE_SENTINEL;
     const page = allPages.find((p: any) => p.PageId === pageId);
     const update = navUpdater(pageId);

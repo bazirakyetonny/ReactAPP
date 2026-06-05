@@ -109,6 +109,7 @@ function App() {
   const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -1370,6 +1371,7 @@ function App() {
         onAnalysisClose={() => { setAnalysisOpen(false); setTranslationHighlight(null); }}
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
+        onTrashClick={() => setShowTrashModal(true)}
       />
       <EditorModals
         showPublishModal={showPublishModal}
@@ -1410,6 +1412,16 @@ function App() {
         updateTranslationsVersion={updateTranslationsVersion}
         onCloseUpdateTranslations={() => setUpdateTranslationsVersion(null)}
         onTranslationsUpdated={handleTranslationsUpdated}
+        showTrashModal={showTrashModal}
+        onCloseTrashModal={() => setShowTrashModal(false)}
+        onTrashChanged={() => {
+          getAppVersions().then(setAppVersions).catch(() => {});
+          getActiveAppVersion().then((fetched: any) => {
+            const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+            dataStore.set("Current_Version", full);
+            setCurrentVersion(full);
+          }).catch(() => {});
+        }}
         tileImageModal={tileImageModal}
         onTileImageConfirm={handleTileImageConfirm}
         onCloseTileImage={() => setTileImageModal(null)}

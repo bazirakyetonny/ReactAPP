@@ -42,6 +42,7 @@ interface NavBarProps {
   isHistoryOpen?: boolean;
   onHistoryToggle?: () => void;
   onShareClick?: () => void;
+  onTrashClick?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -366,6 +367,7 @@ export function NavBar({
   isHistoryOpen = false,
   onHistoryToggle,
   onShareClick,
+  onTrashClick,
 }: NavBarProps) {
   const safeIndex = Math.min(
     analysisCurrentIndex,
@@ -534,7 +536,7 @@ export function NavBar({
         >
           <HistoryIcon active={isHistoryOpen} />
         </button>
-        <button className="navbar-icon-btn" type="button" title="Delete">
+        <button className="navbar-icon-btn" type="button" title="Trash" onClick={onTrashClick}>
           <TrashIcon />
         </button>
         <div className="navbar-separator" role="separator" />

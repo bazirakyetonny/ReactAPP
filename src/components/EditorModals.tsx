@@ -8,6 +8,7 @@ import { UpdateTranslationsModal } from './appversion/UpdateTranslationsModal';
 import { CreateAppVersionTemplateModal } from './appversion/CreateAppVersionTemplateModal';
 import { PublishModal } from './appversion/PublishModal';
 import { ShareLinkModal } from './appversion/ShareLinkModal';
+import { TrashModal } from './appversion/TrashModal';
 import { AddCtaModal } from './phone/AddCtaModal';
 import { TileImageModal } from './phone/TileImageModal';
 
@@ -65,6 +66,10 @@ interface EditorModalsProps {
   }) => void;
   onCloseTileImage: () => void;
 
+  showTrashModal: boolean;
+  onCloseTrashModal: () => void;
+  onTrashChanged: () => void;
+
   pendingCta: {
     blockType: string;
     insertBeforeInfoId: string | null;
@@ -90,6 +95,7 @@ export function EditorModals({
   trashVersion, onCloseTrash, onVersionDeleted,
   duplicateVersion, onCloseDuplicate, onVersionDuplicated,
   updateTranslationsVersion, onCloseUpdateTranslations, onTranslationsUpdated,
+  showTrashModal, onCloseTrashModal, onTrashChanged,
   tileImageModal, onTileImageConfirm, onCloseTileImage,
   pendingCta, onConfirmCta, onCancelCta,
 }: EditorModalsProps) {
@@ -162,6 +168,9 @@ export function EditorModals({
           onClose={onCloseUpdateTranslations}
           onUpdated={onTranslationsUpdated}
         />
+      )}
+      {showTrashModal && (
+        <TrashModal onClose={onCloseTrashModal} onChanged={onTrashChanged} />
       )}
       {tileImageModal && (
         <TileImageModal
