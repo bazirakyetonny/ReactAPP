@@ -4,6 +4,7 @@ interface DescriptionBlockProps {
   block: { InfoId: string; InfoValue?: string };
   interactive?: boolean;
   isDragging?: boolean;
+  isMultiSelected?: boolean;
   onEdit?: (infoId: string) => void;
   onDelete?: (infoId: string) => void;
   onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
@@ -38,13 +39,15 @@ function TrashIcon() {
   );
 }
 
-export function DescriptionBlock({ block, interactive = false, isDragging = false, onEdit, onDelete, onDragStart }: DescriptionBlockProps) {
+export function DescriptionBlock({ block, interactive = false, isDragging = false, isMultiSelected = false, onEdit, onDelete, onDragStart }: DescriptionBlockProps) {
   return (
     <div
+      data-description-id={block.InfoId}
       className={[
         'phone-desc-block',
         interactive ? 'phone-desc-block--interactive' : '',
         isDragging ? 'phone-desc-block--dragging' : '',
+        isMultiSelected ? 'phone-desc-block--multi-selected' : '',
       ].filter(Boolean).join(' ')}
       onMouseDown={interactive && onDragStart
         ? (e) => onDragStart(e, block.InfoId, e.currentTarget as HTMLElement)

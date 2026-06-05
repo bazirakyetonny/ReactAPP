@@ -134,6 +134,7 @@ export interface LinkedFrame {
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   onAddStandaloneTile?: () => void;
   onAddBlock?: (blockType: string, insertBeforeInfoId: string | null) => void;
+  onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
   onAddTilesToColumn?: (gridId: string, colId: string, count: number) => void;
   onFreeResizeRelease?: (
     gridId: string,
@@ -277,6 +278,22 @@ interface MainCanvasProps {
   appVersionId?: string;
   /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
   statusBarExtra?: React.ReactNode;
+  isMultiSelectMode?: boolean;
+  onSelectionChange?: (
+    tileIds: Set<string>,
+    ctaIds: Set<string>,
+    imageIds: Set<string>,
+    descIds: Set<string>,
+  ) => void;
+  multiSelectedTileIds?: Set<string>;
+  multiSelectedCtaIds?: Set<string>;
+  multiSelectedImageIds?: Set<string>;
+  multiSelectedDescriptionIds?: Set<string>;
+  onExitMultiSelectMode?: () => void;
+  onCopySelected?: (sourceBlocks: any[]) => void;
+  onCutSelected?: (sourceBlocks: any[]) => void;
+  hasClipboard?: boolean;
+  onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
 }
 
 export function MainCanvas({
@@ -325,8 +342,147 @@ export function MainCanvas({
   onDeletePage,
   appVersionId,
   statusBarExtra,
+  isMultiSelectMode = false,
+  onSelectionChange,
+  multiSelectedTileIds,
+  multiSelectedCtaIds,
+  multiSelectedImageIds,
+  multiSelectedDescriptionIds,
+  onExitMultiSelectMode,
+  onCopySelected,
+  onCutSelected,
+  hasClipboard,
+  onPasteBlocks,
 }: MainCanvasProps) {
-  const interactionsLocked = isPreviewMode || isReadOnly;
+  const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
+
+  const [marquee, setMarquee] = useState<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null>(null);
+  const marqueeOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  function handleCanvasMouseDown(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    marqueeOriginRef.current = { x, y };
+    setMarquee({ x1: x, y1: y, x2: x, y2: y });
+  }
+
+  function handleCanvasMouseMove(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode || !marqueeOriginRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMarquee({
+      x1: marqueeOriginRef.current.x,
+      y1: marqueeOriginRef.current.y,
+      x2: x,
+      y2: y,
+    });
+  }
+
+  function handleCanvasMouseUp(e: React.MouseEvent<HTMLElement>) {
+    if (!isMultiSelectMode || !marqueeOriginRef.current) return;
+    const canvasEl = e.currentTarget;
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const endX = e.clientX - canvasRect.left;
+    const endY = e.clientY - canvasRect.top;
+
+    const isDrag =
+      Math.abs(endX - marqueeOriginRef.current.x) > 5 ||
+      Math.abs(endY - marqueeOriginRef.current.y) > 5;
+
+    if (!isDrag) {
+      onExitMultiSelectMode?.();
+      marqueeOriginRef.current = null;
+      setMarquee(null);
+      return;
+    }
+
+    const selLeft = Math.min(marqueeOriginRef.current.x, endX);
+    const selTop = Math.min(marqueeOriginRef.current.y, endY);
+    const selRight = Math.max(marqueeOriginRef.current.x, endX);
+    const selBottom = Math.max(marqueeOriginRef.current.y, endY);
+
+    const tileIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-tile-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (
+        elLeft < selRight &&
+        elRight > selLeft &&
+        elTop < selBottom &&
+        elBottom > selTop
+      ) {
+        tileIds.add(el.dataset.tileId!);
+      }
+    });
+
+    const ctaIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-cta-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (
+        elLeft < selRight &&
+        elRight > selLeft &&
+        elTop < selBottom &&
+        elBottom > selTop
+      ) {
+        ctaIds.add(el.dataset.ctaId!);
+      }
+    });
+
+    const imageIds = new Set<string>();
+    canvasEl.querySelectorAll<HTMLElement>("[data-image-id]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const elLeft = r.left - canvasRect.left;
+      const elTop = r.top - canvasRect.top;
+      const elRight = r.right - canvasRect.left;
+      const elBottom = r.bottom - canvasRect.top;
+      if (
+        elLeft < selRight &&
+        elRight > selLeft &&
+        elTop < selBottom &&
+        elBottom > selTop
+      ) {
+        imageIds.add(el.dataset.imageId!);
+      }
+    });
+
+    const descIds = new Set<string>();
+    canvasEl
+      .querySelectorAll<HTMLElement>("[data-description-id]")
+      .forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const elLeft = r.left - canvasRect.left;
+        const elTop = r.top - canvasRect.top;
+        const elRight = r.right - canvasRect.left;
+        const elBottom = r.bottom - canvasRect.top;
+        if (
+          elLeft < selRight &&
+          elRight > selLeft &&
+          elTop < selBottom &&
+          elBottom > selTop
+        ) {
+          descIds.add(el.dataset.descriptionId!);
+        }
+      });
+
+    onSelectionChange?.(tileIds, ctaIds, imageIds, descIds);
+    marqueeOriginRef.current = null;
+    setMarquee(null);
+  }
 
   const tileGrids = infoContent.filter(
     (block: any) => block.InfoType === "TileGrid",
@@ -492,121 +648,157 @@ export function MainCanvas({
 
   // In preview mode: show only the current active frame
   const showHomeFrame = !isPreviewMode || (linkedFrames?.length ?? 0) === 0;
-  const previewLinkedFrames = isPreviewMode && linkedFrames?.length
-    ? [linkedFrames[linkedFrames.length - 1]]
-    : linkedFrames;
+  const previewLinkedFrames =
+    isPreviewMode && linkedFrames?.length
+      ? [linkedFrames[linkedFrames.length - 1]]
+      : linkedFrames;
+
+  const marqueeStyle = marquee
+    ? {
+        left: Math.min(marquee.x1, marquee.x2),
+        top: Math.min(marquee.y1, marquee.y2),
+        width: Math.abs(marquee.x2 - marquee.x1),
+        height: Math.abs(marquee.y2 - marquee.y1),
+      }
+    : null;
 
   return (
-    <main className="app-canvas">
+    <main
+      className="app-canvas"
+      style={isMultiSelectMode ? { cursor: "crosshair" } : undefined}
+      onMouseDown={handleCanvasMouseDown}
+      onMouseMove={handleCanvasMouseMove}
+      onMouseUp={handleCanvasMouseUp}
+    >
+      {marqueeStyle && (
+        <div
+          className="marquee-selection"
+          style={{ position: "absolute", ...marqueeStyle }}
+        />
+      )}
       <div className="canvas-stage" ref={canvasStageRef}>
         {/* Home frame */}
         {showHomeFrame && (
-        <div className={`phone-frame${activeFrameIndex === -1 ? ' phone-frame--active' : ' phone-frame--inactive'}`} ref={mainPhoneFrameRef} onMouseDown={() => setManualActiveIndex(-1)}>
-          <PhoneStatusBar rightExtra={statusBarExtra} />
-          <PhoneAppHeader />
-          <DraggableScreen
-            infoContent={infoContent}
-            tileGrids={tileGrids}
-            themeColors={themeColors}
-            themeIcons={themeIcons}
-            selectedTileId={selectedTileId}
-            onSelectTile={onSelectTile}
-            onAddColumn={onAddColumn}
-            onDeleteTile={onDeleteTile}
-            onEditTile={onEditTile}
-            onAddTilesToColumn={onAddTilesToColumn}
-            onAddStandaloneTile={onAddStandaloneTile}
-            onAddBlock={onAddBlock}
-            onFreeResizeRelease={onFreeResizeRelease}
-            onTileDrop={onTileDrop}
-            onTileDropAsNewBlock={onTileDropAsNewBlock}
-            onTileNavigate={
-              onTileNavigate
-                ? (pageId) => onTileNavigate(pageId, -1)
-                : undefined
-            }
-            onCollapseFromParent={
-              onCollapseDescendants
-                ? () => onCollapseDescendants(-1)
-                : undefined
-            }
-            activeNavTileIds={activeNavTileIds}
-            sourceFrameIndex={-1}
-            getAllFrameData={() => getAllFrameData(-1)}
-            onCrossFrameDragPreview={setCrossFramePreview}
-            onCrossFrameTileDrop={
-              onCrossFrameTileDrop
-                ? (fg, fc, tid, tfi, pv) =>
-                    onCrossFrameTileDrop(-1, tfi, fg, fc, tid, pv)
-                : undefined
-            }
-            onCrossFrameTileDropToEmpty={
-              onCrossFrameTileDropToEmpty
-                ? (fg, fc, tid, tfi) =>
-                    onCrossFrameTileDropToEmpty(-1, tfi, fg, fc, tid)
-                : undefined
-            }
-            onCrossFrameTileDropAsNewBlock={
-              onCrossFrameTileDropAsNewBlock
-                ? (fg, fc, tid, tfi, bi) =>
-                    onCrossFrameTileDropAsNewBlock(-1, tfi, fg, fc, tid, bi)
-                : undefined
-            }
-            externalTileDropPreview={
-              crossFramePreview?.frameIndex === -1
-                ? crossFramePreview.tdPreview
-                : null
-            }
-            externalBlockInsertPreview={
-              crossFramePreview?.frameIndex === -1
-                ? crossFramePreview.biPreview
-                : null
-            }
-            isExternalDragActive={
-              !!(
-                crossFramePreview?.frameIndex === -1 &&
-                (crossFramePreview.tdPreview ||
-                  crossFramePreview.biPreview ||
-                  crossFramePreview.emptyDrop)
-              )
-            }
-            onColRef={(id, el) => registerFrameEl(-1, "col", id, el)}
-            onGridRef={(id, el) => registerFrameEl(-1, "grid", id, el)}
-            onBlockWrapperRef={(id, el) =>
-              registerFrameEl(-1, "blockWrapper", id, el)
-            }
-            onAddDescription={onAddDescription}
-            onEditDescription={onEditDescription}
-            onDeleteBlock={onDeleteBlock}
-            onMoveBlock={onMoveBlock}
-            onCrossFrameBlockDrop={onCrossFrameBlockDrop}
-            onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
-            externalBlockDropPreview={
-              crossFrameBlockPreview?.targetFrameIdx === -1
-                ? {
-                    insertBeforeInfoId:
-                      crossFrameBlockPreview.insertBeforeInfoId,
-                  }
-                : null
-            }
-            isExternalBlockDragActive={
-              crossFrameBlockPreview?.targetFrameIdx === -1
-            }
-            onAddImage={onAddImage}
-            onEditImage={onEditImage}
-            onTileDoubleClick={onTileDoubleClick}
-            onDeselectTile={onDeselectTile}
-            onSelectCta={onSelectCta}
-            onEditCta={onEditCta}
-            selectedCtaId={selectedCtaId}
-            themeCtaColors={themeCtaColors}
-            onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
-            liveTileText={liveTileText}
-            liveCtaLabel={liveCtaLabel}
-            analysisHighlight={analysisHighlight}
-            isPreviewMode={interactionsLocked}
-          />
-        </div>
+          <div
+            className={`phone-frame${activeFrameIndex === -1 ? " phone-frame--active" : " phone-frame--inactive"}`}
+            ref={mainPhoneFrameRef}
+            onMouseDown={() => setManualActiveIndex(-1)}
+          >
+            <PhoneStatusBar rightExtra={statusBarExtra} />
+            <PhoneAppHeader />
+            <DraggableScreen
+              infoContent={infoContent}
+              tileGrids={tileGrids}
+              themeColors={themeColors}
+              themeIcons={themeIcons}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onAddColumn={onAddColumn}
+              onDeleteTile={onDeleteTile}
+              onEditTile={onEditTile}
+              onAddTilesToColumn={onAddTilesToColumn}
+              onAddStandaloneTile={onAddStandaloneTile}
+              onAddBlock={onAddBlock}
+              onFreeResizeRelease={onFreeResizeRelease}
+              onTileDrop={onTileDrop}
+              onTileDropAsNewBlock={onTileDropAsNewBlock}
+              onTileNavigate={
+                onTileNavigate
+                  ? (pageId) => onTileNavigate(pageId, -1)
+                  : undefined
+              }
+              onCollapseFromParent={
+                onCollapseDescendants
+                  ? () => onCollapseDescendants(-1)
+                  : undefined
+              }
+              activeNavTileIds={activeNavTileIds}
+              sourceFrameIndex={-1}
+              getAllFrameData={() => getAllFrameData(-1)}
+              onCrossFrameDragPreview={setCrossFramePreview}
+              onCrossFrameTileDrop={
+                onCrossFrameTileDrop
+                  ? (fg, fc, tid, tfi, pv) =>
+                      onCrossFrameTileDrop(-1, tfi, fg, fc, tid, pv)
+                  : undefined
+              }
+              onCrossFrameTileDropToEmpty={
+                onCrossFrameTileDropToEmpty
+                  ? (fg, fc, tid, tfi) =>
+                      onCrossFrameTileDropToEmpty(-1, tfi, fg, fc, tid)
+                  : undefined
+              }
+              onCrossFrameTileDropAsNewBlock={
+                onCrossFrameTileDropAsNewBlock
+                  ? (fg, fc, tid, tfi, bi) =>
+                      onCrossFrameTileDropAsNewBlock(-1, tfi, fg, fc, tid, bi)
+                  : undefined
+              }
+              externalTileDropPreview={
+                crossFramePreview?.frameIndex === -1
+                  ? crossFramePreview.tdPreview
+                  : null
+              }
+              externalBlockInsertPreview={
+                crossFramePreview?.frameIndex === -1
+                  ? crossFramePreview.biPreview
+                  : null
+              }
+              isExternalDragActive={
+                !!(
+                  crossFramePreview?.frameIndex === -1 &&
+                  (crossFramePreview.tdPreview ||
+                    crossFramePreview.biPreview ||
+                    crossFramePreview.emptyDrop)
+                )
+              }
+              onColRef={(id, el) => registerFrameEl(-1, "col", id, el)}
+              onGridRef={(id, el) => registerFrameEl(-1, "grid", id, el)}
+              onBlockWrapperRef={(id, el) =>
+                registerFrameEl(-1, "blockWrapper", id, el)
+              }
+              onAddDescription={onAddDescription}
+              onEditDescription={onEditDescription}
+              onDeleteBlock={onDeleteBlock}
+              onMoveBlock={onMoveBlock}
+              onCrossFrameBlockDrop={onCrossFrameBlockDrop}
+              onCrossFrameBlockDragPreview={setCrossFrameBlockPreview}
+              externalBlockDropPreview={
+                crossFrameBlockPreview?.targetFrameIdx === -1
+                  ? {
+                      insertBeforeInfoId:
+                        crossFrameBlockPreview.insertBeforeInfoId,
+                    }
+                  : null
+              }
+              isExternalBlockDragActive={
+                crossFrameBlockPreview?.targetFrameIdx === -1
+              }
+              onAddImage={onAddImage}
+              onEditImage={onEditImage}
+              onTileDoubleClick={onTileDoubleClick}
+              onDeselectTile={onDeselectTile}
+              onSelectCta={onSelectCta}
+              onEditCta={onEditCta}
+              selectedCtaId={selectedCtaId}
+              themeCtaColors={themeCtaColors}
+              onTileMenuAction={
+                interactionsLocked ? undefined : onTileMenuAction
+              }
+              liveTileText={liveTileText}
+              liveCtaLabel={liveCtaLabel}
+              analysisHighlight={analysisHighlight}
+              isPreviewMode={interactionsLocked}
+              multiSelectedTileIds={multiSelectedTileIds}
+              multiSelectedCtaIds={multiSelectedCtaIds}
+              multiSelectedImageIds={multiSelectedImageIds}
+              multiSelectedDescriptionIds={multiSelectedDescriptionIds}
+              onCopySelected={onCopySelected}
+              onCutSelected={onCutSelected}
+              hasPaste={hasClipboard}
+              onPasteBlocks={onPasteBlocks}
+            />
+          </div>
         )}
 
         {/* Linked page frames */}
@@ -614,7 +806,7 @@ export function MainCanvas({
           const frameArrayIndex = isPreviewMode
             ? (linkedFrames?.length ?? 1) - 1
             : i;
-          const pageType = frame.page?.PageType ?? '';
+          const pageType = frame.page?.PageType ?? "";
           const isModulePage = MODULE_PAGE_TYPES.has(pageType);
           const isWebLink = pageType === "WebLink" || !!frame.webLinkUrl;
           const frameTileGrids =
@@ -623,11 +815,16 @@ export function MainCanvas({
               : frame.infoContent.filter((b: any) => b.InfoType === "TileGrid");
           return (
             <div key={frame.pageId ?? i} className="phone-frame-outer">
-              {!frame.isNew && frame.page?.PageId && onDeletePage && appVersionId && (
-                <DeletePageButton
-                  onClick={() => setDeletePageTarget({ pageId: frame.page.PageId })}
-                />
-              )}
+              {!frame.isNew &&
+                frame.page?.PageId &&
+                onDeletePage &&
+                appVersionId && (
+                  <DeletePageButton
+                    onClick={() =>
+                      setDeletePageTarget({ pageId: frame.page.PageId })
+                    }
+                  />
+                )}
               <div
                 className={`phone-frame phone-frame--linked${activeFrameIndex === i ? " phone-frame--active" : " phone-frame--inactive"}`}
                 ref={(el) => {
@@ -779,11 +976,21 @@ export function MainCanvas({
                     onEditCta={frame.onEditCta}
                     selectedCtaId={selectedCtaId}
                     themeCtaColors={themeCtaColors}
-                    onTileMenuAction={interactionsLocked ? undefined : onTileMenuAction}
+                    onTileMenuAction={
+                      interactionsLocked ? undefined : onTileMenuAction
+                    }
                     liveTileText={liveTileText}
                     liveCtaLabel={liveCtaLabel}
                     analysisHighlight={analysisHighlight}
                     isPreviewMode={interactionsLocked}
+                    multiSelectedTileIds={multiSelectedTileIds}
+                    multiSelectedCtaIds={multiSelectedCtaIds}
+                    multiSelectedImageIds={multiSelectedImageIds}
+                    multiSelectedDescriptionIds={multiSelectedDescriptionIds}
+                    onCopySelected={onCopySelected}
+                    onCutSelected={onCutSelected}
+                    hasPaste={hasClipboard}
+                    onPasteBlocks={frame.onPasteBlocks}
                   />
                 )}
               </div>
@@ -804,45 +1011,14 @@ export function MainCanvas({
         />
       )}
 
-     {/* Page thumbnails — hidden in preview mode */}
-     {!isPreviewMode && <div className="page-thumbnails">
-        <div
-          className={`page-thumb-clip${activeFrameIndex === -1 ? " page-thumb-clip--active" : ""}`}
-          onClick={() => {
-            setManualActiveIndex(-1);
-            scrollToFrame(-1);
-          }}
-        >
+      {/* Page thumbnails — hidden in preview mode */}
+      {!isPreviewMode && (
+        <div className="page-thumbnails">
           <div
-            className="phone-frame page-thumb-frame"
-            style={{
-              width: thumbFrameW,
-              transform: `scale(${(45 / thumbFrameW).toFixed(6)})`,
-            }}
-          >
-            <PhoneStatusBar />
-            <PhoneAppHeader />
-            <div className="phone-screen">
-              <div
-                className={`phone-add-row${infoContent.length === 0 ? " phone-add-row--visible" : ""}`}
-              />
-              {renderThumbBlocks(
-                infoContent,
-                themeColors,
-                themeIcons,
-                themeCtaColors,
-              )}
-            </div>
-          </div>
-        </div>
-
-        {linkedFrames?.map((frame, i) => (
-          <div
-            key={frame.page?.PageId ?? i}
-            className={`page-thumb-clip${activeFrameIndex === i ? " page-thumb-clip--active" : ""}`}
+            className={`page-thumb-clip${activeFrameIndex === -1 ? " page-thumb-clip--active" : ""}`}
             onClick={() => {
-              setManualActiveIndex(i);
-              scrollToFrame(i);
+              setManualActiveIndex(-1);
+              scrollToFrame(-1);
             }}
           >
             <div
@@ -853,33 +1029,66 @@ export function MainCanvas({
               }}
             >
               <PhoneStatusBar />
-              <PhoneLinkedHeader
-                pageName={frame.page?.PageName ?? ""}
-                onBack={() => {}}
-              />
+              <PhoneAppHeader />
               <div className="phone-screen">
-                {MODULE_PAGE_TYPES.has(frame.page?.PageType ?? "") ? (
-                  renderModulePage(frame.page.PageType, themeColors)
-                ) : frame.webLinkUrl ? (
-                  <div className="phone-weblink-thumb-placeholder">🔗</div>
-                ) : (
-                  <>
-                    <div
-                      className={`phone-add-row${frame.infoContent.length === 0 ? " phone-add-row--visible" : ""}`}
-                    />
-                    {renderThumbBlocks(
-                      frame.infoContent,
-                      themeColors,
-                      themeIcons,
-                      themeCtaColors,
-                    )}
-                  </>
+                <div
+                  className={`phone-add-row${infoContent.length === 0 ? " phone-add-row--visible" : ""}`}
+                />
+                {renderThumbBlocks(
+                  infoContent,
+                  themeColors,
+                  themeIcons,
+                  themeCtaColors,
                 )}
               </div>
             </div>
           </div>
-        ))}
-      </div>}
+
+          {linkedFrames?.map((frame, i) => (
+            <div
+              key={frame.page?.PageId ?? i}
+              className={`page-thumb-clip${activeFrameIndex === i ? " page-thumb-clip--active" : ""}`}
+              onClick={() => {
+                setManualActiveIndex(i);
+                scrollToFrame(i);
+              }}
+            >
+              <div
+                className="phone-frame page-thumb-frame"
+                style={{
+                  width: thumbFrameW,
+                  transform: `scale(${(45 / thumbFrameW).toFixed(6)})`,
+                }}
+              >
+                <PhoneStatusBar />
+                <PhoneLinkedHeader
+                  pageName={frame.page?.PageName ?? ""}
+                  onBack={() => {}}
+                />
+                <div className="phone-screen">
+                  {MODULE_PAGE_TYPES.has(frame.page?.PageType ?? "") ? (
+                    renderModulePage(frame.page.PageType, themeColors)
+                  ) : frame.webLinkUrl ? (
+                    <div className="phone-weblink-thumb-placeholder">🔗</div>
+                  ) : (
+                    <>
+                      <div
+                        className={`phone-add-row${frame.infoContent.length === 0 ? " phone-add-row--visible" : ""}`}
+                      />
+                      {renderThumbBlocks(
+                        frame.infoContent,
+                        themeColors,
+                        themeIcons,
+                        themeCtaColors,
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

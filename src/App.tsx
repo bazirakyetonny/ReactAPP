@@ -24,6 +24,8 @@ import {
   applyEditTile,
   applyAddBlock,
   applyCopyTile,
+  applyDeleteTile,
+  applyPasteBlocks,
 } from "./utils/contentTransforms";
 import {
   createInfoPage,
@@ -38,6 +40,7 @@ import { useNavigation } from "./hooks/useNavigation";
 import { useContentHandlers } from "./hooks/useContentHandlers";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAnalysis } from "./hooks/useAnalysis";
+import { useMultiSelect } from "./hooks/useMultiSelect";
 import { BusyModal } from "./components/BusyModal";
 
 function App() {
@@ -355,7 +358,9 @@ function App() {
     }
   })();
 
-  const baseLanguage: string = (currentVersion?.AppVersionLanguage ?? "").toLowerCase();
+  const baseLanguage: string = (
+    currentVersion?.AppVersionLanguage ?? ""
+  ).toLowerCase();
   const translationLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== baseLanguage,
   );
@@ -414,6 +419,200 @@ function App() {
     translationLanguages,
     translationRevision,
   });
+
+  const {
+    isMultiSelectMode,
+    selectedTileIds,
+    selectedCtaIds,
+    selectedImageIds,
+    selectedDescriptionIds,
+    toggleMultiSelectMode,
+    exitMultiSelectMode,
+    setSelectedTileIds,
+    setSelectedCtaIds,
+    setSelectedImageIds,
+    setSelectedDescriptionIds,
+  } = useMultiSelect();
+
+  const [clipboard, setClipboard] = useState<any[]>([]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && isMultiSelectMode) exitMultiSelectMode();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isMultiSelectMode, exitMultiSelectMode]);
+
+  function handleBulkEditTiles(patch: Record<string, any>) {
+    setInfoContent((prev: any[]) => {
+      let content = prev;
+      selectedTileIds.forEach((tileId) => {
+        content = applyEditTile(content, tileId, patch);
+      });
+      return content;
+    });
+    setNavContents((prev: Record<string, any[]>) => {
+      const next = { ...prev };
+      for (const [pageId, blocks] of Object.entries(prev)) {
+        let content = blocks;
+        selectedTileIds.forEach((tileId) => {
+          content = applyEditTile(content, tileId, patch);
+        });
+        next[pageId] = content;
+      }
+      return next;
+    });
+  }
+
+  function handleBulkEditCtas(patch: Record<string, any>) {
+    const applyCtaPatch = (blocks: any[]) =>
+      blocks.map((block: any) =>
+        block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId)
+          ? {
+              ...block,
+              CtaAttributes: { ...(block.CtaAttributes ?? {}), ...patch },
+            }
+          : block,
+      );
+    setInfoContent((prev: any[]) => applyCtaPatch(prev));
+    setNavContents((prev: Record<string, any[]>) => {
+      const next = { ...prev };
+      for (const pageId of Object.keys(prev)) {
+        next[pageId] = applyCtaPatch(prev[pageId]);
+      }
+      return next;
+    });
+  }
+
+  function collectClipboardItems(sourceBlocks: any[]): any[] {
+    const items: any[] = [];
+    const seen = new Set<string>();
+    for (const block of sourceBlocks) {
+      if (block.InfoType === "TileGrid") {
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (selectedTileIds.has(tile.Id) && !seen.has(tile.Id)) {
+              seen.add(tile.Id);
+              items.push({
+                InfoId: `grid-clip-${tile.Id}`,
+                InfoType: "TileGrid",
+                Columns: [
+                  { ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] },
+                ],
+              });
+            }
+          }
+        }
+      } else if (
+        block.InfoType === "Cta" &&
+        selectedCtaIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      } else if (
+        block.InfoType === "Images" &&
+        selectedImageIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      } else if (
+        block.InfoType === "Description" &&
+        selectedDescriptionIds.has(block.InfoId) &&
+        !seen.has(block.InfoId)
+      ) {
+        seen.add(block.InfoId);
+        items.push({ ...block });
+      }
+    }
+    return items;
+  }
+
+  function handleCopySelected(sourceBlocks: any[]) {
+    const items = collectClipboardItems(sourceBlocks);
+    if (items.length > 0) setClipboard(items);
+    exitMultiSelectMode();
+  }
+
+  function handleCutSelected(sourceBlocks: any[]) {
+    const items = collectClipboardItems(sourceBlocks);
+    if (items.length > 0) setClipboard(items);
+
+    const applyTileDelete = (blocks: any[]) => {
+      let content = blocks;
+      for (const tileId of selectedTileIds) {
+        for (const block of content) {
+          if (block.InfoType !== "TileGrid") continue;
+          for (const col of block.Columns ?? []) {
+            if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) {
+              content = applyDeleteTile(
+                content,
+                block.InfoId,
+                col.ColId,
+                tileId,
+              );
+              break;
+            }
+          }
+        }
+      }
+      return content;
+    };
+    const applyCtaDelete = (blocks: any[]) =>
+      selectedCtaIds.size > 0
+        ? blocks.filter(
+            (b: any) => !(b.InfoType === "Cta" && selectedCtaIds.has(b.InfoId)),
+          )
+        : blocks;
+    const applyImageDelete = (blocks: any[]) =>
+      selectedImageIds.size > 0
+        ? blocks.filter(
+            (b: any) =>
+              !(b.InfoType === "Images" && selectedImageIds.has(b.InfoId)),
+          )
+        : blocks;
+    const applyDescDelete = (blocks: any[]) =>
+      selectedDescriptionIds.size > 0
+        ? blocks.filter(
+            (b: any) =>
+              !(
+                b.InfoType === "Description" &&
+                selectedDescriptionIds.has(b.InfoId)
+              ),
+          )
+        : blocks;
+    const applyDeletes = (blocks: any[]) =>
+      applyDescDelete(
+        applyImageDelete(applyCtaDelete(applyTileDelete(blocks))),
+      );
+
+    if (sourceBlocks === infoContent) {
+      setInfoContent((prev: any[]) => applyDeletes(prev));
+    } else {
+      const targetPageId = Object.keys(
+        navContents as Record<string, any[]>,
+      ).find(
+        (key) => (navContents as Record<string, any[]>)[key] === sourceBlocks,
+      );
+      if (targetPageId) {
+        setNavContents((prev: Record<string, any[]>) => ({
+          ...prev,
+          [targetPageId]: applyDeletes(prev[targetPageId]),
+        }));
+      }
+    }
+    exitMultiSelectMode();
+  }
+
+  function handlePasteToHome(insertBeforeInfoId: string | null) {
+    if (clipboard.length === 0) return;
+    pushSnapshot();
+    setInfoContent((prev: any[]) =>
+      applyPasteBlocks(prev, clipboard, insertBeforeInfoId),
+    );
+  }
 
   const homePageId =
     (currentVersion?.Pages ?? []).find(
@@ -484,14 +683,17 @@ function App() {
     analysisOpen && analysisIssues.length > 0
       ? analysisIssues[Math.min(analysisIndex, analysisIssues.length - 1)]
       : null;
-  const analysisHighlight = currentAnalysisIssue && !currentAnalysisIssue.language
-    ? {
-        blockId: currentAnalysisIssue.blockId,
-        tileId: currentAnalysisIssue.subItemId,
-        message:
-          currentAnalysisIssue.category === 1 ? "Invalid URL" : "Text too long",
-      }
-    : null;
+  const analysisHighlight =
+    currentAnalysisIssue && !currentAnalysisIssue.language
+      ? {
+          blockId: currentAnalysisIssue.blockId,
+          tileId: currentAnalysisIssue.subItemId,
+          message:
+            currentAnalysisIssue.category === 1
+              ? "Invalid URL"
+              : "Text too long",
+        }
+      : null;
 
   // ── Data persistence ─────────────────────────────────────────────────────
 
@@ -636,7 +838,11 @@ function App() {
               WWPFormId: 0,
             });
             if (newPage?.PageId) {
-              const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+              const updated = {
+                ...cv,
+                Page: [...(cv.Page ?? []), newPage],
+                Pages: [...(cv.Pages ?? []), newPage],
+              };
               dataStore.set("Current_Version", updated);
               setCurrentVersion(updated);
               finalAttrs = {
@@ -721,7 +927,11 @@ function App() {
       const newPage: any = Array.isArray(raw) ? raw[0] : raw;
       if (!newPage?.PageId) return;
       pendingNewPageTileRef.current = null;
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      const updated = {
+        ...cv,
+        Page: [...(cv.Page ?? []), newPage],
+        Pages: [...(cv.Pages ?? []), newPage],
+      };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       setNavStack((prev) =>
@@ -1034,7 +1244,11 @@ function App() {
           if (!newPage?.PageId) throw new Error("no page");
           const pageUrl = newPage.PageLinkStructure?.Url ?? url;
           pushSnapshot();
-          const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+          const updated = {
+            ...cv,
+            Page: [...(cv.Page ?? []), newPage],
+            Pages: [...(cv.Pages ?? []), newPage],
+          };
           dataStore.set("Current_Version", updated);
           setCurrentVersion(updated);
           handleEditTile(tileId, {
@@ -1106,7 +1320,11 @@ function App() {
         if (!newPage?.PageId) throw new Error("no page");
         const url = newPage.PageLinkStructure?.Url ?? "";
         pushSnapshot();
-        const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+        const updated = {
+          ...cv,
+          Page: [...(cv.Page ?? []), newPage],
+          Pages: [...(cv.Pages ?? []), newPage],
+        };
         dataStore.set("Current_Version", updated);
         setCurrentVersion(updated);
         handleEditTile(tileId, {
@@ -1251,7 +1469,11 @@ function App() {
       if (!newPage?.PageId) throw new Error("no page");
       const pageUrl = newPage.PageLinkStructure?.Url ?? url;
       pushSnapshot();
-      const updated = { ...cv, Page: [...(cv.Page ?? []), newPage] };
+      const updated = {
+        ...cv,
+        Page: [...(cv.Page ?? []), newPage],
+        Pages: [...(cv.Pages ?? []), newPage],
+      };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       handleEditCta(ctaId, {
@@ -1288,6 +1510,7 @@ function App() {
     handleSelectCta: handleCtaClick,
     handleEditCta,
     handleTileDoubleClick,
+    getClipboard: () => clipboard,
     onCommitNewPage: handleCommitNewPage,
     onCancelNewPage: handleCancelNewPage,
   });
@@ -1375,10 +1598,21 @@ function App() {
         )}
         onAnalysisPrev={handleAnalysisPrev}
         onAnalysisNext={handleAnalysisNext}
-        onAnalysisClose={() => { setAnalysisOpen(false); setTranslationHighlight(null); }}
+        onAnalysisClose={() => {
+          setAnalysisOpen(false);
+          setTranslationHighlight(null);
+        }}
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
+        isMultiSelectMode={isMultiSelectMode}
+        onMultiSelectToggle={() => {
+          if (!isMultiSelectMode) {
+            setSelectedTileId(null);
+            setSelectedCtaId(null);
+          }
+          toggleMultiSelectMode();
+        }}
       />
       <EditorModals
         showPublishModal={showPublishModal}
@@ -1422,12 +1656,19 @@ function App() {
         showTrashModal={showTrashModal}
         onCloseTrashModal={() => setShowTrashModal(false)}
         onTrashChanged={() => {
-          getAppVersions().then(setAppVersions).catch(() => {});
-          getActiveAppVersion().then((fetched: any) => {
-            const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
-            dataStore.set("Current_Version", full);
-            setCurrentVersion(full);
-          }).catch(() => {});
+          getAppVersions()
+            .then(setAppVersions)
+            .catch(() => {});
+          getActiveAppVersion()
+            .then((fetched: any) => {
+              const full = {
+                ...fetched,
+                Page: fetched.Page ?? fetched.Pages ?? [],
+              };
+              dataStore.set("Current_Version", full);
+              setCurrentVersion(full);
+            })
+            .catch(() => {});
         }}
         tileImageModal={tileImageModal}
         onTileImageConfirm={handleTileImageConfirm}
@@ -1500,6 +1741,22 @@ function App() {
           onActiveFrameChange={handleActiveFrameChange}
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
+          isMultiSelectMode={isMultiSelectMode}
+          onSelectionChange={(tileIds, ctaIds, imageIds, descIds) => {
+            setSelectedTileIds(tileIds);
+            setSelectedCtaIds(ctaIds);
+            setSelectedImageIds(imageIds);
+            setSelectedDescriptionIds(descIds);
+          }}
+          onExitMultiSelectMode={exitMultiSelectMode}
+          multiSelectedTileIds={selectedTileIds}
+          multiSelectedCtaIds={selectedCtaIds}
+          multiSelectedImageIds={selectedImageIds}
+          multiSelectedDescriptionIds={selectedDescriptionIds}
+          onCopySelected={handleCopySelected}
+          onCutSelected={handleCutSelected}
+          hasClipboard={clipboard.length > 0}
+          onPasteBlocks={handlePasteToHome}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar
@@ -1550,6 +1807,10 @@ function App() {
             onCtaWeblinkSave={handleCtaWeblinkSave}
             onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
             onEndLiveCtaLabel={() => setLiveCtaLabel(null)}
+            selectedTileIds={selectedTileIds}
+            selectedCtaIds={selectedCtaIds}
+            onBulkEditTiles={handleBulkEditTiles}
+            onBulkEditCtas={handleBulkEditCtas}
           />
         )}
       </div>

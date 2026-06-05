@@ -5,6 +5,8 @@ export interface AddBlockMenuProps {
   pos: { x: number; y: number };
   onSelect: (blockType: string) => void;
   onClose: () => void;
+  hasPaste?: boolean;
+  onPaste?: () => void;
 }
 
 const CTA_SUB_ITEMS = [
@@ -22,7 +24,7 @@ const ADD_BLOCK_ITEMS = [
   { label: 'Tile',           type: 'TileGrid',     sub: false },
 ] as const;
 
-export function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
+export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddBlockMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [ctaHovered, setCtaHovered] = useState(false);
 
@@ -78,6 +80,17 @@ export function AddBlockMenu({ pos, onSelect, onClose }: AddBlockMenuProps) {
           )}
         </div>
       ))}
+
+      {hasPaste && (
+        <div className="add-block-menu__item-wrap">
+          <button
+            className="add-block-menu__item"
+            onMouseDown={e => { e.stopPropagation(); onPaste?.(); onClose(); }}
+          >
+            <span>Paste</span>
+          </button>
+        </div>
+      )}
     </div>,
     document.getElementById("root") ?? document.body
   );

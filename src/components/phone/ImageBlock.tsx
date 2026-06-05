@@ -68,19 +68,22 @@ interface ImageBlockProps {
   block: { InfoId: string; Images?: Image[] };
   interactive?: boolean;
   isDragging?: boolean;
+  isMultiSelected?: boolean;
   onEdit?: (infoId: string) => void;
   onDelete?: (infoId: string) => void;
   onDragStart?: (e: React.MouseEvent, infoId: string, el: HTMLElement) => void;
 }
 
-export function ImageBlock({ block, interactive = false, isDragging = false, onEdit, onDelete, onDragStart }: ImageBlockProps) {
+export function ImageBlock({ block, interactive = false, isDragging = false, isMultiSelected = false, onEdit, onDelete, onDragStart }: ImageBlockProps) {
   const images = block.Images ?? [];
   return (
     <div
+      data-image-id={block.InfoId}
       className={[
         'phone-image-block',
         interactive ? 'phone-image-block--interactive' : '',
         isDragging ? 'phone-image-block--dragging' : '',
+        isMultiSelected ? 'phone-image-block--multi-selected' : '',
       ].filter(Boolean).join(' ')}
       onMouseDown={interactive && onDragStart
         ? (e) => onDragStart(e, block.InfoId, e.currentTarget as HTMLElement)
