@@ -38,10 +38,14 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("pages");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
+    null,
+  );
   const [acting, setActing] = useState(false);
 
-  useEffect(() => { loadItems(); }, []);
+  useEffect(() => {
+    loadItems();
+  }, []);
 
   function loadItems() {
     setLoading(true);
@@ -57,13 +61,16 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
 
   const tabItems = useMemo(() => {
     const base = items.filter((i) =>
-      activeTab === "pages" ? i.Type === "Page" : i.Type !== "Page"
+      activeTab === "pages" ? i.Type === "Page" : i.Type !== "Page",
     );
     const q = search.trim().toLowerCase();
     if (!q) return base;
     return base.filter((i) => {
-      const name = activeTab === "pages" ? i.Page : i.Version;
-      return (name ?? "").toLowerCase().includes(q);
+      const name =
+        activeTab === "pages"
+          ? (i.Page?.PageName ?? "")
+          : (i.Version?.AppVersionName ?? "");
+      return name.toLowerCase().includes(q);
     });
   }, [items, activeTab, search]);
 
@@ -203,7 +210,10 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
           {!loading && tabItems.length > 0 && (
             <ul className="tm-list">
               {tabItems.map((item) => {
-                const name = activeTab === "pages" ? item.Page : item.Version;
+                const name =
+                  activeTab === "pages"
+                    ? (item.Page?.PageName ?? "")
+                    : (item.Version?.AppVersionName ?? "");
                 const checked = selectedIds.has(item.TrashId);
                 return (
                   <li
@@ -247,7 +257,9 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
               </button>
               <button
                 className={
-                  confirmAction === "restore" ? "tm-btn-primary" : "tm-btn-danger"
+                  confirmAction === "restore"
+                    ? "tm-btn-primary"
+                    : "tm-btn-danger"
                 }
                 type="button"
                 disabled={acting}
@@ -256,8 +268,8 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                 {acting
                   ? "…"
                   : confirmAction === "restore"
-                  ? "Restore"
-                  : "Delete Forever"}
+                    ? "Restore"
+                    : "Delete Forever"}
               </button>
             </div>
           </div>
@@ -265,10 +277,9 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
       </div>
     </div>
   );
-
   return ReactDOM.createPortal(
     modal,
-    document.getElementById("root") ?? document.body
+    document.getElementById("root") ?? document.body,
   );
 }
 
