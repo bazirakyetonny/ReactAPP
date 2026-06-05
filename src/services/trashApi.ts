@@ -1,10 +1,22 @@
 import { apiGet, apiPost } from './apiClient';
 
+export interface TrashedPage {
+  PageId: string;
+  PageName: string;
+  PageType: string;
+  PageStructure: string;
+}
+
+export interface TrashedVersion {
+  AppVersionId: string;
+  AppVersionName: string;
+}
+
 export interface TrashItem {
   TrashId: string;
   Type: string;
-  Version: string;
-  Page: string;
+  Version: TrashedVersion | null;
+  Page: TrashedPage | null;
   DeletedAt: string;
 }
 

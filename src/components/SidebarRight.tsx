@@ -226,6 +226,7 @@ export function SidebarRight({
   onLiveCtaLabel,
   onEndLiveCtaLabel,
   moodId,
+  selectedThemeId,
 }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
@@ -246,6 +247,7 @@ export function SidebarRight({
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
   moodId?: string;
+  selectedThemeId?: string;
 }) {
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
@@ -305,6 +307,7 @@ export function SidebarRight({
             activeBgHex={activeBgHex}
             onEditTile={onEditTile}
             moodId={moodId}
+            selectedThemeId={selectedThemeId}
           />
           {/* 2b. Image tools */}
           <div className="sr-image-tools">

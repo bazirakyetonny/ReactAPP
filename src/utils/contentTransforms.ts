@@ -565,3 +565,40 @@ export function applyCopyTile(prev: any[], tileId: string, ts = Date.now()): any
     return changed ? { ...block, Columns: newCols } : block;
   });
 }
+
+export function applyMoodColorRemapToPages(
+  pages: any[],
+  originalColorNames: string[],
+  selectedColorNames: string[],
+): any[] {
+  const colorMap: Record<string, string> = {};
+  for (let i = 0; i < originalColorNames.length; i++) {
+    if (originalColorNames[i] && selectedColorNames[i]) {
+      colorMap[originalColorNames[i]] = selectedColorNames[i];
+    }
+  }
+  if (Object.keys(colorMap).length === 0) return pages;
+
+  return pages.map((page: any) => {
+    if (!page?.PageStructure) return page;
+    let parsed: any;
+    try { parsed = JSON.parse(page.PageStructure); } catch { return page; }
+
+    const infoContent: any[] = parsed?.InfoContent ?? [];
+    const remapped = infoContent.map((block: any) => {
+      if (block.InfoType !== 'TileGrid') return block;
+      return {
+        ...block,
+        Columns: (block.Columns ?? []).map((col: any) => ({
+          ...col,
+          Tiles: (col.Tiles ?? []).map((tile: any) => {
+            const mapped = colorMap[tile.BGColor];
+            return mapped !== undefined ? { ...tile, BGColor: mapped } : tile;
+          }),
+        })),
+      };
+    });
+
+    return { ...page, PageStructure: JSON.stringify({ ...parsed, InfoContent: remapped }) };
+  });
+}

@@ -114,10 +114,12 @@
   padding: 16px 20px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: thin;
 }
 
 .cav-card {
   border: 2px solid #e5e7eb;
+  background-color: #eef1f4;
   cursor: pointer;
   transition: border-color 0.15s;
   user-select: none;

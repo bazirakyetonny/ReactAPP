@@ -126,7 +126,10 @@ export function TileIconSelector({
   }, [themeIcons, activeCategory, search, isSearching]);
 
   useEffect(() => {
-    activeButtonRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    activeButtonRef.current?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
   }, [selectedTile?.IconId, selectedTile?.Icon, visibleIcons]);
 
   function openSearch() {
@@ -136,7 +139,6 @@ export function TileIconSelector({
     setIsSearching(false);
     setSearch("");
   }
-
   return (
     <>
       <div className="sr-category-row">

@@ -5,6 +5,7 @@ import { dataStore } from "../../data/datastore";
 import { FlagSelect } from "./FlagSelect";
 import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
 import { DescriptionBlock } from "../phone/DescriptionBlock";
+import { InlineDescriptionEditor } from "./InlineDescriptionEditor";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
 import { resolveColor, resolveIconSVG } from "../../utils/tileUtils";
@@ -66,7 +67,13 @@ export function TranslationSideBar({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayContent: any[] = sdtPage?.PageStructure?.InfoContent ?? [];
-  const editablePageName: string = sdtPage?.PageName ?? pageName ?? "";
+  const editablePageName: string = decodeHtml(sdtPage?.PageName ?? pageName ?? "");
+
+  function decodeHtml(encoded: string): string {
+    const el = document.createElement("textarea");
+    el.innerHTML = encoded;
+    return el.value;
+  }
 
   // ── Fetch helpers ────────────────────────────────────────────────────────────
 
@@ -159,6 +166,18 @@ export function TranslationSideBar({
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].Columns[ci].Tiles[ti].Text = value;
+    const next = {
+      ...sdtPage,
+      PageStructure: { ...sdtPage.PageStructure, InfoContent: content },
+    };
+    setSdtPage(next);
+    saveNow(next);
+    setEditingKey(null);
+  }
+
+  function handleDescriptionSave(bi: number, value: string) {
+    const content = structuredClone(sdtPage.PageStructure.InfoContent);
+    content[bi].InfoValue = value;
     const next = {
       ...sdtPage,
       PageStructure: { ...sdtPage.PageStructure, InfoContent: content },
@@ -265,7 +284,7 @@ export function TranslationSideBar({
                           {editingKey === tileKey ? (
                             <input
                               className="ts-editable-input"
-                              defaultValue={tile.Text ?? ""}
+                              defaultValue={decodeHtml(tile.Text ?? "")}
                               autoFocus
                               style={{ color: tile.Color ?? "#333" }}
                               onBlur={(e) =>
@@ -281,7 +300,7 @@ export function TranslationSideBar({
                               title="Click to edit"
                               onClick={() => setEditingKey(tileKey)}
                             >
-                              {tile.Text || " "}
+                              {decodeHtml(tile.Text || " ")}
                             </span>
                           )}
                         </div>
@@ -295,10 +314,25 @@ export function TranslationSideBar({
         );
         i++;
       } else if (block.InfoType === "Description") {
+        const descKey = `desc-${bi}`;
         out.push(
-          <div key={block.InfoId} data-block-id={block.InfoId}>
-            <DescriptionBlock block={block} interactive={false} />
-          </div>,
+          editingKey === descKey ? (
+            <InlineDescriptionEditor
+              key={block.InfoId}
+              initialHtml={block.InfoValue ?? ""}
+              onSave={(value) => handleDescriptionSave(bi, value)}
+              onCancel={() => setEditingKey(null)}
+            />
+          ) : (
+            <div
+              key={block.InfoId}
+              className="ts-desc-clickable"
+              title="Click to edit"
+              onClick={() => setEditingKey(descKey)}
+            >
+              <DescriptionBlock block={block} interactive={false} />
+            </div>
+          ),
         );
         i++;
       } else if (block.InfoType === "Images") {

@@ -72,7 +72,7 @@ function App() {
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
@@ -109,6 +109,7 @@ function App() {
   const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
@@ -774,12 +775,16 @@ function App() {
       clearHistory();
       setSelectedTileId(null);
     } catch {}
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   function handleTemplateCreated() {
     setShowCreateTemplateModal(false);
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   function handleVersionRenamed(newName: string) {
@@ -801,17 +806,23 @@ function App() {
 
   function handleVersionDeleted() {
     setTrashVersion(null);
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   function handleVersionDuplicated() {
     setDuplicateVersion(null);
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   function handleTranslationsUpdated() {
     setUpdateTranslationsVersion(null);
-    getAppVersions().then(setAppVersions).catch(() => {});
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
   }
 
   // ── Preview tile navigation (no selection, no sidebar) ───────────────────
@@ -996,7 +1007,8 @@ function App() {
         }
       }
       const existing = (cv.Page ?? []).find(
-        (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
+        (p: any) =>
+          p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
       );
       if (existing) {
         pushSnapshot();
@@ -1155,7 +1167,7 @@ function App() {
     handleSelectCta(ctaId);
     const allBlocks = [
       ...infoContentRef.current,
-      ...Object.values(navContentsRef.current).flat() as any[],
+      ...(Object.values(navContentsRef.current).flat() as any[]),
     ];
     const block = allBlocks.find(
       (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
@@ -1213,8 +1225,7 @@ function App() {
     }
 
     const existing = (cv.Page ?? []).find(
-      (p: any) =>
-        p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
+      (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
     );
     if (existing) {
       pushSnapshot();
@@ -1367,6 +1378,7 @@ function App() {
         onAnalysisClose={() => { setAnalysisOpen(false); setTranslationHighlight(null); }}
         onPublish={() => setShowPublishModal(true)}
         onShareClick={() => setShowShareModal(true)}
+        onTrashClick={() => setShowTrashModal(true)}
       />
       <EditorModals
         showPublishModal={showPublishModal}
@@ -1375,9 +1387,16 @@ function App() {
         analysisIssueCount={analysisIssues.length}
         onPublished={() => setShowPublishModal(false)}
         onClosePublish={() => setShowPublishModal(false)}
-        onFixIssues={() => { setShowPublishModal(false); setAnalysisOpen(true); }}
+        onFixIssues={() => {
+          setShowPublishModal(false);
+          setAnalysisOpen(true);
+        }}
         showShareModal={showShareModal}
-        shareLink={currentVersion?.AppVersionId ? `${getBaseUrl()}/wp_applicationdesign_preview?AppVersionId=${currentVersion.AppVersionId}` : ""}
+        shareLink={
+          currentVersion?.AppVersionId
+            ? `${getBaseUrl()}/wp_applicationdesign_preview.aspx?AppVersionId=${currentVersion.AppVersionId}`
+            : ""
+        }
         onCloseShare={() => setShowShareModal(false)}
         showCreateModal={showCreateModal}
         templatesCollection={templatesCollection}
@@ -1400,6 +1419,16 @@ function App() {
         updateTranslationsVersion={updateTranslationsVersion}
         onCloseUpdateTranslations={() => setUpdateTranslationsVersion(null)}
         onTranslationsUpdated={handleTranslationsUpdated}
+        showTrashModal={showTrashModal}
+        onCloseTrashModal={() => setShowTrashModal(false)}
+        onTrashChanged={() => {
+          getAppVersions().then(setAppVersions).catch(() => {});
+          getActiveAppVersion().then((fetched: any) => {
+            const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+            dataStore.set("Current_Version", full);
+            setCurrentVersion(full);
+          }).catch(() => {});
+        }}
         tileImageModal={tileImageModal}
         onTileImageConfirm={handleTileImageConfirm}
         onCloseTileImage={() => setTileImageModal(null)}
@@ -1505,6 +1534,7 @@ function App() {
             themeColors={selectedTheme?.ThemeColors}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
             moodId={currentVersion?.MoodId}
+            selectedThemeId={selectedThemeId}
             selectedTile={selectedTile}
             onEditTile={handleEditTile}
             onOpenTileImage={handleOpenTileImageFromSidebar}
