@@ -26,6 +26,7 @@ interface NavBarProps {
   onExpand?: () => void;
   isTranslationOpen?: boolean;
   onTranslationToggle?: () => void;
+  canTranslate?: boolean;
   isSaving?: boolean;
   saveError?: boolean;
   savedAt?: number | null;
@@ -331,6 +332,7 @@ export function NavBar({
   onExpand,
   isTranslationOpen = false,
   onTranslationToggle,
+  canTranslate = false,
   isSaving = false,
   saveError = false,
   savedAt = null,
@@ -531,15 +533,19 @@ export function NavBar({
         >
           <TrashIcon />
         </button>
-        <div className="navbar-separator" role="separator" />
-        <button
-          className="navbar-icon-btn"
-          type="button"
-          title="Translation"
-          onClick={onTranslationToggle}
-        >
-          <GlobeIcon active={isTranslationOpen} />
-        </button>
+        {canTranslate && (
+          <>
+            <div className="navbar-separator" role="separator" />
+            <button
+              className="navbar-icon-btn"
+              type="button"
+              title="Translation"
+              onClick={onTranslationToggle}
+            >
+              <GlobeIcon active={isTranslationOpen} />
+            </button>
+          </>
+        )}
         <button className="navbar-icon-btn" type="button" title="Path">
           <PathIcon />
         </button>
