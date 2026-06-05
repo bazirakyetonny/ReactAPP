@@ -453,7 +453,6 @@ export function NavBar({
           </div>
         )}
       </div>
-
       {analysisOpen ? (
         <div className="navbar-center">
           <div className="navbar-analysis-bar">

@@ -231,6 +231,7 @@ export function SidebarRight({
   selectedCtaIds,
   onBulkEditTiles,
   onBulkEditCtas,
+  selectedThemeId,
 }: {
   themeIcons?: ThemeIcon[];
   themeColors?: ThemeColors;
@@ -255,6 +256,7 @@ export function SidebarRight({
   selectedCtaIds?: Set<string>;
   onBulkEditTiles?: (patch: Record<string, any>) => void;
   onBulkEditCtas?: (patch: Record<string, any>) => void;
+  selectedThemeId?: string;
 }) {
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
@@ -297,11 +299,14 @@ export function SidebarRight({
         onBulkEditCtas={onBulkEditCtas}
       />
 
-      {!selectedTile && !selectedCta && (selectedTileIds?.size ?? 0) === 0 && (selectedCtaIds?.size ?? 0) === 0 && (
-        <div className="sr-empty-state">
-          Select a tile or button to edit its properties
-        </div>
-      )}
+      {!selectedTile &&
+        !selectedCta &&
+        (selectedTileIds?.size ?? 0) === 0 &&
+        (selectedCtaIds?.size ?? 0) === 0 && (
+          <div className="sr-empty-state">
+            Select a tile or button to edit its properties
+          </div>
+        )}
 
       {selectedCta && !selectedTile && (
         <SidebarCtaControls
@@ -324,6 +329,7 @@ export function SidebarRight({
             activeBgHex={activeBgHex}
             onEditTile={onEditTile}
             moodId={moodId}
+            selectedThemeId={selectedThemeId}
           />
           {/* 2b. Image tools */}
           <div className="sr-image-tools">

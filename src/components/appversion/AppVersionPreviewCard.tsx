@@ -66,13 +66,13 @@ export function AppVersionPreviewCard({
       ) : (
         <div className="avc-clip" ref={clipRef}>
           <div
-            className="phone-frame avc-frame"
+            className="avc-frame"
             ref={frameRef}
             style={{ transform: `scale(${scale.toFixed(6)})` }}
           >
             <PhoneStatusBar />
             <PhoneAppHeader />
-            <div className="phone-screen">
+            <div className="avc-screen">
               {infoContent.map((block: any) => {
                 if (block.InfoType === "TileGrid")
                   return (

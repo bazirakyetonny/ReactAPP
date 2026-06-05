@@ -31,11 +31,13 @@ export function ColorPalette({
   activeBgHex,
   onEditTile,
   moodId,
+  selectedThemeId,
 }: {
   selectedTile: any;
   activeBgHex?: string;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   moodId?: string;
+  selectedThemeId?: string;
 }) {
   const moods: Mood[] = dataStore.get("Moods") ?? [];
   const themes: any[] = dataStore.get("themes") ?? [];
@@ -45,20 +47,18 @@ export function ColorPalette({
   const activeMood = moodId
     ? moods.find((m) => m.MoodId === moodId)
     : undefined;
-  const themeId = activeMood?.ThemeId ?? dataStore.get("CurrentThemeId");
-  const theme = themes.find((t) => t.ThemeId === themeId);
-  const moodColorNames = JSON.parse(
-    activeMood?.MoodColorNames ?? "[]",
-  ) as string[];
-  const moodColors = moodColorNames.map((n) => {
-    return {
-      ColorId: n,
-      ColorName: n,
-      ColorCode: theme.ThemeColors[n],
-    };
-  });
+  // Both palettes resolve colors from the currently selected theme
+  const activeThemeId = selectedThemeId ?? dataStore.get("CurrentThemeId");
+  const activeTheme = themes.find((t) => t.ThemeId === activeThemeId);
 
-  const themeColors = Object.entries(theme?.ThemeColors ?? {}).map(([k, v]) => {
+  const moodColorNames = JSON.parse(activeMood?.MoodColorNames ?? "[]") as string[];
+  const moodColors = moodColorNames.map((n) => ({
+    ColorId: n,
+    ColorName: n,
+    ColorCode: activeTheme?.ThemeColors[n] as string | undefined,
+  }));
+
+  const themeColors = Object.entries(activeTheme?.ThemeColors ?? {}).map(([k, v]) => {
     return {
       ColorId: k,
       ColorName: k,
@@ -104,6 +104,7 @@ export function ColorPalette({
                     selectedTile &&
                     onEditTile?.(selectedTile.Id, {
                       BGColor: mc.ColorName,
+                      Color: "#ffffff",
                       BGImageUrl: null,
                       OriginalImageUrl: null,
                       Opacity: null,
@@ -125,6 +126,7 @@ export function ColorPalette({
                   selectedTile &&
                   onEditTile?.(selectedTile.Id, {
                     BGColor: mc.ColorName,
+                    Color: "#ffffff",
                     BGImageUrl: null,
                     OriginalImageUrl: null,
                     Opacity: null,
