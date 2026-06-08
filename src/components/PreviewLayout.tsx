@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import './PreviewLayout.css';
-import type { ThemeColors, ThemeIcon, ThemeCtaColor } from '../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor, SupportedLanguages } from '../types';
 import type { LinkedFrame } from './MainCanvas';
 import { MainCanvas } from './MainCanvas';
 import { dataStore } from '../data/datastore';
 import { getTranslatedPage } from '../services/translationApi';
+import { FlagSelect } from './translation/FlagSelect';
 
 interface PreviewLayoutProps {
   infoContent: any[];
@@ -103,20 +104,26 @@ export function PreviewLayout({
         : frame.infoContent,
   }));
 
-  const langSelect = allLanguages.length > 1 ? (
-    <select
-      className="preview-status-lang-select"
+  const supportedLangs: SupportedLanguages[] = dataStore.get("SupportedLanguages") ?? [];
+  const flagOptions = allLanguages.map(
+    (code) =>
+      supportedLangs.find((l) => l.value === code) ?? {
+        value: code,
+        label: code.toUpperCase(),
+        flag: "",
+      }
+  );
+
+  const langSelect = flagOptions.length > 1 ? (
+    <FlagSelect
+      options={flagOptions}
       value={previewLang}
-      onChange={(e) => {
-        setPreviewLang(e.target.value);
+      onChange={(val) => {
+        setPreviewLang(val);
         setTranslatedContents({});
         fetchingRef.current.clear();
       }}
-    >
-      {allLanguages.map((l) => (
-        <option key={l} value={l}>{l.toUpperCase()}</option>
-      ))}
-    </select>
+    />
   ) : undefined;
 
   return (

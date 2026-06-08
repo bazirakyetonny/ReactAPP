@@ -853,7 +853,10 @@ export function MainCanvas({
                   onBack={
                     frame.isNew
                       ? (frame.onCancelNew ?? frame.onClose)
-                      : frame.onClose
+                      : () => {
+                          setManualActiveIndex(i === 0 ? null : i - 1);
+                          frame.onClose();
+                        }
                   }
                   onRename={
                     frame.isNew
