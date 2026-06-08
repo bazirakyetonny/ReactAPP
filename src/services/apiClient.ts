@@ -12,6 +12,8 @@ export class AuthError extends Error {
 }
 
 export function getBaseUrl(): string {
+  // return window.location.origin;
+  if (window.location.origin.startsWith("https")) return window.location.origin;
   return import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 }
 

@@ -64,6 +64,7 @@ export function TranslationSideBar({
   const [isLoading, setIsLoading] = useState(false);
   const isMounted = useRef(true);
   const isFirstRender = useRef(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayContent: any[] = sdtPage?.PageStructure?.InfoContent ?? [];
   const editablePageName: string = decodeHtml(sdtPage?.PageName ?? pageName ?? "");
@@ -114,6 +115,18 @@ export function TranslationSideBar({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightLanguage]);
+
+  // Scroll highlighted element into view after content loads or highlight changes
+  useEffect(() => {
+    if (!highlightBlockId || !sdtPage) return;
+    requestAnimationFrame(() => {
+      const selector = highlightTileId
+        ? `[data-tile-id="${highlightTileId}"]`
+        : `[data-block-id="${highlightBlockId}"]`;
+      const el = scrollRef.current?.querySelector(selector);
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  }, [highlightBlockId, highlightTileId, sdtPage]);
 
   // On language change or active page change (skip first render)
   useEffect(() => {
@@ -198,7 +211,7 @@ export function TranslationSideBar({
       if (block.InfoType === "TileGrid") {
         const cols: any[] = block.Columns ?? [];
         out.push(
-          <div key={block.InfoId} className="phone-tilegrid">
+          <div key={block.InfoId} data-block-id={block.InfoId} className="phone-tilegrid">
             {cols.map((col: any, ci: number) => (
               <div key={col.ColId} className="phone-column">
                 {(col.Tiles ?? []).map((tile: any, ti: number) => {
@@ -222,6 +235,7 @@ export function TranslationSideBar({
                   return (
                     <div
                       key={tile.Id}
+                      data-tile-id={tile.Id}
                       className={`phone-tile-wrap${isTileHighlighted ? ' phone-tile-wrap--analysis' : ''}`}
                       style={{ height: tileHeight }}
                     >
@@ -323,7 +337,9 @@ export function TranslationSideBar({
         i++;
       } else if (block.InfoType === "Images") {
         out.push(
-          <ImageBlock key={block.InfoId} block={block} interactive={false} />,
+          <div key={block.InfoId} data-block-id={block.InfoId}>
+            <ImageBlock block={block} interactive={false} />
+          </div>,
         );
         i++;
       } else if (
@@ -343,12 +359,12 @@ export function TranslationSideBar({
           i++;
         }
         out.push(
-          <div key={row[0].block.InfoId} className="phone-round-cta-row">
+          <div key={row[0].block.InfoId} data-block-id={row[0].block.InfoId} className="phone-round-cta-row">
             {row.map(({ block: rb, bi: rbi }) => {
               const ctaKey = `cta-${rbi}`;
               const isCtaHighlighted = highlightBlockId === rb.InfoId && !highlightTileId;
               return (
-                <div key={rb.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+                <div key={rb.InfoId} style={{ position: 'relative' }}>
                   {isCtaHighlighted && highlightMessage && (
                     <div className="block-analysis-label">{highlightMessage}</div>
                   )}
@@ -356,6 +372,7 @@ export function TranslationSideBar({
                     block={rb}
                     ctaColors={ctaColors}
                     interactive={false}
+                    isAnalysisHighlight={isCtaHighlighted}
                     editableLabel={editingKey === ctaKey}
                     onLabelClick={() => setEditingKey(ctaKey)}
                     onLabelBlur={(value) => handleCtaBlur(rbi, value)}
@@ -369,7 +386,7 @@ export function TranslationSideBar({
         const ctaKey = `cta-${bi}`;
         const isCtaHighlighted = highlightBlockId === block.InfoId && !highlightTileId;
         out.push(
-          <div key={block.InfoId} className={isCtaHighlighted ? 'ts-block--analysis' : undefined} style={{ position: 'relative' }}>
+          <div key={block.InfoId} data-block-id={block.InfoId} style={{ position: 'relative' }}>
             {isCtaHighlighted && highlightMessage && (
               <div className="block-analysis-label">{highlightMessage}</div>
             )}
@@ -377,6 +394,7 @@ export function TranslationSideBar({
               block={block}
               ctaColors={ctaColors}
               interactive={false}
+              isAnalysisHighlight={isCtaHighlighted}
               editableLabel={editingKey === ctaKey}
               onLabelClick={() => setEditingKey(ctaKey)}
               onLabelBlur={(value) => handleCtaBlur(bi, value)}
@@ -433,7 +451,7 @@ export function TranslationSideBar({
               editOnClick
             />
 
-            <div className="ts-phone-scroll">{renderEditableBlocks()}</div>
+            <div className="ts-phone-scroll" ref={scrollRef}>{renderEditableBlocks()}</div>
           </div>
         )}
       </div>

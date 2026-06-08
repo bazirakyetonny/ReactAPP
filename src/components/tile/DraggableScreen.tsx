@@ -335,6 +335,30 @@ export function DraggableScreen({
   } | null>(null);
   const allFramesBlockRectsRef = useRef<Map<string, { rect: DOMRect; frameIndex: number }>>(new Map());
 
+  const SCROLL_ZONE = 60;
+  const SCROLL_SPEED = 8;
+
+  function makeAutoScroller() {
+    let rafId: number | null = null;
+    let currentY = 0;
+    function tick() {
+      const el = screenRef.current;
+      if (!el) return;
+      const { top, bottom } = el.getBoundingClientRect();
+      if (currentY < top + SCROLL_ZONE) {
+        el.scrollTop -= SCROLL_SPEED;
+      } else if (currentY > bottom - SCROLL_ZONE) {
+        el.scrollTop += SCROLL_SPEED;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    return {
+      update(y: number) { currentY = y; },
+      start() { if (rafId === null) rafId = requestAnimationFrame(tick); },
+      stop() { if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; } },
+    };
+  }
+
   function handleResizeDragStart(tileId: string, startY: number, startHeight: number) {
     setDragTileId(tileId);
     let splitInfo: { gridId: string; oppositeColId: string } | null = null;
@@ -646,12 +670,15 @@ export function DraggableScreen({
       ghostIconSvg: resolveIconSVG(tile, themeIconsRef.current),
     };
 
+    const scroller = makeAutoScroller();
+
     function onMove(ev: MouseEvent) {
       const drag = tileDragInfoRef.current;
       if (!drag) return;
       if (!drag.hasMoved) {
         if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
         drag.hasMoved = true;
+        scroller.start();
         colRectsSnapshot.current = new Map(
           [...colElRefs.current.entries()].map(([id, el]) => [id, el.getBoundingClientRect()])
         );
@@ -681,6 +708,7 @@ export function DraggableScreen({
         document.body.style.userSelect = 'none';
         setTileDragId(drag.tileId);
       }
+      scroller.update(ev.clientY);
       setGhostPos({ x: ev.clientX, y: ev.clientY });
       const blockInsert = calcBlockInsertTarget(ev.clientX, ev.clientY);
       if (blockInsert) {
@@ -741,6 +769,7 @@ export function DraggableScreen({
         setGhostPos(null);
         onCrossFrameDragPreviewRef.current?.(null);
       }
+      scroller.stop();
       tileDragInfoRef.current = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -782,12 +811,15 @@ export function DraggableScreen({
       return { frameIdx: sourceFrameIndexRef.current, frameContent: infoContentRef.current };
     }
 
+    const blockScroller = makeAutoScroller();
+
     function onMove(ev: MouseEvent) {
       const drag = blockDragInfoRef.current;
       if (!drag) return;
       if (!drag.hasMoved) {
         if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 4) return;
         drag.hasMoved = true;
+        blockScroller.start();
         allFramesBlockRectsRef.current = new Map(
           [...blockWrapperElsRef.current.entries()].map(([id, el]) => [id, { rect: el.getBoundingClientRect(), frameIndex: sourceFrameIndexRef.current }])
         );
@@ -802,6 +834,7 @@ export function DraggableScreen({
         document.body.style.userSelect = 'none';
         setBlockDragId(infoId);
       }
+      blockScroller.update(ev.clientY);
       setBlockGhostPos({ x: ev.clientX, y: ev.clientY });
       const { frameIdx, frameContent } = detectFrame(ev.clientX, ev.clientY);
       const isCross = frameIdx !== sourceFrameIndexRef.current;
@@ -830,6 +863,7 @@ export function DraggableScreen({
             onMoveBlockRef.current?.(drag.infoId, drop.insertBeforeInfoId);
         }
       }
+      blockScroller.stop();
       blockDragInfoRef.current = null;
       setBlockDragId(null);
       setBlockGhostPos(null);
@@ -1011,7 +1045,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Description') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div onClick={() => { onCollapseFromParent?.(); onDeselectTile?.(); }} ref={(el) => {
+                <div data-block-id={block.InfoId} onClick={() => { onCollapseFromParent?.(); onDeselectTile?.(); }} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
@@ -1048,6 +1082,7 @@ export function DraggableScreen({
             return (
               <React.Fragment key={block.InfoId}>
                 <div
+                  data-block-id={block.InfoId}
                   className={analysisHighlight?.blockId === block.InfoId ? 'block--analysis-highlight' : undefined}
                   onClick={() => { onCollapseFromParent?.(); onDeselectTile?.(); }}
                   ref={(el) => {
@@ -1089,7 +1124,7 @@ export function DraggableScreen({
           if (block.InfoType === 'Cta') {
             return (
               <React.Fragment key={block.InfoId}>
-                <div style={{ position: 'relative' }} ref={(el) => {
+                <div data-block-id={block.InfoId} style={{ position: 'relative' }} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
                 }}>
