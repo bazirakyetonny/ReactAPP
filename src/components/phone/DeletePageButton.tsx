@@ -27,9 +27,10 @@ interface DeletePageModalProps {
   pageId: string;
   onClose: () => void;
   onDeleted: (pageId: string) => void;
+  onBeforeDelete?: () => void;
 }
 
-export function DeletePageModal({ appVersionId, pageId, onClose, onDeleted }: DeletePageModalProps) {
+export function DeletePageModal({ appVersionId, pageId, onClose, onDeleted, onBeforeDelete }: DeletePageModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ export function DeletePageModal({ appVersionId, pageId, onClose, onDeleted }: De
     setLoading(true);
     setError(null);
     try {
+      onBeforeDelete?.();
       await deletePage(appVersionId, pageId);
       onDeleted(pageId);
     } catch {

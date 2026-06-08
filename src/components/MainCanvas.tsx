@@ -275,6 +275,7 @@ interface MainCanvasProps {
   /** Fires whenever the visually active frame changes. null = home frame. */
   onActiveFrameChange?: (pageId: string | null) => void;
   onDeletePage?: (pageId: string) => void;
+  onBeforeDeletePage?: () => void;
   appVersionId?: string;
   /** Extra element rendered to the left of the status icons (e.g. language selector in preview) */
   statusBarExtra?: React.ReactNode;
@@ -340,6 +341,7 @@ export function MainCanvas({
   analysisHighlight,
   onActiveFrameChange,
   onDeletePage,
+  onBeforeDeletePage,
   appVersionId,
   statusBarExtra,
   isMultiSelectMode = false,
@@ -1007,6 +1009,7 @@ export function MainCanvas({
           appVersionId={appVersionId}
           pageId={deletePageTarget.pageId}
           onClose={() => setDeletePageTarget(null)}
+          onBeforeDelete={onBeforeDeletePage}
           onDeleted={(pageId) => {
             setDeletePageTarget(null);
             onDeletePage?.(pageId);

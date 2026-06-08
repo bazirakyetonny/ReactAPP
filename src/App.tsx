@@ -31,7 +31,9 @@ import {
   createInfoPage,
   updatePageTitle,
   createLinkPage,
+  deletePage,
 } from "./services/pagesApi";
+import { getTrash, restoreTrash } from "./services/trashApi";
 import { NEW_PAGE_SENTINEL } from "./utils/linkedFrames";
 import type { TileMenuAction } from "./components/tile/TileActionMenu";
 import { buildLinkedFrames } from "./utils/linkedFrames";
@@ -216,21 +218,79 @@ function App() {
     onRestorePages: (pages) => {
       const cv = dataStore.get("Current_Version");
       if (!cv) return;
-      const currentPages: any[] = cv.Page ?? [];
+      const currentPages: any[] = cv.Pages ?? [];
+
       const renamedPages = pages.filter((p: any) => {
         const cur = currentPages.find((c: any) => c.PageId === p.PageId);
         return cur && cur.PageName !== p.PageName;
       });
-      const updated = { ...cv, Page: pages };
+      const restoredPageIds = pages
+        .filter(
+          (p: any) => !currentPages.some((c: any) => c.PageId === p.PageId),
+        )
+        .map((p: any) => p.PageId);
+      const reDeletedPageIds = currentPages
+        .filter((c: any) => !pages.some((p: any) => p.PageId === c.PageId))
+        .map((c: any) => c.PageId);
+
+      // Rebuild Page: keep all existing entries, apply renames/restores/re-deletes
+      const updatedPage = [
+        ...(cv.Page ?? [])
+          .filter((p: any) => !reDeletedPageIds.includes(p.PageId))
+          .map((p: any) => {
+            const renamed = renamedPages.find(
+              (r: any) => r.PageId === p.PageId,
+            );
+            return renamed ? { ...p, PageName: renamed.PageName } : p;
+          }),
+        ...pages.filter((p: any) => restoredPageIds.includes(p.PageId)),
+      ];
+
+      const updated = { ...cv, Page: updatedPage, Pages: pages };
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
+
+      const apiFns: (() => Promise<void>)[] = [];
+
       if (renamedPages.length > 0) {
-        runSaveRef.current?.(() =>
+        apiFns.push(() =>
           Promise.all(
             renamedPages.map((p: any) =>
               updatePageTitle(cv.AppVersionId, p.PageId, p.PageName),
             ),
           ).then(() => undefined),
+        );
+      }
+      if (restoredPageIds.length > 0) {
+        apiFns.push(() =>
+          getTrash().then((items) =>
+            Promise.all(
+              restoredPageIds.map((pageId: string) => {
+                const item = items.find((i) => i.Page?.PageId === pageId);
+                return item
+                  ? restoreTrash(item.Type, item.TrashId)
+                  : Promise.resolve();
+              }),
+            ).then(() => undefined),
+          ),
+        );
+      }
+      if (reDeletedPageIds.length > 0) {
+        apiFns.push(() =>
+          Promise.all(
+            reDeletedPageIds.map((pageId: string) =>
+              deletePage(cv.AppVersionId, pageId).then(() => undefined),
+            ),
+          ).then(() => undefined),
+        );
+      }
+
+      if (apiFns.length > 0) {
+        runSaveRef.current?.(() =>
+          apiFns.reduce<Promise<void>>(
+            (chain, fn) => chain.then(fn),
+            Promise.resolve(),
+          ),
         );
       }
     },
@@ -366,6 +426,9 @@ function App() {
   const translationLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== baseLanguage,
   );
+  const canTranslate =
+    !!(dataStore.get("HasMultiLingualSupport") as boolean | undefined) &&
+    translationLanguages.length > 0;
 
   const allTiles = [
     ...infoContent.flatMap((b: any) =>
@@ -816,13 +879,6 @@ function App() {
       );
     find(infoContentRef.current);
     Object.values(navContentsRef.current).forEach(find);
-    console.log({
-      tileId,
-      tileWidth: rect.width,
-      tileHeight: rect.height,
-      initialOriginalUrl: tile?.OriginalImageUrl,
-      initialOpacity: tile?.Opacity,
-    });
     setTileImageModal({
       tileId,
       tileWidth: rect.width,
@@ -1647,6 +1703,7 @@ function App() {
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
+        canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
         onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
         analysisIssues={analysisIssues}
@@ -1807,6 +1864,7 @@ function App() {
           onActiveFrameChange={handleActiveFrameChange}
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
+          onBeforeDeletePage={pushSnapshot}
           isMultiSelectMode={isMultiSelectMode}
           onSelectionChange={(tileIds, ctaIds, imageIds, descIds) => {
             setSelectedTileIds(tileIds);
@@ -1830,7 +1888,7 @@ function App() {
             onClose={() => setIsHistoryOpen(false)}
             onRestored={handleVersionRestored}
           />
-        ) : isTranslationOpen ? (
+        ) : isTranslationOpen && canTranslate ? (
           <TranslationSideBar
             appVersionId={currentVersion?.AppVersionId ?? ""}
             appVersionLanguage={currentVersion?.AppVersionLanguage ?? ""}
