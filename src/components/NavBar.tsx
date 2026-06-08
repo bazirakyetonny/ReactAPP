@@ -545,7 +545,6 @@ export function NavBar({
           <TrashIcon />
         </button>
         <div className="navbar-separator" role="separator" />
-
         {canTranslate && (
           <>
             <button
