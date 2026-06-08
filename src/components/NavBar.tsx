@@ -533,6 +533,15 @@ export function NavBar({
         >
           <TrashIcon />
         </button>
+        <div className="navbar-separator" role="separator" />
+        <button
+          className="navbar-icon-btn"
+          type="button"
+          title="Trash"
+          onClick={onTrashClick}
+        >
+          <TrashIcon />
+        </button>
         {canTranslate && (
           <>
             <div className="navbar-separator" role="separator" />
