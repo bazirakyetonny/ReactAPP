@@ -348,6 +348,10 @@ export function TileGrids({
                           ? liveTileText?.text
                           : tile.Text;
                       const hasText = !!displayText;
+                      // mirrors CSS: font-size 15px × line-height 1.3, padding 8px×2, icon 22px + gap 4px
+                      const tileHeightPx = parseInt(height, 10);
+                      const availableForText = tileHeightPx - 16 - (hasIcon ? 26 : 0);
+                      const maxTextLines = Math.max(1, Math.floor(availableForText / (15 * 1.3)));
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;
                       const showDelText = canEdit && hasIcon && hasText;
@@ -544,7 +548,7 @@ export function TileGrids({
                               <div
                                 className={`phone-tile-element${showDelText ? " phone-tile-element--deletable" : ""}`}
                               >
-                                <span className="phone-tile-text">
+                                <span className="phone-tile-text" style={{ WebkitLineClamp: maxTextLines }}>
                                   {displayText}
                                 </span>
                                 {showDelText &&

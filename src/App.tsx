@@ -117,6 +117,7 @@ function App() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
+  const [showNavPaths, setShowNavPaths] = useState(false);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
     text: string;
@@ -1733,6 +1734,8 @@ function App() {
           }
           toggleMultiSelectMode();
         }}
+        showNavPaths={showNavPaths}
+        onToggleNavPaths={() => setShowNavPaths((v) => !v)}
       />
       <EditorModals
         showPublishModal={showPublishModal}
@@ -1881,6 +1884,7 @@ function App() {
           onCutSelected={handleCutSelected}
           hasClipboard={clipboard.length > 0}
           onPasteBlocks={handlePasteToHome}
+          showNavPaths={showNavPaths}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar
