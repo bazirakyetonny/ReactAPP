@@ -159,7 +159,6 @@ export function AppVersionDropDown({
   onCategoryChange,
   disabled = false,
 }: AppVersionDropDownProps) {
-  console.log("appversions", appVersions);
   const userRoles: string[] = dataStore.get("UserRoles") ?? [];
   const canCreateVersion =
     userRoles.includes("Receptionist") ||
