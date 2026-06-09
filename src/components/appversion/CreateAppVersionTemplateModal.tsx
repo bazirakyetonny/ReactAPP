@@ -18,8 +18,12 @@ export function CreateAppVersionTemplateModal({
   onClose,
   onCreated,
 }: CreateAppVersionTemplateModalProps) {
+  const userRoles: string[] = dataStore.get("UserRoles") ?? [];
+
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
+
+  if (!userRoles.includes("Comforta Admin")) return null;
 
   const [step, setStep] = useState<1 | 2>(1);
   const [templateName, setTemplateName] = useState("");

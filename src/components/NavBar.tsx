@@ -3,9 +3,10 @@ import "./NavBar.css";
 import type { AppVersion, Theme } from "../types";
 import type { AnalysisIssue } from "../utils/analysisUtils";
 import { AppVersionDropDown } from "./appversion/AppVersionDropDown";
+import { dataStore } from "../data/datastore";
 
 interface NavBarProps {
-  version?: Pick<AppVersion, "AppVersionName">;
+  version?: Pick<AppVersion, "AppVersionName" | "IsPublishedTemplate">;
   appVersions?: AppVersion[];
   selectedVersionId?: string;
   onVersionSelect?: (id: string) => void;
@@ -14,11 +15,15 @@ interface NavBarProps {
   onDuplicateVersion?: (id: string) => void;
   onRenameVersion?: (id: string) => void;
   onUpdateTranslations?: (id: string) => void;
+  onUpdateDescription?: (id: string) => void;
   onMoveVersionToTrash?: (id: string) => void;
+  onCategoryChange?: (versionId: string, categoryId: string) => void;
   themes?: Theme[];
   selectedThemeId?: string;
   onThemeChange?: (id: string) => void;
   onPublish?: () => void;
+  onPublishAsTemplate?: () => void;
+  onUnpublishTemplate?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
@@ -322,11 +327,15 @@ export function NavBar({
   onDuplicateVersion,
   onRenameVersion,
   onUpdateTranslations,
+  onUpdateDescription,
   onMoveVersionToTrash,
+  onCategoryChange,
   themes = [],
   selectedThemeId = "",
   onThemeChange,
   onPublish,
+  onPublishAsTemplate,
+  onUnpublishTemplate,
   canUndo = false,
   canRedo = false,
   onUndo,
@@ -357,6 +366,9 @@ export function NavBar({
   showNavPaths = false,
   onToggleNavPaths,
 }: NavBarProps) {
+  const userRoles: string[] = dataStore.get("UserRoles") ?? [];
+  const isComfortaAdmin = userRoles.includes("Comforta Admin");
+
   const safeIndex = Math.min(
     analysisCurrentIndex,
     Math.max(0, analysisIssueCount - 1),
@@ -383,7 +395,9 @@ export function NavBar({
           onDuplicate={onDuplicateVersion}
           onRename={onRenameVersion}
           onUpdateTranslations={onUpdateTranslations}
+          onUpdateDescription={onUpdateDescription}
           onMoveToTrash={onMoveVersionToTrash}
+          onCategoryChange={onCategoryChange}
         />
         <button
           className={`navbar-icon-btn${analysisOpen ? " navbar-icon-btn--active" : ""}`}
@@ -587,10 +601,31 @@ export function NavBar({
             </option>
           ))}
         </select>
-        <button className="navbar-publish" type="button" onClick={onPublish}>
-          <UploadIcon />
-          Publish
-        </button>
+        {isComfortaAdmin ? (
+          version?.IsPublishedTemplate ? (
+            <button
+              className="navbar-publish"
+              type="button"
+              onClick={onUnpublishTemplate}
+              title="Unpublish Template"
+            >
+              <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
+                <UploadIcon />
+              </span>
+              Unpublish
+            </button>
+          ) : (
+            <button className="navbar-publish" type="button" onClick={onPublishAsTemplate}>
+              <UploadIcon />
+              Publish
+            </button>
+          )
+        ) : (
+          <button className="navbar-publish" type="button" onClick={onPublish}>
+            <UploadIcon />
+            Publish
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -4,6 +4,7 @@ import {
   getAppVersions,
   getActiveAppVersion,
   activateAppVersion,
+  updateAppVersionCategory,
   type SDTAppVersion,
 } from "./services/appVersionsApi";
 import { getBaseUrl } from "./services/apiClient";
@@ -73,6 +74,8 @@ function App() {
     useState<SDTAppVersion | null>(null);
   const [updateTranslationsVersion, setUpdateTranslationsVersion] =
     useState<SDTAppVersion | null>(null);
+  const [updateDescriptionVersion, setUpdateDescriptionVersion] =
+    useState<SDTAppVersion | null>(null);
   useEffect(() => {
     if (isPreviewMode) return;
     getAppVersions()
@@ -114,6 +117,8 @@ function App() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showPublishAsTemplateModal, setShowPublishAsTemplateModal] = useState(false);
+  const [showUnpublishTemplateModal, setShowUnpublishTemplateModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
@@ -574,19 +579,23 @@ function App() {
     const seen = new Set<string>();
     for (const block of sourceBlocks) {
       if (block.InfoType === "TileGrid") {
-        for (const col of block.Columns ?? []) {
-          for (const tile of col.Tiles ?? []) {
-            if (selectedTileIds.has(tile.Id) && !seen.has(tile.Id)) {
-              seen.add(tile.Id);
-              items.push({
-                InfoId: `grid-clip-${tile.Id}`,
-                InfoType: "TileGrid",
-                Columns: [
-                  { ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] },
-                ],
-              });
+        // Preserve column structure: keep only columns that contain at least
+        // one selected tile, with only the selected tiles inside each column.
+        const selectedColumns = (block.Columns ?? []).reduce(
+          (acc: any[], col: any) => {
+            const selectedTiles = (col.Tiles ?? []).filter(
+              (t: any) => selectedTileIds.has(t.Id) && !seen.has(t.Id),
+            );
+            if (selectedTiles.length > 0) {
+              selectedTiles.forEach((t: any) => seen.add(t.Id));
+              acc.push({ ...col, Tiles: selectedTiles });
             }
-          }
+            return acc;
+          },
+          [],
+        );
+        if (selectedColumns.length > 0) {
+          items.push({ ...block, InfoId: `grid-clip-${block.InfoId}`, Columns: selectedColumns });
         }
       } else if (
         block.InfoType === "Cta" &&
@@ -1148,6 +1157,45 @@ function App() {
       .catch(() => {});
   }
 
+  async function handleCategoryChange(versionId: string, categoryId: string) {
+    try {
+      await updateAppVersionCategory(versionId, categoryId);
+      const versions = await getAppVersions();
+      setAppVersions(versions);
+    } catch {
+      // silently fail — consistent with other direct-action handlers
+    }
+  }
+
+  async function handleTemplatePublished() {
+    setShowPublishAsTemplateModal(false);
+    try {
+      const [versions, fetched] = await Promise.all([getAppVersions(), getActiveAppVersion()]);
+      setAppVersions(versions);
+      const fullVersion = { ...fetched as any, Page: (fetched as any).Page ?? (fetched as any).Pages ?? [] };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+    } catch {}
+  }
+
+  async function handleTemplateUnpublished() {
+    setShowUnpublishTemplateModal(false);
+    try {
+      const [versions, fetched] = await Promise.all([getAppVersions(), getActiveAppVersion()]);
+      setAppVersions(versions);
+      const fullVersion = { ...fetched as any, Page: (fetched as any).Page ?? (fetched as any).Pages ?? [] };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+    } catch {}
+  }
+
+  function handleDescriptionUpdated() {
+    setUpdateDescriptionVersion(null);
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
+  }
+
   function handleTranslationsUpdated() {
     setUpdateTranslationsVersion(null);
     getAppVersions()
@@ -1674,6 +1722,12 @@ function App() {
             appVersions.find((a) => a.AppVersionId === id) ?? null,
           )
         }
+        onUpdateDescription={(id) =>
+          setUpdateDescriptionVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
+        onCategoryChange={handleCategoryChange}
         onUpdateTranslations={(id) =>
           setUpdateTranslationsVersion(
             appVersions.find((a) => a.AppVersionId === id) ?? null,
@@ -1724,6 +1778,8 @@ function App() {
           setTranslationHighlight(null);
         }}
         onPublish={() => setShowPublishModal(true)}
+        onPublishAsTemplate={() => setShowPublishAsTemplateModal(true)}
+        onUnpublishTemplate={() => setShowUnpublishTemplateModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
         isMultiSelectMode={isMultiSelectMode}
@@ -1739,6 +1795,12 @@ function App() {
       />
       <EditorModals
         showPublishModal={showPublishModal}
+        showPublishAsTemplateModal={showPublishAsTemplateModal}
+        onClosePublishAsTemplate={() => setShowPublishAsTemplateModal(false)}
+        onTemplatePublished={handleTemplatePublished}
+        showUnpublishTemplateModal={showUnpublishTemplateModal}
+        onCloseUnpublishTemplate={() => setShowUnpublishTemplateModal(false)}
+        onTemplateUnpublished={handleTemplateUnpublished}
         currentVersion={currentVersion}
         appVersions={appVersions}
         analysisIssueCount={analysisIssues.length}
@@ -1773,6 +1835,9 @@ function App() {
         duplicateVersion={duplicateVersion}
         onCloseDuplicate={() => setDuplicateVersion(null)}
         onVersionDuplicated={handleVersionDuplicated}
+        updateDescriptionVersion={updateDescriptionVersion}
+        onCloseUpdateDescription={() => setUpdateDescriptionVersion(null)}
+        onDescriptionUpdated={handleDescriptionUpdated}
         updateTranslationsVersion={updateTranslationsVersion}
         onCloseUpdateTranslations={() => setUpdateTranslationsVersion(null)}
         onTranslationsUpdated={handleTranslationsUpdated}

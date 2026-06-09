@@ -5,6 +5,8 @@ import { RenameAppVersionModal } from './appversion/RenameAppVersionModal';
 import { MoveToTrashModal } from './appversion/MoveToTrashModal';
 import { DuplicateAppVersionModal } from './appversion/DuplicateAppVersionModal';
 import { UpdateTranslationsModal } from './appversion/UpdateTranslationsModal';
+import { UpdateDescriptionModal } from './appversion/UpdateDescriptionModal';
+import { TemplatePublishModal } from './appversion/TemplatePublishModal';
 import { CreateAppVersionTemplateModal } from './appversion/CreateAppVersionTemplateModal';
 import { PublishModal } from './appversion/PublishModal';
 import { ShareLinkModal } from './appversion/ShareLinkModal';
@@ -14,6 +16,12 @@ import { TileImageModal } from './phone/TileImageModal';
 
 interface EditorModalsProps {
   showPublishModal: boolean;
+  showPublishAsTemplateModal: boolean;
+  onClosePublishAsTemplate: () => void;
+  onTemplatePublished: () => void;
+  showUnpublishTemplateModal: boolean;
+  onCloseUnpublishTemplate: () => void;
+  onTemplateUnpublished: () => void;
   currentVersion: any;
   appVersions: SDTAppVersion[];
   analysisIssueCount: number;
@@ -47,6 +55,10 @@ interface EditorModalsProps {
   duplicateVersion: SDTAppVersion | null;
   onCloseDuplicate: () => void;
   onVersionDuplicated: () => void;
+
+  updateDescriptionVersion: SDTAppVersion | null;
+  onCloseUpdateDescription: () => void;
+  onDescriptionUpdated: () => void;
 
   updateTranslationsVersion: (SDTAppVersion & { TranslateLanguages?: string[] }) | null;
   onCloseUpdateTranslations: () => void;
@@ -87,6 +99,8 @@ interface EditorModalsProps {
 export function EditorModals({
   showPublishModal, currentVersion, appVersions, analysisIssueCount,
   onPublished, onClosePublish, onFixIssues,
+  showPublishAsTemplateModal, onClosePublishAsTemplate, onTemplatePublished,
+  showUnpublishTemplateModal, onCloseUnpublishTemplate, onTemplateUnpublished,
   showShareModal, shareLink, onCloseShare,
   showCreateModal, templatesCollection, themeColors, themeIcons,
   onCloseCreate, onVersionCreated,
@@ -94,6 +108,7 @@ export function EditorModals({
   renameVersion, onCloseRename, onVersionRenamed,
   trashVersion, onCloseTrash, onVersionDeleted,
   duplicateVersion, onCloseDuplicate, onVersionDuplicated,
+  updateDescriptionVersion, onCloseUpdateDescription, onDescriptionUpdated,
   updateTranslationsVersion, onCloseUpdateTranslations, onTranslationsUpdated,
   showTrashModal, onCloseTrashModal, onTrashChanged,
   tileImageModal, onTileImageConfirm, onCloseTileImage,
@@ -114,6 +129,22 @@ export function EditorModals({
       )}
       {showShareModal && (
         <ShareLinkModal shareLink={shareLink} onClose={onCloseShare} />
+      )}
+      {showPublishAsTemplateModal && currentVersion && (
+        <TemplatePublishModal
+          mode="publish"
+          versionId={currentVersion.AppVersionId}
+          onConfirmed={onTemplatePublished}
+          onClose={onClosePublishAsTemplate}
+        />
+      )}
+      {showUnpublishTemplateModal && currentVersion && (
+        <TemplatePublishModal
+          mode="unpublish"
+          versionId={currentVersion.AppVersionId}
+          onConfirmed={onTemplateUnpublished}
+          onClose={onCloseUnpublishTemplate}
+        />
       )}
       {showCreateModal && (
         <CreateAppVersionModal
@@ -156,6 +187,16 @@ export function EditorModals({
           currentName={duplicateVersion.AppVersionName}
           onClose={onCloseDuplicate}
           onDuplicated={onVersionDuplicated}
+        />
+      )}
+      {updateDescriptionVersion && (
+        <UpdateDescriptionModal
+          key={updateDescriptionVersion.AppVersionId}
+          versionId={updateDescriptionVersion.AppVersionId}
+          currentName={updateDescriptionVersion.AppVersionName}
+          currentDescription={updateDescriptionVersion.AppVersionDescription}
+          onClose={onCloseUpdateDescription}
+          onUpdated={onDescriptionUpdated}
         />
       )}
       {updateTranslationsVersion && (

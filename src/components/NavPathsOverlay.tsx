@@ -32,7 +32,13 @@ const NODE_R = 4;
 const BIG = 10000;
 
 function sCurve(x1: number, y1: number, x2: number, y2: number): string {
-  const tension = Math.max(40, Math.abs(x2 - x1) * 0.4);
+  const dx = Math.abs(x2 - x1);
+  const tension = Math.max(40, dx * 0.4);
+  if (Math.abs(y2 - y1) < 80) {
+    const offset = tension / Math.SQRT2;
+    const yDir = Math.sign(y2 - y1) || 1;
+    return `M ${x1} ${y1} C ${x1 + offset} ${y1 + yDir * offset} ${x2 - offset} ${y2 - yDir * offset} ${x2} ${y2}`;
+  }
   return `M ${x1} ${y1} C ${x1 + tension} ${y1} ${x2 - tension} ${y2} ${x2} ${y2}`;
 }
 
@@ -120,7 +126,10 @@ export function NavPathsOverlay({
       newPaths.push({
         key: `${src.key}-${dst.key}`,
         d: sCurve(x1, y1, x2, y2),
-        x1, y1, x2, y2,
+        x1,
+        y1,
+        x2,
+        y2,
         srcScreen: getScreenRect(src.el),
         dstScreen: getScreenRect(dst.el),
         gapLeft: getFrameEdges(src.el).rightX,
@@ -145,7 +154,10 @@ export function NavPathsOverlay({
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(recompute);
     };
-    stage.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    stage.addEventListener("scroll", onScroll, {
+      passive: true,
+      capture: true,
+    });
 
     return () => {
       obs.disconnect();
