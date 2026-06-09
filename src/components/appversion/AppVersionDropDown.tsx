@@ -14,6 +14,7 @@ interface AppVersionDropDownProps {
   onRename?: (id: string) => void;
   onUpdateTranslations?: (id: string) => void;
   onMoveToTrash?: (id: string) => void;
+  disabled?: boolean;
 }
 
 function ChevronDownIcon() {
@@ -113,6 +114,7 @@ export function AppVersionDropDown({
   onRename,
   onUpdateTranslations,
   onMoveToTrash,
+  disabled = false,
 }: AppVersionDropDownProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -172,6 +174,7 @@ export function AppVersionDropDown({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
+        disabled={disabled}
       >
         {versionName ?? "My version"}
         <ChevronDownIcon />

@@ -846,6 +846,15 @@ function App() {
   }, [infoContent]);
 
   useEffect(() => {
+    if (!isTranslationOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsTranslationOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isTranslationOpen]);
+
+  useEffect(() => {
     if (Object.keys(navContents).length === 0) return;
     const cv = dataStore.get("Current_Version");
     if (!cv) return;
@@ -1702,7 +1711,10 @@ function App() {
         saveError={saveError}
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
-        onTranslationToggle={() => setIsTranslationOpen((v) => !v)}
+        onTranslationToggle={() => {
+          if (!isTranslationOpen && analysisOpen) setAnalysisOpen(false);
+          setIsTranslationOpen((v) => !v);
+        }}
         canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
         onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
