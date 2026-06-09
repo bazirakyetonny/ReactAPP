@@ -3,22 +3,21 @@
   position: absolute;
   inset: 0;
   background: #eef0f4;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
   z-index: 10;
 }
 
-/* ── Toolbar ───────────────────────────────────────────────────────────────── */
+/* ── Toolbar (rendered inside SVG foreignObject) ───────────────────────────── */
 .tree-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   height: 44px;
+  width: 100%;
+  box-sizing: border-box;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  flex-shrink: 0;
 }
 
 .tree-breadcrumbs {
@@ -97,8 +96,8 @@
 
 /* ── SVG canvas ────────────────────────────────────────────────────────────── */
 .tree-svg {
-  flex: 1;
   width: 100%;
+  height: 100%;
   cursor: default;
   overflow: visible;
 }
@@ -138,6 +137,13 @@
 .tree-node.orphan .tree-node-shell {
   stroke: #fca5a5;
   stroke-dasharray: 4 2;
+}
+
+.tree-node-stack-shadow {
+  fill: #ffffff;
+  stroke: #cbd5e1;
+  stroke-width: 0.75;
+  opacity: 0.55;
 }
 
 .tree-node-statusbar {

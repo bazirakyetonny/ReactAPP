@@ -5,6 +5,7 @@ export interface GraphNode {
   name: string;
   content: any[];
   isOrphan: boolean;
+  hasChildren: boolean;
 }
 
 export interface GraphEdge {
@@ -59,6 +60,7 @@ export function usePageGraph(
       name: page.PageName ?? 'Unnamed',
       content: getPageContent(page, infoContent, navContents),
       isOrphan: false,
+      hasChildren: false,
     }));
 
     const allEdges: GraphEdge[] = nodes.flatMap((n) => extractEdges(n.id, n.content));
@@ -78,7 +80,11 @@ export function usePageGraph(
       }
     }
 
-    for (const node of nodes) node.isOrphan = !reachable.has(node.id);
+    const sourcesWithChildren = new Set(allEdges.map(e => e.source));
+    for (const node of nodes) {
+      node.isOrphan = !reachable.has(node.id);
+      node.hasChildren = sourcesWithChildren.has(node.id);
+    }
 
     // BFS to find shortest path from home to a pageId (returns navStack slice, excluding home)
     function getPath(targetId: string): string[] {
