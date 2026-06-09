@@ -145,3 +145,22 @@
 .vd-sub-item--danger:hover {
   color: #dc2626;
 }
+
+.vd-sub-item--has-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vd-sub-item--has-sub svg {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.vd-sub-empty {
+  display: block;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}

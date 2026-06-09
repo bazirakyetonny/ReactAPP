@@ -25,6 +25,7 @@ import { CalendarPage } from "./CalendarPage";
 import { MyActivityPage } from "./MyActivityPage";
 import { MapPage } from "./MapPage";
 import { DeletePageButton, DeletePageModal } from "./phone/DeletePageButton";
+import { NavPathsOverlay } from "./NavPathsOverlay";
 
 const MODULE_PAGE_TYPES = new Set([
   "BulletinBoard",
@@ -295,6 +296,7 @@ interface MainCanvasProps {
   onCutSelected?: (sourceBlocks: any[]) => void;
   hasClipboard?: boolean;
   onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
+  showNavPaths?: boolean;
 }
 
 export function MainCanvas({
@@ -355,6 +357,7 @@ export function MainCanvas({
   onCutSelected,
   hasClipboard,
   onPasteBlocks,
+  showNavPaths = false,
 }: MainCanvasProps) {
   const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
 
@@ -835,6 +838,7 @@ export function MainCanvas({
                   if (el) linkedFrameRefs.current.set(i, el);
                   else linkedFrameRefs.current.delete(i);
                 }}
+                data-frame-page-id={frame.page?.PageId}
                 onMouseDown={() => setManualActiveIndex(i)}
               >
                 <PhoneStatusBar />
@@ -1004,6 +1008,14 @@ export function MainCanvas({
             </div>
           );
         })}
+        {showNavPaths && (
+          <NavPathsOverlay
+            stageRef={canvasStageRef}
+            activeNavTileIds={activeNavTileIds ?? new Set<string>()}
+            selectedTileId={selectedTileId}
+            selectedCtaId={selectedCtaId}
+          />
+        )}
       </div>
 
       {deletePageTarget && appVersionId && (

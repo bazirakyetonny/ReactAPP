@@ -4,6 +4,7 @@ import {
   getAppVersions,
   getActiveAppVersion,
   activateAppVersion,
+  updateAppVersionCategory,
   type SDTAppVersion,
 } from "./services/appVersionsApi";
 import { getBaseUrl } from "./services/apiClient";
@@ -48,7 +49,11 @@ import { usePageGraph } from "./components/tree/usePageGraph";
 
 function getLinkedPageUrl(page: any): string {
   if (page?.PageLinkStructure?.Url) return page.PageLinkStructure.Url;
-  try { return JSON.parse(page?.PageStructure ?? '{}')?.Url ?? ''; } catch { return ''; }
+  try {
+    return JSON.parse(page?.PageStructure ?? "{}")?.Url ?? "";
+  } catch {
+    return "";
+  }
 }
 
 function App() {
@@ -77,6 +82,8 @@ function App() {
   const [duplicateVersion, setDuplicateVersion] =
     useState<SDTAppVersion | null>(null);
   const [updateTranslationsVersion, setUpdateTranslationsVersion] =
+    useState<SDTAppVersion | null>(null);
+  const [updateDescriptionVersion, setUpdateDescriptionVersion] =
     useState<SDTAppVersion | null>(null);
   useEffect(() => {
     if (isPreviewMode) return;
@@ -119,15 +126,22 @@ function App() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisIndex, setAnalysisIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showPublishAsTemplateModal, setShowPublishAsTemplateModal] =
+    useState(false);
+  const [showUnpublishTemplateModal, setShowUnpublishTemplateModal] =
+    useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
+  const [showNavPaths, setShowNavPaths] = useState(false);
   const [trashedPageIds, setTrashedPageIds] = useState<Set<string>>(new Set());
 
   function refreshTrashedPageIds() {
     getTrash()
       .then((items) => {
-        setTrashedPageIds(new Set(items.filter(i => i.Page).map(i => i.Page.PageId)));
+        setTrashedPageIds(
+          new Set(items.filter((i) => i.Page).map((i) => i.Page.PageId)),
+        );
       })
       .catch(() => {});
   }
@@ -176,7 +190,7 @@ function App() {
 
   function handleDeletePage(pageId: string) {
     _handleDeletePage(pageId);
-    setTrashedPageIds(prev => new Set([...prev, pageId]));
+    setTrashedPageIds((prev) => new Set([...prev, pageId]));
     const updated = dataStore.get("Current_Version");
     if (updated) setCurrentVersion(updated);
   }
@@ -437,12 +451,12 @@ function App() {
   // When a WebLink page enters the nav stack (tree, analysis, or tile navigation),
   // ensure its URL is in navUrls so the iframe renders correctly.
   useEffect(() => {
-    setNavUrls(prev => {
+    setNavUrls((prev) => {
       const updates: Record<string, string> = {};
       for (const pageId of navStack) {
         if (prev[pageId]) continue;
         const page = allPages.find((p: any) => p.PageId === pageId);
-        if (page?.PageType === 'WebLink' || page?.PageType === 'DynamicForm') {
+        if (page?.PageType === "WebLink" || page?.PageType === "DynamicForm") {
           const url = getLinkedPageUrl(page);
           if (url) updates[pageId] = url;
         }
@@ -502,24 +516,34 @@ function App() {
       if (pageIdx === -1) continue;
       // Resolve the parent frame content (the frame that contains the source tile)
       const parentPageId = pageIdx > 0 ? navStack[pageIdx - 1] : null;
-      const parentContent: any[] = parentPageId !== null
-        ? (navContents[parentPageId] ?? [])
-        : infoContent;
+      const parentContent: any[] =
+        parentPageId !== null ? (navContents[parentPageId] ?? []) : infoContent;
       // Clear nav-active when a DIFFERENT tile is selected in the same frame
-      const otherTileInParent = !!selectedTileId && selectedTileId !== sourceTileId &&
-        parentContent.some((b: any) =>
-          b.InfoType === 'TileGrid' &&
-          (b.Columns ?? []).some((c: any) =>
-            (c.Tiles ?? []).some((t: any) => t.Id === selectedTileId)
-          )
+      const otherTileInParent =
+        !!selectedTileId &&
+        selectedTileId !== sourceTileId &&
+        parentContent.some(
+          (b: any) =>
+            b.InfoType === "TileGrid" &&
+            (b.Columns ?? []).some((c: any) =>
+              (c.Tiles ?? []).some((t: any) => t.Id === selectedTileId),
+            ),
         );
       // Clear nav-active when any CTA is selected in the same frame
-      const ctaInParent = !!selectedCtaId &&
+      const ctaInParent =
+        !!selectedCtaId &&
         parentContent.some((b: any) => b.InfoId === selectedCtaId);
       if (!otherTileInParent && !ctaInParent) ids.add(sourceTileId);
     }
     return ids;
-  }, [navStack, navSourceTiles, navContents, infoContent, selectedTileId, selectedCtaId]);
+  }, [
+    navStack,
+    navSourceTiles,
+    navContents,
+    infoContent,
+    selectedTileId,
+    selectedCtaId,
+  ]);
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
@@ -616,19 +640,27 @@ function App() {
     const seen = new Set<string>();
     for (const block of sourceBlocks) {
       if (block.InfoType === "TileGrid") {
-        for (const col of block.Columns ?? []) {
-          for (const tile of col.Tiles ?? []) {
-            if (selectedTileIds.has(tile.Id) && !seen.has(tile.Id)) {
-              seen.add(tile.Id);
-              items.push({
-                InfoId: `grid-clip-${tile.Id}`,
-                InfoType: "TileGrid",
-                Columns: [
-                  { ColId: `col-clip-${tile.Id}`, Tiles: [{ ...tile }] },
-                ],
-              });
+        // Preserve column structure: keep only columns that contain at least
+        // one selected tile, with only the selected tiles inside each column.
+        const selectedColumns = (block.Columns ?? []).reduce(
+          (acc: any[], col: any) => {
+            const selectedTiles = (col.Tiles ?? []).filter(
+              (t: any) => selectedTileIds.has(t.Id) && !seen.has(t.Id),
+            );
+            if (selectedTiles.length > 0) {
+              selectedTiles.forEach((t: any) => seen.add(t.Id));
+              acc.push({ ...col, Tiles: selectedTiles });
             }
-          }
+            return acc;
+          },
+          [],
+        );
+        if (selectedColumns.length > 0) {
+          items.push({
+            ...block,
+            InfoId: `grid-clip-${block.InfoId}`,
+            Columns: selectedColumns,
+          });
         }
       } else if (
         block.InfoType === "Cta" &&
@@ -766,19 +798,25 @@ function App() {
     }
   }
 
-  function buildNavSourceTilesForPath(pageIds: string[]): Record<string, string> {
+  function buildNavSourceTilesForPath(
+    pageIds: string[],
+  ): Record<string, string> {
     const cv = dataStore.get("Current_Version");
     const allPagesStore: any[] = cv?.Pages ?? cv?.Page ?? [];
     function getContent(pageId: string): any[] {
       if (navContents[pageId]) return navContents[pageId];
       const page = allPagesStore.find((p: any) => p.PageId === pageId);
-      try { return JSON.parse(page?.PageStructure ?? '{}').InfoContent ?? []; } catch { return []; }
+      try {
+        return JSON.parse(page?.PageStructure ?? "{}").InfoContent ?? [];
+      } catch {
+        return [];
+      }
     }
     const result: Record<string, string> = {};
     for (let i = 0; i < pageIds.length; i++) {
       const parentContent = i === 0 ? infoContent : getContent(pageIds[i - 1]);
       for (const block of parentContent) {
-        if (block.InfoType !== 'TileGrid') continue;
+        if (block.InfoType !== "TileGrid") continue;
         let found = false;
         for (const col of block.Columns ?? []) {
           for (const tile of col.Tiles ?? []) {
@@ -804,13 +842,13 @@ function App() {
       const path = pageGraph.getPath(issue.pageId);
       const sourceTiles = buildNavSourceTilesForPath(path);
       handleNavigateToPath(path);
-      setNavSourceTiles(prev => ({ ...prev, ...sourceTiles }));
+      setNavSourceTiles((prev) => ({ ...prev, ...sourceTiles }));
       setSelectedTileId(null);
       setSelectedCtaId(null);
       requestAnimationFrame(() => {
         for (const tileId of Object.values(sourceTiles)) {
           const el = document.querySelector(`[data-tile-id="${tileId}"]`);
-          el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
         }
       });
     }
@@ -832,7 +870,7 @@ function App() {
         ? `[data-tile-id="${issue.subItemId}"]`
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
-      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
     });
   }
 
@@ -1199,6 +1237,57 @@ function App() {
       .catch(() => {});
   }
 
+  async function handleCategoryChange(versionId: string, categoryId: string) {
+    try {
+      await updateAppVersionCategory(versionId, categoryId);
+      const versions = await getAppVersions();
+      setAppVersions(versions);
+    } catch {
+      // silently fail — consistent with other direct-action handlers
+    }
+  }
+
+  async function handleTemplatePublished() {
+    setShowPublishAsTemplateModal(false);
+    try {
+      const [versions, fetched] = await Promise.all([
+        getAppVersions(),
+        getActiveAppVersion(),
+      ]);
+      setAppVersions(versions);
+      const fullVersion = {
+        ...(fetched as any),
+        Page: (fetched as any).Page ?? (fetched as any).Pages ?? [],
+      };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+    } catch {}
+  }
+
+  async function handleTemplateUnpublished() {
+    setShowUnpublishTemplateModal(false);
+    try {
+      const [versions, fetched] = await Promise.all([
+        getAppVersions(),
+        getActiveAppVersion(),
+      ]);
+      setAppVersions(versions);
+      const fullVersion = {
+        ...(fetched as any),
+        Page: (fetched as any).Page ?? (fetched as any).Pages ?? [],
+      };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+    } catch {}
+  }
+
+  function handleDescriptionUpdated() {
+    setUpdateDescriptionVersion(null);
+    getAppVersions()
+      .then(setAppVersions)
+      .catch(() => {});
+  }
+
   function handleTranslationsUpdated() {
     setUpdateTranslationsVersion(null);
     getAppVersions()
@@ -1364,7 +1453,11 @@ function App() {
       });
       handleTileNavigate(action.pageId, parentIndex);
       setNavSourceTiles((prev) => ({ ...prev, [action.pageId]: tileId }));
-      if ((action.objectType === "WebLink" || action.objectType === "DynamicForm") && objectUrl)
+      if (
+        (action.objectType === "WebLink" ||
+          action.objectType === "DynamicForm") &&
+        objectUrl
+      )
         setNavUrls((prev) => ({ ...prev, [action.pageId]: objectUrl }));
       return;
     }
@@ -1562,7 +1655,11 @@ function App() {
       (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
     );
     const action = block?.CtaAttributes?.Action;
-    if ((action?.ObjectType === "WebLink" || action?.ObjectType === "DynamicForm") && action?.ObjectId) {
+    if (
+      (action?.ObjectType === "WebLink" ||
+        action?.ObjectType === "DynamicForm") &&
+      action?.ObjectId
+    ) {
       const frames = [
         { frameIndex: -1 as number, blocks: infoContentRef.current },
         ...navStackRef.current.map((pid: string, i: number) => ({
@@ -1725,6 +1822,12 @@ function App() {
             appVersions.find((a) => a.AppVersionId === id) ?? null,
           )
         }
+        onUpdateDescription={(id) =>
+          setUpdateDescriptionVersion(
+            appVersions.find((a) => a.AppVersionId === id) ?? null,
+          )
+        }
+        onCategoryChange={handleCategoryChange}
         onUpdateTranslations={(id) =>
           setUpdateTranslationsVersion(
             appVersions.find((a) => a.AppVersionId === id) ?? null,
@@ -1778,6 +1881,8 @@ function App() {
           setTranslationHighlight(null);
         }}
         onPublish={() => setShowPublishModal(true)}
+        onPublishAsTemplate={() => setShowPublishAsTemplateModal(true)}
+        onUnpublishTemplate={() => setShowUnpublishTemplateModal(true)}
         onShareClick={() => setShowShareModal(true)}
         onTrashClick={() => setShowTrashModal(true)}
         isMultiSelectMode={isMultiSelectMode}
@@ -1788,9 +1893,17 @@ function App() {
           }
           toggleMultiSelectMode();
         }}
+        showNavPaths={showNavPaths}
+        onToggleNavPaths={() => setShowNavPaths((v) => !v)}
       />
       <EditorModals
         showPublishModal={showPublishModal}
+        showPublishAsTemplateModal={showPublishAsTemplateModal}
+        onClosePublishAsTemplate={() => setShowPublishAsTemplateModal(false)}
+        onTemplatePublished={handleTemplatePublished}
+        showUnpublishTemplateModal={showUnpublishTemplateModal}
+        onCloseUnpublishTemplate={() => setShowUnpublishTemplateModal(false)}
+        onTemplateUnpublished={handleTemplateUnpublished}
         currentVersion={currentVersion}
         appVersions={appVersions}
         analysisIssueCount={analysisIssues.length}
@@ -1825,6 +1938,9 @@ function App() {
         duplicateVersion={duplicateVersion}
         onCloseDuplicate={() => setDuplicateVersion(null)}
         onVersionDuplicated={handleVersionDuplicated}
+        updateDescriptionVersion={updateDescriptionVersion}
+        onCloseUpdateDescription={() => setUpdateDescriptionVersion(null)}
+        onDescriptionUpdated={handleDescriptionUpdated}
         updateTranslationsVersion={updateTranslationsVersion}
         onCloseUpdateTranslations={() => setUpdateTranslationsVersion(null)}
         onTranslationsUpdated={handleTranslationsUpdated}
@@ -1856,7 +1972,9 @@ function App() {
       <div className="app-body">
         {treeOpen && (
           <PageBubbleTree
-            allPages={allPages.filter((p: any) => !trashedPageIds.has(p.PageId))}
+            allPages={allPages.filter(
+              (p: any) => !trashedPageIds.has(p.PageId),
+            )}
             infoContent={infoContent}
             navContents={navContents}
             navStack={navStack}
@@ -1870,15 +1988,21 @@ function App() {
               const urlUpdates: Record<string, string> = {};
               for (const pageId of pageIds) {
                 const page = allPages.find((p: any) => p.PageId === pageId);
-                if (page?.PageType === 'WebLink' || page?.PageType === 'DynamicForm') {
+                if (
+                  page?.PageType === "WebLink" ||
+                  page?.PageType === "DynamicForm"
+                ) {
                   const url = getLinkedPageUrl(page);
                   if (url) urlUpdates[pageId] = url;
                 }
               }
               if (Object.keys(urlUpdates).length > 0)
-                setNavUrls(prev => ({ ...prev, ...urlUpdates }));
+                setNavUrls((prev) => ({ ...prev, ...urlUpdates }));
               handleNavigateToPath(pageIds);
-              setNavSourceTiles(prev => ({ ...prev, ...buildNavSourceTilesForPath(pageIds) }));
+              setNavSourceTiles((prev) => ({
+                ...prev,
+                ...buildNavSourceTilesForPath(pageIds),
+              }));
               setSelectedTileId(null);
               setSelectedCtaId(null);
               setTreeOpen(false);
@@ -1950,6 +2074,7 @@ function App() {
           onCutSelected={handleCutSelected}
           hasClipboard={clipboard.length > 0}
           onPasteBlocks={handlePasteToHome}
+          showNavPaths={showNavPaths}
         />
         {isHistoryOpen ? (
           <VersionHistorySidebar

@@ -48,6 +48,7 @@
   min-width: 0;
   width: 100%;
   scrollbar-width: none;
+  position: relative;
 }
 
 .canvas-stage::-webkit-scrollbar {
@@ -443,6 +444,10 @@
   font-weight: 400;
   line-height: 1.3;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 /* Invisible bottom resize zone — full width hit area, ns-resize cursor */
@@ -462,6 +467,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
 }
 
 .phone-tile-element-delete {

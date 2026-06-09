@@ -3,9 +3,10 @@ import "./NavBar.css";
 import type { AppVersion, Theme } from "../types";
 import type { AnalysisIssue } from "../utils/analysisUtils";
 import { AppVersionDropDown } from "./appversion/AppVersionDropDown";
+import { dataStore } from "../data/datastore";
 
 interface NavBarProps {
-  version?: Pick<AppVersion, "AppVersionName">;
+  version?: Pick<AppVersion, "AppVersionName" | "IsPublishedTemplate">;
   appVersions?: AppVersion[];
   selectedVersionId?: string;
   onVersionSelect?: (id: string) => void;
@@ -14,11 +15,15 @@ interface NavBarProps {
   onDuplicateVersion?: (id: string) => void;
   onRenameVersion?: (id: string) => void;
   onUpdateTranslations?: (id: string) => void;
+  onUpdateDescription?: (id: string) => void;
   onMoveVersionToTrash?: (id: string) => void;
+  onCategoryChange?: (versionId: string, categoryId: string) => void;
   themes?: Theme[];
   selectedThemeId?: string;
   onThemeChange?: (id: string) => void;
   onPublish?: () => void;
+  onPublishAsTemplate?: () => void;
+  onUnpublishTemplate?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
@@ -46,6 +51,8 @@ interface NavBarProps {
   onTrashClick?: () => void;
   isMultiSelectMode?: boolean;
   onMultiSelectToggle?: () => void;
+  showNavPaths?: boolean;
+  onToggleNavPaths?: () => void;
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -188,7 +195,7 @@ function GlobeIcon({ active }: { active?: boolean }) {
   );
 }
 
-function PathIcon() {
+function PathIcon({ active }: { active?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -201,7 +208,7 @@ function PathIcon() {
         data-name="сonnection "
         d="M21.962.03A4.56,4.56,0,0,0,20.927.24a3.9,3.9,0,0,0-2.364,2.382l-.077.222-.868.014a6.244,6.244,0,0,0-1.312.108,5.214,5.214,0,0,0-2.657,1.387,2.273,2.273,0,0,0-.57.788A6.133,6.133,0,0,0,12.527,8.1c-.014.641.006,1.689.047,2.671.12,2.785.073,3.677-.237,4.5a3.3,3.3,0,0,1-2.1,1.535,12.646,12.646,0,0,1-2.156.171H7.7l-.03-.226a3.881,3.881,0,0,0-2.263-3,3.06,3.06,0,0,0-1.542-.288,3.058,3.058,0,0,0-1.021.1A3.861,3.861,0,0,0,.108,16.445a4.535,4.535,0,0,0,0,1.582,3.822,3.822,0,0,0,2.935,2.927,5.276,5.276,0,0,0,1.624,0A3.867,3.867,0,0,0,7.433,18.64c.07-.17.129-.255.19-.267s.558-.027,1.131-.037a6.364,6.364,0,0,0,2.2-.287,4.872,4.872,0,0,0,1.972-1.223,2.314,2.314,0,0,0,.6-.8A5.49,5.49,0,0,0,14,14.242c.054-.514.031-2.814-.048-4.787A15.279,15.279,0,0,1,14.036,6.7a3.276,3.276,0,0,1,.4-1.108A3.746,3.746,0,0,1,16.366,4.4,5.9,5.9,0,0,1,18,4.245c.366.028.381.034.4.144a3.923,3.923,0,0,0,1.133,2.17,3.982,3.982,0,0,0,1.654.948,3.056,3.056,0,0,0,1.012.1,3.072,3.072,0,0,0,1.02-.1,3.9,3.9,0,0,0,2.547-2.253A3.831,3.831,0,0,0,24.644.89,3.947,3.947,0,0,0,21.962.03m.873,1.48a2.2,2.2,0,0,1,1.08.626,2.171,2.171,0,0,1,.631,1.071A2.421,2.421,0,0,1,21.158,6a2.743,2.743,0,0,1-1.125-1.092,2.421,2.421,0,0,1,2.8-3.4M4.3,14.867a2.575,2.575,0,0,1,1.737,1.29,2.418,2.418,0,0,1-2.171,3.485,2.788,2.788,0,0,1-1.21-.312,3.111,3.111,0,0,1-.9-.9,2.728,2.728,0,0,1-.315-1.2A2.452,2.452,0,0,1,3.8,14.823a3.322,3.322,0,0,1,.5.044"
         transform="translate(-0.038 -0.019)"
-        fill="#7c8791"
+        fill={active ? "#2563eb" : "#7c8791"}
         fill-rule="evenodd"
       ></path>
     </svg>
@@ -331,11 +338,15 @@ export function NavBar({
   onDuplicateVersion,
   onRenameVersion,
   onUpdateTranslations,
+  onUpdateDescription,
   onMoveVersionToTrash,
+  onCategoryChange,
   themes = [],
   selectedThemeId = "",
   onThemeChange,
   onPublish,
+  onPublishAsTemplate,
+  onUnpublishTemplate,
   canUndo = false,
   canRedo = false,
   onUndo,
@@ -363,7 +374,12 @@ export function NavBar({
   onTrashClick,
   isMultiSelectMode = false,
   onMultiSelectToggle,
+  showNavPaths = false,
+  onToggleNavPaths,
 }: NavBarProps) {
+  const userRoles: string[] = dataStore.get("UserRoles") ?? [];
+  const isComfortaAdmin = userRoles.includes("Comforta Admin");
+
   const safeIndex = Math.min(
     analysisCurrentIndex,
     Math.max(0, analysisIssueCount - 1),
@@ -393,7 +409,9 @@ export function NavBar({
           onDuplicate={onDuplicateVersion}
           onRename={onRenameVersion}
           onUpdateTranslations={onUpdateTranslations}
+          onUpdateDescription={onUpdateDescription}
           onMoveToTrash={onMoveVersionToTrash}
+          onCategoryChange={onCategoryChange}
           disabled={locked}
         />
         <button
@@ -568,12 +586,12 @@ export function NavBar({
           </>
         )}
         <button
-          className="navbar-icon-btn"
+          className={`navbar-icon-btn${showNavPaths ? " navbar-icon-btn--active" : ""}`}
           type="button"
-          title="Show Navigation"
-          disabled={locked}
+          title="Show navigation"
+          onClick={onToggleNavPaths}
         >
-          <PathIcon />
+          <PathIcon active={showNavPaths} />
         </button>
         <button
           className="navbar-icon-btn"
@@ -597,15 +615,42 @@ export function NavBar({
             </option>
           ))}
         </select>
-        <button
-          className="navbar-publish"
-          type="button"
-          onClick={onPublish}
-          disabled={locked}
-        >
-          <UploadIcon />
-          Publish
-        </button>
+        {isComfortaAdmin ? (
+          version?.IsPublishedTemplate ? (
+            <button
+              className="navbar-publish"
+              type="button"
+              onClick={onUnpublishTemplate}
+              title="Unpublish Template"
+              disabled={locked}
+            >
+              <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
+                <UploadIcon />
+              </span>
+              Unpublish
+            </button>
+          ) : (
+            <button
+              disabled={locked}
+              className="navbar-publish"
+              type="button"
+              onClick={onPublishAsTemplate}
+            >
+              <UploadIcon />
+              Publish
+            </button>
+          )
+        ) : (
+          <button
+            disabled={locked}
+            className="navbar-publish"
+            type="button"
+            onClick={onPublish}
+          >
+            <UploadIcon />
+            Publish
+          </button>
+        )}
       </div>
     </nav>
   );
