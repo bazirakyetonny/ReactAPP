@@ -811,6 +811,8 @@ export function MainCanvas({
           const pageType = frame.page?.PageType ?? "";
           const isModulePage = MODULE_PAGE_TYPES.has(pageType);
           const isWebLink = pageType === "WebLink" || !!frame.webLinkUrl;
+          const isInformationPage =
+            frame.isNew || !pageType || pageType === "Information";
           const frameTileGrids =
             isModulePage || isWebLink
               ? []
@@ -885,15 +887,15 @@ export function MainCanvas({
                     themeIcons={themeIcons}
                     selectedTileId={selectedTileId}
                     onSelectTile={onSelectTile}
-                    onAddColumn={frame.onAddColumn}
-                    onDeleteTile={frame.onDeleteTile}
-                    onEditTile={frame.onEditTile}
-                    onAddTilesToColumn={frame.onAddTilesToColumn}
-                    onAddStandaloneTile={frame.onAddStandaloneTile}
-                    onAddBlock={frame.onAddBlock}
-                    onFreeResizeRelease={frame.onFreeResizeRelease}
-                    onTileDrop={frame.onTileDrop}
-                    onTileDropAsNewBlock={frame.onTileDropAsNewBlock}
+                    onAddColumn={isInformationPage ? frame.onAddColumn : undefined}
+                    onDeleteTile={isInformationPage ? frame.onDeleteTile : undefined}
+                    onEditTile={isInformationPage ? frame.onEditTile : undefined}
+                    onAddTilesToColumn={isInformationPage ? frame.onAddTilesToColumn : undefined}
+                    onAddStandaloneTile={isInformationPage ? frame.onAddStandaloneTile : undefined}
+                    onAddBlock={isInformationPage ? frame.onAddBlock : undefined}
+                    onFreeResizeRelease={isInformationPage ? frame.onFreeResizeRelease : undefined}
+                    onTileDrop={isInformationPage ? frame.onTileDrop : undefined}
+                    onTileDropAsNewBlock={isInformationPage ? frame.onTileDropAsNewBlock : undefined}
                     onTileNavigate={
                       onTileNavigate
                         ? (pageId) => onTileNavigate(pageId, i)
@@ -982,20 +984,20 @@ export function MainCanvas({
                     selectedCtaId={selectedCtaId}
                     themeCtaColors={themeCtaColors}
                     onTileMenuAction={
-                      interactionsLocked ? undefined : onTileMenuAction
+                      interactionsLocked || !isInformationPage ? undefined : onTileMenuAction
                     }
                     liveTileText={liveTileText}
                     liveCtaLabel={liveCtaLabel}
                     analysisHighlight={analysisHighlight}
-                    isPreviewMode={interactionsLocked}
+                    isPreviewMode={interactionsLocked || !isInformationPage}
                     multiSelectedTileIds={multiSelectedTileIds}
                     multiSelectedCtaIds={multiSelectedCtaIds}
                     multiSelectedImageIds={multiSelectedImageIds}
                     multiSelectedDescriptionIds={multiSelectedDescriptionIds}
-                    onCopySelected={onCopySelected}
-                    onCutSelected={onCutSelected}
-                    hasPaste={hasClipboard}
-                    onPasteBlocks={frame.onPasteBlocks}
+                    onCopySelected={isInformationPage ? onCopySelected : undefined}
+                    onCutSelected={isInformationPage ? onCutSelected : undefined}
+                    hasPaste={isInformationPage ? hasClipboard : false}
+                    onPasteBlocks={isInformationPage ? frame.onPasteBlocks : undefined}
                   />
                 )}
               </div>

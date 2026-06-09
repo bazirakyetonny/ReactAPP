@@ -3,8 +3,9 @@ import * as d3 from 'd3';
 import './PageBubbleTree.css';
 import { usePageGraph } from './usePageGraph';
 import type { GraphNode, GraphEdge } from './usePageGraph';
-import type { ThemeColors, ThemeIcon } from '../../types';
+import type { ThemeColors, ThemeIcon, ThemeCtaColor } from '../../types';
 import { PhoneNodeContent, NODE_W, NODE_H, NODE_RX } from './PhoneNodeContent';
+import { DeletePageModal } from '../phone/DeletePageButton';
 
 const TOOLBAR_H = 44;
 
@@ -15,9 +16,12 @@ interface PageBubbleTreeProps {
   navStack: string[];
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
+  themeCtaColors?: ThemeCtaColor[];
+  appVersionId?: string;
   onClose: () => void;
   onNavigateToPath: (pageIds: string[]) => void;
   onDeletePage: (pageId: string) => void;
+  onBeforeDeletePage?: () => void;
 }
 
 interface SimNode extends GraphNode {
@@ -42,9 +46,12 @@ export function PageBubbleTree({
   navStack,
   themeColors,
   themeIcons,
+  themeCtaColors,
+  appVersionId,
   onClose,
   onNavigateToPath,
   onDeletePage,
+  onBeforeDeletePage,
 }: PageBubbleTreeProps) {
   const { nodes, edges, homeId, getPath } = usePageGraph(allPages, infoContent, navContents);
 
@@ -52,6 +59,7 @@ export function PageBubbleTree({
   const [focusedPageId, setFocusedPageId] = useState(initialFocus);
   const [viewMode, setViewMode] = useState<'focused' | 'all'>('focused');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; pageId: string } | null>(null);
+  const [deleteModalPageId, setDeleteModalPageId] = useState<string | null>(null);
 
   const simNodesRef = useRef<SimNode[]>([]);
   const [tick, setTick] = useState(0);
@@ -63,17 +71,16 @@ export function PageBubbleTree({
     if (viewMode === 'all') {
       return { visibleNodes: nodes as SimNode[], visibleEdges: edges };
     }
-    const childIds = new Set(edges.filter(e => e.source === focusedPageId).map(e => e.target));
-    const ancestorIds = new Set<string>([homeId]);
-    for (const id of navStack) {
-      ancestorIds.add(id);
-      if (id === focusedPageId) break;
-    }
-    if (!ancestorIds.has(focusedPageId)) ancestorIds.add(focusedPageId);
-    const visibleIds = new Set([...ancestorIds, ...childIds]);
+    // Full BFS path from home to the focused page
+    const pathIds = new Set([homeId, ...getPath(focusedPageId)]);
+    // Direct children of the focused page
+    const childIds = new Set(
+      edges.filter(e => e.source === focusedPageId).map(e => e.target as string)
+    );
+    const visibleIds = new Set([...pathIds, ...childIds]);
     return {
       visibleNodes: (nodes as SimNode[]).filter(n => visibleIds.has(n.id)),
-      visibleEdges: edges.filter(e => visibleIds.has(e.source) && visibleIds.has(e.target)),
+      visibleEdges: edges.filter(e => visibleIds.has(e.source as string) && visibleIds.has(e.target as string)),
     };
   })();
 
@@ -85,9 +92,17 @@ export function PageBubbleTree({
 
     const diagramCenterY = TOOLBAR_H + (height - TOOLBAR_H) / 2;
     const oldPositions = new Map(simNodesRef.current.map(n => [n.id, { x: n.x, y: n.y }]));
+    const safeW = Math.max(width - NODE_W, 1);
+    const safeH = Math.max(height - TOOLBAR_H - NODE_H, 1);
     const freshNodes: SimNode[] = visibleNodes.map(n => {
       const old = oldPositions.get(n.id);
-      return { ...n, x: old?.x ?? width / 2, y: old?.y ?? diagramCenterY, fx: null, fy: null };
+      return {
+        ...n,
+        x: old?.x ?? (NODE_W / 2 + Math.random() * safeW),
+        y: old?.y ?? (TOOLBAR_H + NODE_H / 2 + Math.random() * safeH),
+        fx: null,
+        fy: null,
+      };
     });
     simNodesRef.current = freshNodes;
 
@@ -96,11 +111,19 @@ export function PageBubbleTree({
     const linksCopy = visibleEdges.map(e => ({ source: e.source, target: e.target, tileId: e.tileId }));
 
     const sim = d3.forceSimulation<SimNode, any>(freshNodes)
-      .force('link', d3.forceLink<SimNode, any>(linksCopy).id(d => d.id).distance(220).strength(0.4))
-      .force('charge', d3.forceManyBody<SimNode>().strength(-600))
+      .force('link', d3.forceLink<SimNode, any>(linksCopy).id(d => d.id).distance(270).strength(0.4))
+      .force('charge', d3.forceManyBody<SimNode>().strength(-1400))
       .force('center', d3.forceCenter(width / 2, diagramCenterY))
-      .force('collision', d3.forceCollide<SimNode>().radius(NODE_W * 0.65))
-      .on('tick', () => setTick(t => t + 1));
+      .force('x', d3.forceX(width / 2).strength(0.04))
+      .force('y', d3.forceY(diagramCenterY).strength(0.04))
+      .force('collision', d3.forceCollide<SimNode>().radius(NODE_W * 0.85))
+      .on('tick', () => {
+        for (const n of simNodesRef.current) {
+          n.x = Math.max(0, Math.min(n.x, width - NODE_W));
+          n.y = Math.max(TOOLBAR_H, Math.min(n.y, height - NODE_H));
+        }
+        setTick(t => t + 1);
+      });
 
     simRef.current = sim;
     return () => { sim.stop(); };
@@ -145,9 +168,14 @@ export function PageBubbleTree({
   }
 
   function handleEdgeClick(edge: GraphEdge) {
+    const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id;
     const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id;
-    const targetPath = getPath(targetId);
-    onNavigateToPath(targetPath.length > 0 ? targetPath : [targetId]);
+    // Build path by following the drawn stroke: path-to-source + target.
+    // This ensures we always navigate via the clicked edge, not BFS shortest path.
+    const pathToSource = getPath(srcId);
+    const fullPath = [...pathToSource, targetId];
+    setFocusedPageId(targetId);
+    onNavigateToPath(fullPath);
   }
 
   function handleNodeContextMenu(e: React.MouseEvent, node: SimNode) {
@@ -207,8 +235,8 @@ export function PageBubbleTree({
             >
               <text
                 x={NODE_W / 2}
-                y={-6}
-                fontSize={7}
+                y={-5}
+                fontSize={12}
                 fontWeight="600"
                 fill="#1e3a5f"
                 textAnchor="middle"
@@ -218,11 +246,8 @@ export function PageBubbleTree({
               </text>
 
               {/* Stacked shadow layers indicate this page has linked child pages */}
-              {node.hasChildren && (
-                <>
-                  <rect x={6} y={-4} width={NODE_W} height={NODE_H} rx={NODE_RX} className="tree-node-stack-shadow" />
-                  <rect x={3} y={-2} width={NODE_W} height={NODE_H} rx={NODE_RX} className="tree-node-stack-shadow" />
-                </>
+              {node.hasChildren && !isFocused && (
+                <rect x={3} y={-2} width={NODE_W} height={NODE_H} rx={NODE_RX} className="tree-node-stack-shadow" />
               )}
 
               <rect width={NODE_W} height={NODE_H} rx={NODE_RX} className="tree-node-shell" />
@@ -231,7 +256,7 @@ export function PageBubbleTree({
                 <rect width={NODE_W} height={NODE_H} rx={NODE_RX} />
               </clipPath>
               <g clipPath={`url(#phone-${node.id})`}>
-                <PhoneNodeContent content={node.content} themeColors={themeColors} themeIcons={themeIcons} />
+                <PhoneNodeContent content={node.content} themeColors={themeColors} themeIcons={themeIcons} themeCtaColors={themeCtaColors} />
               </g>
             </g>
           );
@@ -246,7 +271,7 @@ export function PageBubbleTree({
                 return (
                   <span key={id} className="tree-breadcrumb-item">
                     {i > 0 && <span className="tree-breadcrumb-sep">›</span>}
-                    <button className="tree-breadcrumb-btn" onClick={() => setFocusedPageId(id)}>
+                    <button type="button" className="tree-breadcrumb-btn" onClick={() => setFocusedPageId(id)}>
                       {name}
                     </button>
                   </span>
@@ -254,7 +279,7 @@ export function PageBubbleTree({
               })}
             </div>
             <div className="tree-toolbar-actions">
-              <button className={`tree-toolbar-btn${viewMode === 'all' ? ' active' : ''}`} title="All Pages" onClick={() => setViewMode('all')}>
+              <button type="button" className={`tree-toolbar-btn${viewMode === 'all' ? ' active' : ''}`} title="All Pages" onClick={() => setViewMode('all')}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                   <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
@@ -262,14 +287,14 @@ export function PageBubbleTree({
                   <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                 </svg>
               </button>
-              <button className={`tree-toolbar-btn${viewMode === 'focused' ? ' active' : ''}`} title="Selected Page" onClick={() => setViewMode('focused')}>
+              <button type="button" className={`tree-toolbar-btn${viewMode === 'focused' ? ' active' : ''}`} title="Selected Page" onClick={() => setViewMode('focused')}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <rect x="3" y="2" width="10" height="12" rx="2" stroke="currentColor" strokeWidth="1.2"/>
                   <line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1"/>
                   <line x1="5" y1="9" x2="9" y2="9" stroke="currentColor" strokeWidth="1"/>
                 </svg>
               </button>
-              <button className="tree-toolbar-btn tree-minimize-btn" title="Minimize" onClick={onClose}>
+              <button type="button" className="tree-toolbar-btn tree-minimize-btn" title="Minimize" onClick={onClose}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M3 3L7 7M7 7V4M7 7H4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M13 13L9 9M9 9V12M9 9H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -288,11 +313,21 @@ export function PageBubbleTree({
         >
           <button
             className="tree-context-item tree-context-danger"
-            onClick={() => { onDeletePage(contextMenu.pageId); setContextMenu(null); }}
+            onClick={() => { setDeleteModalPageId(contextMenu.pageId); setContextMenu(null); }}
           >
             Delete page
           </button>
         </div>
+      )}
+
+      {deleteModalPageId && appVersionId && (
+        <DeletePageModal
+          appVersionId={appVersionId}
+          pageId={deleteModalPageId}
+          onClose={() => setDeleteModalPageId(null)}
+          onBeforeDelete={onBeforeDeletePage}
+          onDeleted={(pageId) => { setDeleteModalPageId(null); onDeletePage(pageId); }}
+        />
       )}
     </div>
   );

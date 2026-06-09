@@ -46,6 +46,11 @@ import { useMultiSelect } from "./hooks/useMultiSelect";
 import { BusyModal } from "./components/BusyModal";
 import { usePageGraph } from "./components/tree/usePageGraph";
 
+function getLinkedPageUrl(page: any): string {
+  if (page?.PageLinkStructure?.Url) return page.PageLinkStructure.Url;
+  try { return JSON.parse(page?.PageStructure ?? '{}')?.Url ?? ''; } catch { return ''; }
+}
+
 function App() {
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
   const [reviewOnly, setReviewOnly] = useState(false);
@@ -117,6 +122,20 @@ function App() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
+  const [trashedPageIds, setTrashedPageIds] = useState<Set<string>>(new Set());
+
+  function refreshTrashedPageIds() {
+    getTrash()
+      .then((items) => {
+        setTrashedPageIds(new Set(items.filter(i => i.Page).map(i => i.Page.PageId)));
+      })
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    if (!treeOpen) return;
+    refreshTrashedPageIds();
+  }, [treeOpen]);
   const [liveTileText, setLiveTileText] = useState<{
     id: string;
     text: string;
@@ -151,9 +170,16 @@ function App() {
     handleTileNavigate,
     handleCollapseDescendants,
     handleNavigateToPath,
-    handleDeletePage,
+    handleDeletePage: _handleDeletePage,
     handleCloseFromIndex,
   } = useNavigation();
+
+  function handleDeletePage(pageId: string) {
+    _handleDeletePage(pageId);
+    setTrashedPageIds(prev => new Set([...prev, pageId]));
+    const updated = dataStore.get("Current_Version");
+    if (updated) setCurrentVersion(updated);
+  }
 
   // pageId → the specific tile ID that was clicked to open that page
   const [navSourceTiles, setNavSourceTiles] = useState<Record<string, string>>(
@@ -407,6 +433,23 @@ function App() {
     : homePage;
   const transPageId = transPage?.PageId ?? homePage?.PageId ?? "";
   const transPageName = transPage?.PageName ?? "Home";
+
+  // When a WebLink page enters the nav stack (tree, analysis, or tile navigation),
+  // ensure its URL is in navUrls so the iframe renders correctly.
+  useEffect(() => {
+    setNavUrls(prev => {
+      const updates: Record<string, string> = {};
+      for (const pageId of navStack) {
+        if (prev[pageId]) continue;
+        const page = allPages.find((p: any) => p.PageId === pageId);
+        if (page?.PageType === 'WebLink' || page?.PageType === 'DynamicForm') {
+          const url = getLinkedPageUrl(page);
+          if (url) updates[pageId] = url;
+        }
+      }
+      return Object.keys(updates).length ? { ...prev, ...updates } : prev;
+    });
+  }, [navStack, allPages]);
 
   function handleActiveFrameChange(pageId: string | null) {
     setTranslationPageId(pageId); // null = home frame active
@@ -1312,7 +1355,7 @@ function App() {
       });
       handleTileNavigate(action.pageId, parentIndex);
       setNavSourceTiles((prev) => ({ ...prev, [action.pageId]: tileId }));
-      if (action.objectType === "WebLink" && objectUrl)
+      if ((action.objectType === "WebLink" || action.objectType === "DynamicForm") && objectUrl)
         setNavUrls((prev) => ({ ...prev, [action.pageId]: objectUrl }));
       return;
     }
@@ -1510,7 +1553,7 @@ function App() {
       (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
     );
     const action = block?.CtaAttributes?.Action;
-    if (action?.ObjectType === "WebLink" && action?.ObjectId) {
+    if ((action?.ObjectType === "WebLink" || action?.ObjectType === "DynamicForm") && action?.ObjectId) {
       const frames = [
         { frameIndex: -1 as number, blocks: infoContentRef.current },
         ...navStackRef.current.map((pid: string, i: number) => ({
@@ -1787,6 +1830,7 @@ function App() {
               };
               dataStore.set("Current_Version", full);
               setCurrentVersion(full);
+              refreshTrashedPageIds();
             })
             .catch(() => {});
         }}
@@ -1800,14 +1844,27 @@ function App() {
       <div className="app-body">
         {treeOpen && (
           <PageBubbleTree
-            allPages={allPages}
+            allPages={allPages.filter((p: any) => !trashedPageIds.has(p.PageId))}
             infoContent={infoContent}
             navContents={navContents}
             navStack={navStack}
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
+            themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
+            appVersionId={currentVersion?.AppVersionId}
+            onBeforeDeletePage={pushSnapshot}
             onClose={() => setTreeOpen(false)}
             onNavigateToPath={(pageIds) => {
+              const urlUpdates: Record<string, string> = {};
+              for (const pageId of pageIds) {
+                const page = allPages.find((p: any) => p.PageId === pageId);
+                if (page?.PageType === 'WebLink' || page?.PageType === 'DynamicForm') {
+                  const url = getLinkedPageUrl(page);
+                  if (url) urlUpdates[pageId] = url;
+                }
+              }
+              if (Object.keys(urlUpdates).length > 0)
+                setNavUrls(prev => ({ ...prev, ...urlUpdates }));
               handleNavigateToPath(pageIds);
               setNavSourceTiles(prev => ({ ...prev, ...buildNavSourceTilesForPath(pageIds) }));
               setSelectedTileId(null);
