@@ -51,6 +51,12 @@
   background: #f9fafb;
 }
 
+.navbar-dropdown:disabled {
+  color: #9ca3af;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* ── Icon buttons ───────────────────────────────────────────── */
 .navbar-icon-btn {
   position: relative;
@@ -137,6 +143,12 @@
 
 .navbar-publish:hover {
   background: #142d56;
+}
+
+.navbar-publish:disabled {
+  background: #8fa8c8;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ── Analysis badge ──────────────────────────────────────────── */

@@ -277,8 +277,19 @@ function CloudIcon() {
 
 function AnalysisIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" aria-hidden="true">
-      <path d="M8.786.02a9.494,9.494,0,0,0-5.194,2A12.252,12.252,0,0,0,1.912,3.739a9.426,9.426,0,0,0-.989,9.768,9.243,9.243,0,0,0,1.85,2.582,8.991,8.991,0,0,0,3.369,2.18,9.4,9.4,0,0,0,8.934-1.292l.415-.313,2.135,2.128c2.3,2.294,2.217,2.223,2.6,2.219A.8.8,0,0,0,21,20.234c0-.381.074-.3-2.218-2.6L16.654,15.5l.312-.415A9.442,9.442,0,0,0,16.94,3.739,12.292,12.292,0,0,0,15.26,2.022,9.488,9.488,0,0,0,10.689.085,16.037,16.037,0,0,0,8.786.02M10.8,1.738a7.507,7.507,0,0,1,1.3.35,7.806,7.806,0,0,1,5.02,5.973,9.789,9.789,0,0,1,.048,2.389,7.775,7.775,0,0,1-4.3,5.993,7.3,7.3,0,0,1-3.432.791,7.354,7.354,0,0,1-3.361-.755,7.824,7.824,0,0,1-4.178-5.023,5.959,5.959,0,0,1-.232-2.025,6,6,0,0,1,.217-1.976A7.841,7.841,0,0,1,7.847,1.781a6.249,6.249,0,0,1,1.7-.129,6.4,6.4,0,0,1,1.245.086m2.615,4.8c-.079.033-.743.672-1.787,1.715L9.959,9.911l-.845-.842a12.438,12.438,0,0,0-.97-.905.892.892,0,0,0-.694.013c-.084.044-.74.676-1.6,1.546C4.307,11.273,4.3,11.278,4.3,11.592a.862.862,0,0,0,.48.725.938.938,0,0,0,.651.012,12.252,12.252,0,0,0,1.253-1.174l1.12-1.119.818.821c.867.872,1.027.992,1.316.993.361,0,.279.071,2.445-2.093,1.154-1.152,2.044-2.07,2.077-2.14a.817.817,0,0,0-.422-1.087.984.984,0,0,0-.632,0" transform="translate(0.001 -0.011)" fill="currentColor" fillRule="evenodd" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 21 21"
+      aria-hidden="true"
+    >
+      <path
+        d="M8.786.02a9.494,9.494,0,0,0-5.194,2A12.252,12.252,0,0,0,1.912,3.739a9.426,9.426,0,0,0-.989,9.768,9.243,9.243,0,0,0,1.85,2.582,8.991,8.991,0,0,0,3.369,2.18,9.4,9.4,0,0,0,8.934-1.292l.415-.313,2.135,2.128c2.3,2.294,2.217,2.223,2.6,2.219A.8.8,0,0,0,21,20.234c0-.381.074-.3-2.218-2.6L16.654,15.5l.312-.415A9.442,9.442,0,0,0,16.94,3.739,12.292,12.292,0,0,0,15.26,2.022,9.488,9.488,0,0,0,10.689.085,16.037,16.037,0,0,0,8.786.02M10.8,1.738a7.507,7.507,0,0,1,1.3.35,7.806,7.806,0,0,1,5.02,5.973,9.789,9.789,0,0,1,.048,2.389,7.775,7.775,0,0,1-4.3,5.993,7.3,7.3,0,0,1-3.432.791,7.354,7.354,0,0,1-3.361-.755,7.824,7.824,0,0,1-4.178-5.023,5.959,5.959,0,0,1-.232-2.025,6,6,0,0,1,.217-1.976A7.841,7.841,0,0,1,7.847,1.781a6.249,6.249,0,0,1,1.7-.129,6.4,6.4,0,0,1,1.245.086m2.615,4.8c-.079.033-.743.672-1.787,1.715L9.959,9.911l-.845-.842a12.438,12.438,0,0,0-.97-.905.892.892,0,0,0-.694.013c-.084.044-.74.676-1.6,1.546C4.307,11.273,4.3,11.278,4.3,11.592a.862.862,0,0,0,.48.725.938.938,0,0,0,.651.012,12.252,12.252,0,0,0,1.253-1.174l1.12-1.119.818.821c.867.872,1.027.992,1.316.993.361,0,.279.071,2.445-2.093,1.154-1.152,2.044-2.07,2.077-2.14a.817.817,0,0,0-.422-1.087.984.984,0,0,0-.632,0"
+        transform="translate(0.001 -0.011)"
+        fill="currentColor"
+        fillRule="evenodd"
+      />
     </svg>
   );
 }
@@ -381,6 +392,9 @@ export function NavBar({
     return () => clearTimeout(t);
   }, [savedAt]);
 
+  const locked =
+    isTranslationOpen || analysisOpen || isMultiSelectMode || isHistoryOpen;
+
   return (
     <nav className="navbar" aria-label="App builder toolbar">
       {/* Left: version selector + version-level actions */}
@@ -398,6 +412,7 @@ export function NavBar({
           onUpdateDescription={onUpdateDescription}
           onMoveToTrash={onMoveVersionToTrash}
           onCategoryChange={onCategoryChange}
+          disabled={locked}
         />
         <button
           className={`navbar-icon-btn${analysisOpen ? " navbar-icon-btn--active" : ""}`}
@@ -412,6 +427,7 @@ export function NavBar({
                   : "Analysis"
           }
           onClick={analysisOpen ? onAnalysisClose : onAnalysisOpen}
+          disabled={locked && !analysisOpen}
         >
           <AnalysisIcon />
           {isAnalyzing && analysisIssueCount === 0 ? (
@@ -429,6 +445,7 @@ export function NavBar({
           type="button"
           title="Share"
           onClick={onShareClick}
+          disabled={locked}
         >
           <ShareIcon />
         </button>
@@ -437,6 +454,7 @@ export function NavBar({
           type="button"
           title="Select frame"
           onClick={onMultiSelectToggle}
+          disabled={locked && !isMultiSelectMode}
         >
           <FrameIcon />
         </button>
@@ -521,7 +539,7 @@ export function NavBar({
           className="navbar-icon-btn"
           type="button"
           title="Undo"
-          disabled={!canUndo}
+          disabled={!canUndo || locked}
           onClick={onUndo}
         >
           <UndoIcon />
@@ -530,7 +548,7 @@ export function NavBar({
           className="navbar-icon-btn"
           type="button"
           title="Redo"
-          disabled={!canRedo}
+          disabled={!canRedo || locked}
           onClick={onRedo}
         >
           <RedoIcon />
@@ -540,6 +558,7 @@ export function NavBar({
           type="button"
           title="History"
           onClick={onHistoryToggle}
+          disabled={locked && !isHistoryOpen}
         >
           <HistoryIcon active={isHistoryOpen} />
         </button>
@@ -548,26 +567,19 @@ export function NavBar({
           type="button"
           title="Trash"
           onClick={onTrashClick}
+          disabled={locked}
         >
           <TrashIcon />
         </button>
         <div className="navbar-separator" role="separator" />
-        <button
-          className="navbar-icon-btn"
-          type="button"
-          title="Trash"
-          onClick={onTrashClick}
-        >
-          <TrashIcon />
-        </button>
         {canTranslate && (
           <>
-            <div className="navbar-separator" role="separator" />
             <button
               className="navbar-icon-btn"
               type="button"
               title="Translation"
               onClick={onTranslationToggle}
+              disabled={locked && !isTranslationOpen}
             >
               <GlobeIcon active={isTranslationOpen} />
             </button>
@@ -586,6 +598,7 @@ export function NavBar({
           type="button"
           title="Expand"
           onClick={onExpand}
+          disabled={locked}
         >
           <ExpandIcon />
         </button>
@@ -594,6 +607,7 @@ export function NavBar({
           value={selectedThemeId}
           onChange={(e) => onThemeChange?.(e.target.value)}
           aria-label="Select theme"
+          disabled={locked}
         >
           {themes.map((t) => (
             <option key={t.ThemeId} value={t.ThemeId}>
@@ -608,6 +622,7 @@ export function NavBar({
               type="button"
               onClick={onUnpublishTemplate}
               title="Unpublish Template"
+              disabled={locked}
             >
               <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
                 <UploadIcon />
@@ -615,13 +630,23 @@ export function NavBar({
               Unpublish
             </button>
           ) : (
-            <button className="navbar-publish" type="button" onClick={onPublishAsTemplate}>
+            <button
+              disabled={locked}
+              className="navbar-publish"
+              type="button"
+              onClick={onPublishAsTemplate}
+            >
               <UploadIcon />
               Publish
             </button>
           )
         ) : (
-          <button className="navbar-publish" type="button" onClick={onPublish}>
+          <button
+            disabled={locked}
+            className="navbar-publish"
+            type="button"
+            onClick={onPublish}
+          >
             <UploadIcon />
             Publish
           </button>

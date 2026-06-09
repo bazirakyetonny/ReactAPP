@@ -5,6 +5,7 @@ export interface GraphNode {
   name: string;
   content: any[];
   isOrphan: boolean;
+  hasChildren: boolean;
 }
 
 export interface GraphEdge {
@@ -31,14 +32,23 @@ function getPageContent(page: any, infoContent: any[], navContents: Record<strin
   }
 }
 
-function extractEdges(pageId: string, content: any[]): GraphEdge[] {
+function extractEdges(pageId: string, content: any[], validPageIds: Set<string>): GraphEdge[] {
   const edges: GraphEdge[] = [];
   for (const block of content) {
-    for (const col of block.Columns ?? []) {
-      for (const tile of col.Tiles ?? []) {
-        if ((tile.Action?.ObjectType === 'Information' || tile.Action?.ObjectType === 'BulletinBoard' || tile.Action?.ObjectType === 'Calendar' || tile.Action?.ObjectType === 'MyActivity' || tile.Action?.ObjectType === 'Map') && tile.Action?.ObjectId) {
-          edges.push({ source: pageId, target: tile.Action.ObjectId, tileId: tile.Id });
+    if (block.InfoType === 'TileGrid') {
+      for (const col of block.Columns ?? []) {
+        for (const tile of col.Tiles ?? []) {
+          const targetId = tile.Action?.ObjectId;
+          if (targetId && validPageIds.has(targetId)) {
+            edges.push({ source: pageId, target: targetId, tileId: tile.Id });
+          }
         }
+      }
+    } else if (block.InfoType === 'Cta') {
+      const ctaAction = block.CtaAttributes?.Action;
+      const targetId = ctaAction?.ObjectId;
+      if (targetId && validPageIds.has(targetId)) {
+        edges.push({ source: pageId, target: targetId, tileId: block.InfoId });
       }
     }
   }
@@ -59,9 +69,11 @@ export function usePageGraph(
       name: page.PageName ?? 'Unnamed',
       content: getPageContent(page, infoContent, navContents),
       isOrphan: false,
+      hasChildren: false,
     }));
 
-    const allEdges: GraphEdge[] = nodes.flatMap((n) => extractEdges(n.id, n.content));
+    const validPageIds = new Set(allPages.map((p: any) => p.PageId as string));
+    const allEdges: GraphEdge[] = nodes.flatMap((n) => extractEdges(n.id, n.content, validPageIds));
 
     // BFS from home to find reachable pages
     const reachable = new Set<string>([homeId]);
@@ -78,7 +90,23 @@ export function usePageGraph(
       }
     }
 
-    for (const node of nodes) node.isOrphan = !reachable.has(node.id);
+    const sourcesWithChildren = new Set(allEdges.map(e => e.source));
+    for (const node of nodes) {
+      node.isOrphan = !reachable.has(node.id);
+      node.hasChildren = sourcesWithChildren.has(node.id);
+    }
+
+    // Module pages (Map, MyActivity, Calendar, BulletinBoard) that are not linked
+    // from any other page add noise to the tree — hide them.
+    const MODULE_TYPES = new Set(['Map', 'MyActivity', 'Calendar', 'BulletinBoard']);
+    const pageTypeById = new Map(allPages.map((p: any) => [p.PageId as string, p.PageType as string]));
+    const hiddenIds = new Set(
+      nodes
+        .filter(n => n.isOrphan && MODULE_TYPES.has(pageTypeById.get(n.id) ?? ''))
+        .map(n => n.id)
+    );
+    const visibleNodes = nodes.filter(n => !hiddenIds.has(n.id));
+    const visibleEdges = allEdges.filter(e => !hiddenIds.has(e.source) && !hiddenIds.has(e.target));
 
     // BFS to find shortest path from home to a pageId (returns navStack slice, excluding home)
     function getPath(targetId: string): string[] {
@@ -99,6 +127,6 @@ export function usePageGraph(
       return path;
     }
 
-    return { nodes, edges: allEdges, homeId, getPath };
+    return { nodes: visibleNodes, edges: visibleEdges, homeId, getPath };
   }, [allPages, infoContent, navContents]);
 }
