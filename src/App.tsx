@@ -18,6 +18,7 @@ import { TemplateSidebar } from "./components/TemplateSidebar";
 import { TranslationSideBar } from "./components/translation/TranslationSideBar";
 import { VersionHistorySidebar } from "./components/appversion/VersionHistorySidebar";
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
+import { AlertMessage, type AlertStatus } from "./components/AlertMessage";
 import { dataStore } from "./data/datastore";
 import type { Theme, CategoryTemplates, TrnPageTemplate } from "./types";
 import {
@@ -135,6 +136,7 @@ function App() {
   const [treeOpen, setTreeOpen] = useState(false);
   const [showNavPaths, setShowNavPaths] = useState(false);
   const [trashedPageIds, setTrashedPageIds] = useState<Set<string>>(new Set());
+  const [alertInfo, setAlertInfo] = useState<{ message: string; status: AlertStatus } | null>(null);
 
   function refreshTrashedPageIds() {
     getTrash()
@@ -1907,7 +1909,10 @@ function App() {
         currentVersion={currentVersion}
         appVersions={appVersions}
         analysisIssueCount={analysisIssues.length}
-        onPublished={() => setShowPublishModal(false)}
+        onPublished={() => {
+          setShowPublishModal(false);
+          setAlertInfo({ message: "App published successfully", status: "success" });
+        }}
         onClosePublish={() => setShowPublishModal(false)}
         onFixIssues={() => {
           setShowPublishModal(false);
@@ -2135,6 +2140,12 @@ function App() {
       {isBusy && !reviewOnly && (
         <BusyModal onReviewOnly={() => setReviewOnly(true)} />
       )}
+      <AlertMessage
+        message={alertInfo?.message ?? ""}
+        status={alertInfo?.status ?? "success"}
+        visible={alertInfo !== null}
+        onClose={() => setAlertInfo(null)}
+      />
     </>
   );
 }

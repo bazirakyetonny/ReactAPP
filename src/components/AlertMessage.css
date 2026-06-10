@@ -1,0 +1,45 @@
+.alm-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10001;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  min-width: 240px;
+  max-width: 360px;
+  color: #ffffff;
+  font-family: inherit;
+}
+
+.alm-success { background: #6aaa64; }
+.alm-warning { background: #f59e0b; }
+.alm-danger  { background: #ef4444; }
+
+.alm-icon {
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alm-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.alm-message {
+  font-size: 13px;
+  opacity: 0.92;
+  line-height: 1.4;
+}
