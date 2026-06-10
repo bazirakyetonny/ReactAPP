@@ -825,7 +825,8 @@ export function MainCanvas({
               {!frame.isNew &&
                 frame.page?.PageId &&
                 onDeletePage &&
-                appVersionId && (
+                appVersionId &&
+                isInformationPage && (
                   <DeletePageButton
                     onClick={() =>
                       setDeletePageTarget({ pageId: frame.page.PageId })
