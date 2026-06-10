@@ -2,6 +2,7 @@ import React from 'react';
 import type { ThemeCtaColor } from '../../types';
 import { resolveCtaColor } from '../../utils/tileUtils';
 import { ctaIcons } from '../../data/ctaIcons';
+import imgPlaceholder from '../../assets/image.png';
 
 function TrashIcon() {
   return (
@@ -61,16 +62,6 @@ function AddIcon() {
   );
 }
 
-function ImgPlaceholderIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M1 10.5l4-4.5 3 3 2.5-2.5L15 12" stroke="currentColor" strokeWidth="1.1"
-        strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="5" cy="6" r="1.2" fill="currentColor" />
-    </svg>
-  );
-}
 
 interface CtaBlockProps {
   block: any;
@@ -166,10 +157,7 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
         {type === 'Image' && (
           <div className="phone-cta-fullwidth" style={{ background: bg, color }}>
             <span className="phone-cta-img-wrap">
-              {imgUrl
-                ? <img src={imgUrl} className="phone-cta-img" alt="" />
-                : <span className="phone-cta-img-placeholder"><ImgPlaceholderIcon /></span>
-              }
+              <img src={imgUrl || imgPlaceholder} className="phone-cta-img" alt="" />
               {interactive && onSelectImage && (
                 <button
                   className="phone-cta-img-edit"

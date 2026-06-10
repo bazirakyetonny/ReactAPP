@@ -81,14 +81,18 @@ export function CreateAppVersionModal({
         null)
       : null;
 
-  function handleNext() {
-    if (!selectedId) return;
+  function handleNext(id: string) {
+    const template: AppVersion | null =
+      id !== BLANK_ID
+        ? (activeCategory?.Versions.find((v) => v.AppVersionId === id) ?? null)
+        : null;
     const moods: { MoodId: string }[] = dataStore.get("Moods") ?? [];
-    const templateMoodId = selectedTemplate?.MoodId ?? "";
+    const templateMoodId = template?.MoodId ?? "";
     const moodExists = moods.some((m) => m.MoodId === templateMoodId);
+    setSelectedId(id);
     setSelectedMoodId(moodExists ? templateMoodId : (moods[0]?.MoodId ?? null));
     setError(null);
-    if (selectedId === BLANK_ID) {
+    if (id === BLANK_ID) {
       setVersionName("");
       setVersionLanguage(defaultLanguage);
     }
@@ -128,15 +132,33 @@ export function CreateAppVersionModal({
         dataStore.get("Moods") ?? [];
       const templatePages = selectedTemplate?.Pages ?? [];
       let pages = templatePages;
-      if (!isBlank && selectedTemplate?.MoodId && selectedMoodId &&
-          selectedMoodId !== selectedTemplate.MoodId) {
-        const originalMood = moods.find((m) => m.MoodId === selectedTemplate.MoodId);
+      if (
+        !isBlank &&
+        selectedTemplate?.MoodId &&
+        selectedMoodId &&
+        selectedMoodId !== selectedTemplate.MoodId
+      ) {
+        const originalMood = moods.find(
+          (m) => m.MoodId === selectedTemplate.MoodId,
+        );
         const selectedMood = moods.find((m) => m.MoodId === selectedMoodId);
         let originalNames: string[] = [];
         let selectedNames: string[] = [];
-        try { originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]"); } catch { /* */ }
-        try { selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]"); } catch { /* */ }
-        pages = applyMoodColorRemapToPages(templatePages, originalNames, selectedNames);
+        try {
+          originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]");
+        } catch {
+          /* */
+        }
+        try {
+          selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]");
+        } catch {
+          /* */
+        }
+        pages = applyMoodColorRemapToPages(
+          templatePages,
+          originalNames,
+          selectedNames,
+        );
       }
       const result = await createAppVersion({
         AppVersionName: name,
@@ -208,9 +230,7 @@ export function CreateAppVersionModal({
               <AppVersionPreviewCard
                 version={null}
                 isSelected={selectedId === BLANK_ID}
-                onClick={() =>
-                  setSelectedId(selectedId === BLANK_ID ? null : BLANK_ID)
-                }
+                onClick={() => handleNext(BLANK_ID)}
                 name="Blank Version"
                 description="Start from a clean canvas with no pre-existing content."
                 themeColors={themeColors}
@@ -222,11 +242,7 @@ export function CreateAppVersionModal({
                   key={v.AppVersionId}
                   version={v}
                   isSelected={selectedId === v.AppVersionId}
-                  onClick={() =>
-                    setSelectedId(
-                      selectedId === v.AppVersionId ? null : v.AppVersionId,
-                    )
-                  }
+                  onClick={() => handleNext(v.AppVersionId)}
                   name={v.AppVersionName}
                   description={v.AppVersionDescription}
                   themeColors={themeColors}
@@ -248,9 +264,9 @@ export function CreateAppVersionModal({
                 className="cav-btn-primary"
                 type="button"
                 disabled={!selectedId}
-                onClick={handleNext}
+                onClick={() => handleNext(selectedId!)}
               >
-                Next →
+                Next
               </button>
             </div>
           </>

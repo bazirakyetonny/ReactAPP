@@ -425,9 +425,10 @@ export function SidebarRight({
                   snapshotDeferredRef.current = false;
                   onBeforeTileTextEdit?.();
                 }
-                setTileText(e.target.value);
+                const val = e.target.value.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+                setTileText(val);
                 if (selectedTile)
-                  onLiveTileText?.(selectedTile.Id, e.target.value);
+                  onLiveTileText?.(selectedTile.Id, val);
               }}
               onBlur={() => {
                 isEditingTextRef.current = false;
@@ -482,6 +483,7 @@ export function SidebarRight({
               >
                 <SquareOutlineIcon />
               </button>
+              <div className="sr-group-separator" />
               {/* Dark (#333333) */}
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
@@ -510,6 +512,7 @@ export function SidebarRight({
               >
                 <AlignLeftIcon />
               </button>
+              <div className="sr-group-separator" />
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
                 type="button"

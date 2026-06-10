@@ -359,8 +359,12 @@
   background: #ffffff;
 }
 
-.sr-tool-btn--in-group + .sr-tool-btn--in-group {
-  border-left: 1px solid #d1d5db;
+.sr-group-separator {
+  width: 1px;
+  background: #d1d5db;
+  align-self: stretch;
+  flex-shrink: 0;
+  margin: 0px 2px;
 }
 
 /* Active button inside the group gets a blue tint */

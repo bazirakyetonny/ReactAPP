@@ -233,6 +233,7 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
           >
             <SquareOutlineIcon />
           </button>
+          <div className="sr-group-separator" />
           <button
             className={`sr-tool-btn sr-tool-btn--in-group${attrs.CtaColor === '#333333' ? ' sr-tool-btn-active' : ''}`}
             type="button"
