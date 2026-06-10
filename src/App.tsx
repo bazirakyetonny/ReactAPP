@@ -103,7 +103,7 @@ function App() {
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [translationRevision, setTranslationRevision] = useState(0);
-  const [translationPageId, setTranslationPageId] = useState<string | null>(
+  const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
     null,
   );
   const [translationHighlight, setTranslationHighlight] = useState<{
@@ -440,12 +440,14 @@ function App() {
   }
   const activePageName = activePage?.PageName ?? "Home";
 
-  // Translation sidebar tracks whichever phone frame is visually active (phone-frame--active)
+  // activeFramePageId tracks whichever phone frame is visually active
+  // (phone-frame--active); null = home frame. Drives the translation and
+  // template sidebars.
   const homePage = allPages.find(
     (p: any) => p.PageName.toLowerCase() === "home",
   );
-  const transPage = translationPageId
-    ? allPages.find((p: any) => p.PageId === translationPageId)
+  const transPage = activeFramePageId
+    ? allPages.find((p: any) => p.PageId === activeFramePageId)
     : homePage;
   const transPageId = transPage?.PageId ?? homePage?.PageId ?? "";
   const transPageName = transPage?.PageName ?? "Home";
@@ -468,7 +470,7 @@ function App() {
   }, [navStack, allPages]);
 
   function handleActiveFrameChange(pageId: string | null) {
-    setTranslationPageId(pageId); // null = home frame active
+    setActiveFramePageId(pageId); // null = home frame active
   }
 
   const appVersionMultiLanguages: string[] = (() => {
@@ -779,18 +781,23 @@ function App() {
       (p: any) => p.PageName?.toLowerCase() === "home",
     )?.PageId ?? "home";
 
+  // Template sidebar shows only when the user has clicked a blank Information
+  // page's frame, making it the visually active frame — not merely because a
+  // blank page sits at the tail of navStack.
+  const activeFramePage = allPages.find(
+    (p: any) => p.PageId === activeFramePageId,
+  );
   const isActivePageBlank =
-    activePageId !== homePageId &&
-    activePage?.PageType === "Information" &&
-    (navContents[activePageId] ?? []).length === 0;
+    !!activeFramePageId &&
+    activeFramePageId !== homePageId &&
+    navStack.includes(activeFramePageId) &&
+    activeFramePage?.PageType === "Information" &&
+    (navContents[activeFramePageId] ?? []).length === 0;
 
   function handleApplyTemplate(content: any[]) {
+    if (!activeFramePageId) return;
     pushSnapshot();
-    if (activePageId === homePageId) {
-      setInfoContent(content);
-    } else {
-      setNavContents((prev) => ({ ...prev, [activePageId]: content }));
-    }
+    setNavContents((prev) => ({ ...prev, [activeFramePageId]: content }));
   }
 
   function openAnalysis() {
@@ -855,7 +862,7 @@ function App() {
       });
     }
     if (issue.language) {
-      setTranslationPageId(issue.pageId);
+      setActiveFramePageId(issue.pageId);
       setIsTranslationOpen(true);
       setTranslationHighlight({
         blockId: issue.blockId,
