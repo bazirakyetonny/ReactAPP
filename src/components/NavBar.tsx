@@ -29,6 +29,7 @@ interface NavBarProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onExpand?: () => void;
+  isTreeOpen?: boolean;
   isTranslationOpen?: boolean;
   onTranslationToggle?: () => void;
   canTranslate?: boolean;
@@ -352,6 +353,7 @@ export function NavBar({
   onUndo,
   onRedo,
   onExpand,
+  isTreeOpen = false,
   isTranslationOpen = false,
   onTranslationToggle,
   canTranslate = false,
@@ -393,7 +395,11 @@ export function NavBar({
   }, [savedAt]);
 
   const locked =
-    isTranslationOpen || analysisOpen || isMultiSelectMode || isHistoryOpen;
+    isTranslationOpen ||
+    analysisOpen ||
+    isMultiSelectMode ||
+    isHistoryOpen ||
+    isTreeOpen;
 
   return (
     <nav className="navbar" aria-label="App builder toolbar">
@@ -590,15 +596,16 @@ export function NavBar({
           type="button"
           title="Show navigation"
           onClick={onToggleNavPaths}
+          disabled={locked}
         >
           <PathIcon active={showNavPaths} />
         </button>
         <button
-          className="navbar-icon-btn"
+          className={`navbar-icon-btn${isTreeOpen ? " navbar-icon-btn--active" : ""}`}
           type="button"
-          title="Expand"
+          title="Go to pages overview"
           onClick={onExpand}
-          disabled={locked}
+          disabled={locked && !isTreeOpen}
         >
           <ExpandIcon />
         </button>

@@ -1862,6 +1862,7 @@ function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
+        isTreeOpen={treeOpen}
         isSaving={isSaving}
         saveError={saveError}
         savedAt={savedAt}

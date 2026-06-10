@@ -26,7 +26,9 @@ export function TemplateSidebar({
   const filtered =
     selectedCategories.length === 0
       ? templates
-      : templates.filter((t) => selectedCategories.includes(t.TemplateCategory));
+      : templates.filter((t) =>
+          selectedCategories.includes(t.TemplateCategory),
+        );
 
   function handleSelect(template: TrnPageTemplate) {
     try {
