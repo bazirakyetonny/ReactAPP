@@ -792,7 +792,8 @@ function App() {
   // page's frame, making it the visually active frame — not merely because a
   // blank page sits at the tail of navStack. It stays open while the page is
   // blank or still holds the exact content of the last applied template, so
-  // the user can switch templates until they start editing.
+  // the user can switch templates until they start editing. Explicitly
+  // selecting a tile or CTA yields to SidebarRight's tile/CTA controls.
   const activeFramePage = allPages.find(
     (p: any) => p.PageId === activeFramePageId,
   );
@@ -803,6 +804,8 @@ function App() {
     JSON.stringify(activeFrameContent) === appliedTemplate.json;
   const showTemplateSidebar =
     !!activeFramePageId &&
+    !selectedTileId &&
+    !selectedCtaId &&
     activeFramePageId !== homePageId &&
     navStack.includes(activeFramePageId) &&
     activeFramePage?.PageType === "Information" &&
