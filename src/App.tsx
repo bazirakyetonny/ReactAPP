@@ -106,6 +106,13 @@ function App() {
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
     null,
   );
+  // Last template applied via the template sidebar; json is the serialized
+  // content written at apply time so we can tell when the page diverges.
+  const [appliedTemplate, setAppliedTemplate] = useState<{
+    pageId: string;
+    templateId: string;
+    json: string;
+  } | null>(null);
   const [translationHighlight, setTranslationHighlight] = useState<{
     blockId: string;
     tileId?: string;
@@ -781,23 +788,35 @@ function App() {
       (p: any) => p.PageName?.toLowerCase() === "home",
     )?.PageId ?? "home";
 
-  // Template sidebar shows only when the user has clicked a blank Information
+  // Template sidebar shows only when the user has clicked an Information
   // page's frame, making it the visually active frame — not merely because a
-  // blank page sits at the tail of navStack.
+  // blank page sits at the tail of navStack. It stays open while the page is
+  // blank or still holds the exact content of the last applied template, so
+  // the user can switch templates until they start editing.
   const activeFramePage = allPages.find(
     (p: any) => p.PageId === activeFramePageId,
   );
-  const isActivePageBlank =
+  const activeFrameContent = navContents[activeFramePageId ?? ""] ?? [];
+  const holdsUnmodifiedTemplate =
+    !!appliedTemplate &&
+    appliedTemplate.pageId === activeFramePageId &&
+    JSON.stringify(activeFrameContent) === appliedTemplate.json;
+  const showTemplateSidebar =
     !!activeFramePageId &&
     activeFramePageId !== homePageId &&
     navStack.includes(activeFramePageId) &&
     activeFramePage?.PageType === "Information" &&
-    (navContents[activeFramePageId] ?? []).length === 0;
+    (activeFrameContent.length === 0 || holdsUnmodifiedTemplate);
 
-  function handleApplyTemplate(content: any[]) {
+  function handleApplyTemplate(content: any[], templateId: string) {
     if (!activeFramePageId) return;
     pushSnapshot();
     setNavContents((prev) => ({ ...prev, [activeFramePageId]: content }));
+    setAppliedTemplate({
+      pageId: activeFramePageId,
+      templateId,
+      json: JSON.stringify(content),
+    });
   }
 
   function openAnalysis() {
@@ -2111,10 +2130,15 @@ function App() {
             highlightMessage={translationHighlight?.message}
             onSaved={() => setTranslationRevision((v) => v + 1)}
           />
-        ) : isActivePageBlank ? (
+        ) : showTemplateSidebar ? (
           <TemplateSidebar
             templates={pageTemplates}
             onApply={handleApplyTemplate}
+            appliedTemplateId={
+              appliedTemplate?.pageId === activeFramePageId
+                ? appliedTemplate.templateId
+                : undefined
+            }
           />
         ) : (
           <SidebarRight

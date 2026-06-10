@@ -16,9 +16,11 @@ const ALL_CATEGORIES = CATEGORY_OPTIONS.map((c) => c.value);
 export function TemplateSidebar({
   templates,
   onApply,
+  appliedTemplateId,
 }: {
   templates: TrnPageTemplate[];
-  onApply: (content: any[]) => void;
+  onApply: (content: any[], templateId: string) => void;
+  appliedTemplateId?: string;
 }) {
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(ALL_CATEGORIES);
@@ -33,7 +35,10 @@ export function TemplateSidebar({
   function handleSelect(template: TrnPageTemplate) {
     try {
       const parsed = JSON.parse(template.TemplateContent);
-      onApply(regenerateContentIds(parsed.InfoContent ?? []));
+      onApply(
+        regenerateContentIds(parsed.InfoContent ?? []),
+        template.TemplateId,
+      );
     } catch {
       // malformed TemplateContent — skip silently
     }
@@ -57,7 +62,7 @@ export function TemplateSidebar({
         {filtered.map((template) => (
           <button
             key={template.TemplateId}
-            className="tmpl-card"
+            className={`tmpl-card${template.TemplateId === appliedTemplateId ? " tmpl-card--applied" : ""}`}
             onClick={() => handleSelect(template)}
             title={template.TemplateName}
           >
