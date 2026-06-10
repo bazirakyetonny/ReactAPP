@@ -100,7 +100,7 @@
   display: inline-block;
   min-width: 20px;
   min-height: 1em;
-  border-bottom: 1px dashed transparent;
+  cursor: pointer;
   transition: border-color 0.15s;
 }
 

@@ -61,6 +61,75 @@ const DIRECT_LINK_TYPES = [
   { id: "Weblink", label: "Web link" },
 ] as const;
 
+function findTilePageId(tileId: string, allPagesWithContent: any[]): string | null {
+  for (const page of allPagesWithContent) {
+    let content: any[] = [];
+    try {
+      content = JSON.parse(page.PageStructure)?.InfoContent ?? [];
+    } catch {
+      continue;
+    }
+    for (const block of content) {
+      if (block.InfoType !== "TileGrid") continue;
+      for (const col of block.Columns ?? []) {
+        if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) return page.PageId;
+      }
+    }
+  }
+  return null;
+}
+
+function isPageConnected(pageId: string, allPagesWithContent: any[]): boolean {
+  const homePage = allPagesWithContent.find(
+    (p) => p.PageName?.toLowerCase() === "home",
+  );
+  if (!homePage) return false;
+  if (pageId === homePage.PageId) return true;
+
+  const validPageIds = new Set(allPagesWithContent.map((p) => p.PageId));
+
+  function getLinkedPageIds(page: any): string[] {
+    let content: any[] = [];
+    try {
+      content = JSON.parse(page.PageStructure)?.InfoContent ?? [];
+    } catch {
+      /* ignore */
+    }
+    const linked: string[] = [];
+    for (const block of content) {
+      if (block.InfoType === "TileGrid") {
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            const targetId = tile.Action?.ObjectId;
+            if (targetId && validPageIds.has(targetId)) linked.push(targetId);
+          }
+        }
+      } else if (block.InfoType === "Cta") {
+        const targetId = block.CtaAttributes?.Action?.ObjectId;
+        if (targetId && validPageIds.has(targetId)) linked.push(targetId);
+      }
+    }
+    return linked;
+  }
+
+  const visited = new Set<string>([homePage.PageId]);
+  const queue: any[] = [homePage];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    for (const linkedId of getLinkedPageIds(current)) {
+      if (linkedId === pageId) return true;
+      if (!visited.has(linkedId)) {
+        visited.add(linkedId);
+        const linkedPage = allPagesWithContent.find(
+          (p) => p.PageId === linkedId,
+        );
+        if (linkedPage) queue.push(linkedPage);
+      }
+    }
+  }
+  return false;
+}
+
 export function TileActionMenu({
   tileId,
   pos,
@@ -75,9 +144,13 @@ export function TileActionMenu({
 
   const cv = dataStore.get("Current_Version");
   const pages: any[] = cv?.Pages ?? [];
+  const allPagesWithContent: any[] = cv?.Page ?? [];
+  const currentPageId = findTilePageId(tileId, allPagesWithContent);
   const infoPages = pages.filter(
     (p: any) =>
-      !MODULE_TYPES.has(p.PageType) && p.PageName?.toLowerCase() !== "home",
+      !MODULE_TYPES.has(p.PageType) &&
+      p.PageName?.toLowerCase() !== "home" &&
+      p.PageId !== currentPageId,
   );
   const modulePages = pages.filter((p: any) => MODULE_TYPES.has(p.PageType));
   const forms: any[] = dataStore.get("SDT_DynamicFormsCollection") ?? [];
@@ -147,23 +220,46 @@ export function TileActionMenu({
                   {infoPages.length === 0 ? (
                     <div className="tam__sub-empty">No pages yet</div>
                   ) : (
-                    infoPages.map((p: any) => (
-                      <button
-                        key={p.PageId}
-                        className="tam__sub-item"
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          act({
-                            type: "existing-page",
-                            pageId: p.PageId,
-                            objectType: p.PageType,
-                            objectUrl: pageObjectUrl(p),
-                          });
-                        }}
-                      >
-                        {p.PageName}
-                      </button>
-                    ))
+                    infoPages.map((p: any) => {
+                      const connected = isPageConnected(
+                        p.PageId,
+                        allPagesWithContent,
+                      );
+                      return (
+                        <button
+                          key={p.PageId}
+                          className="tam__sub-item"
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            act({
+                              type: "existing-page",
+                              pageId: p.PageId,
+                              objectType: p.PageType,
+                              objectUrl: pageObjectUrl(p),
+                            });
+                          }}
+                        >
+                          <span style={{ textTransform: "capitalize" }}>{p.PageName}</span>
+                          {!connected && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14.574"
+                              height="12.666"
+                              viewBox="0 0 14.574 12.666"
+                              style={{ flexShrink: 0 }}
+                            >
+                              <path
+                                id="Path_1041"
+                                data-name="Path 1041"
+                                d="M8.823,3.029a1.153,1.153,0,0,0-1,.555L1.693,13.9a1.209,1.209,0,0,0,1,1.8H14.949a1.21,1.21,0,0,0,1-1.8L9.827,3.584A1.153,1.153,0,0,0,8.823,3.029Zm0,1.6,5.736,9.657H3.087Zm-.7,2.609v3.524H9.519V7.237Zm0,4.934v1.41H9.519v-1.41Z"
+                                transform="translate(-1.536 -3.029)"
+                                fill="#bb2e2e"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               )}

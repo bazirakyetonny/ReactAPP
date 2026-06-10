@@ -168,6 +168,7 @@ export function MultiSelectPanel({
               >
                 <SquareOutlineIcon />
               </button>
+              <div className="sr-group-separator" />
               <button
                 className="sr-tool-btn sr-tool-btn--in-group"
                 type="button"
@@ -186,6 +187,7 @@ export function MultiSelectPanel({
               >
                 <AlignLeftIcon />
               </button>
+              <div className="sr-group-separator" />
               <button
                 className="sr-tool-btn sr-tool-btn--in-group"
                 type="button"
@@ -255,6 +257,7 @@ export function MultiSelectPanel({
               >
                 <SquareOutlineIcon />
               </button>
+              <div className="sr-group-separator" />
               <button
                 className="sr-tool-btn sr-tool-btn--in-group"
                 type="button"

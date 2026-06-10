@@ -562,9 +562,10 @@ export function MainCanvas({
       if (frameEl) result.frameEls.set(fi, frameEl);
     };
     addFrame(-1, infoContentRef_mc.current, mainPhoneFrameRef.current);
-    linkedFramesRef.current?.forEach((f, i) =>
-      addFrame(i, f.infoContent, linkedFrameRefs.current.get(i) ?? null),
-    );
+    linkedFramesRef.current?.forEach((f, i) => {
+      if (!f.isNew)
+        addFrame(i, f.infoContent, linkedFrameRefs.current.get(i) ?? null);
+    });
     return result;
   }
 
@@ -884,7 +885,7 @@ export function MainCanvas({
                   />
                 ) : isModulePage ? (
                   renderModulePage(pageType, themeColors)
-                ) : (
+                ) : !frame.isNew ? (
                   <DraggableScreen
                     infoContent={frame.infoContent}
                     tileGrids={frameTileGrids}
@@ -1004,7 +1005,7 @@ export function MainCanvas({
                     hasPaste={isInformationPage ? hasClipboard : false}
                     onPasteBlocks={isInformationPage ? frame.onPasteBlocks : undefined}
                   />
-                )}
+                ) : null}
               </div>
             </div>
           );

@@ -19,6 +19,7 @@ import {
   applyTileDropAsNewBlock,
   extractTileFromContent,
   insertTileAtPreview,
+  freshBlockIds,
 } from "../utils/contentTransforms";
 import type { TileDropPreview } from "../components/MainCanvas";
 
@@ -195,7 +196,7 @@ export function useContentHandlers({
       toFrameIdx === -1 ? infoContent : navContents[navStack[toFrameIdx]] ?? [];
     const { content: newSrc, block } = applyExtractBlock(srcContent, infoId);
     if (!block) return;
-    const newTgt = applyInsertBlock(tgtContent, block, insertBeforeInfoId);
+    const newTgt = applyInsertBlock(tgtContent, freshBlockIds(block), insertBeforeInfoId);
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
     setNavContents((prev) => {
@@ -312,7 +313,8 @@ export function useContentHandlers({
       tileId
     );
     if (!tile) return;
-    const newTgt = insertTileAtPreview(tgtContent, tile, preview);
+    const ts = Date.now();
+    const newTgt = insertTileAtPreview(tgtContent, { ...tile, Id: `tile-${ts}` }, preview);
     if (fromFrameIdx === -1) setInfoContent(newSrc);
     if (toFrameIdx === -1) setInfoContent(newTgt);
     setNavContents((prev) => {
@@ -347,7 +349,7 @@ export function useContentHandlers({
       {
         InfoId: `grid-${ts}`,
         InfoType: "TileGrid",
-        Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] }],
+        Columns: [{ ColId: `col-${ts}`, Tiles: [{ ...tile, Id: `tile-${ts}`, Height: TILE_H }] }],
       },
     ];
     if (fromFrameIdx === -1) setInfoContent(newSrc);
@@ -387,7 +389,7 @@ export function useContentHandlers({
       InfoId: `grid-new-${ts}`,
       InfoType: "TileGrid",
       Columns: [
-        { ColId: `col-new-${ts}`, Tiles: [{ ...tile, Height: TILE_H }] },
+        { ColId: `col-new-${ts}`, Tiles: [{ ...tile, Id: `tile-new-${ts}`, Height: TILE_H }] },
       ],
     };
     const newTgt =

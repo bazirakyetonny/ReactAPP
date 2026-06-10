@@ -264,6 +264,9 @@ export function SidebarRight({
     selectedTile?.Action?.ObjectUrl ?? "",
   );
   const isEditingActionRef = useRef(false);
+  const tileTextInputRef = useRef<HTMLInputElement>(null);
+  const autoFocusedRef = useRef(false);
+  const snapshotDeferredRef = useRef(false);
 
   useEffect(() => {
     if (!isEditingTextRef.current) setTileText(selectedTile?.Text ?? "");
@@ -273,6 +276,14 @@ export function SidebarRight({
     if (!isEditingActionRef.current)
       setActionUrl(selectedTile?.Action?.ObjectUrl ?? "");
   }, [selectedTile?.Id, selectedTile?.Action?.ObjectUrl]);
+
+  useEffect(() => {
+    if (selectedTile?.Id) {
+      autoFocusedRef.current = true;
+      snapshotDeferredRef.current = true;
+      tileTextInputRef.current?.focus();
+    }
+  }, [selectedTile?.Id]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -392,6 +403,7 @@ export function SidebarRight({
           {/* 2c. Text input — bound to selected tile */}
           <div className="sr-section">
             <input
+              ref={tileTextInputRef}
               className="sr-input"
               type="text"
               placeholder={
@@ -401,15 +413,27 @@ export function SidebarRight({
               disabled={!selectedTile}
               onFocus={() => {
                 isEditingTextRef.current = true;
-                onBeforeTileTextEdit?.();
+                if (autoFocusedRef.current) {
+                  autoFocusedRef.current = false;
+                } else {
+                  snapshotDeferredRef.current = false;
+                  onBeforeTileTextEdit?.();
+                }
               }}
               onChange={(e) => {
-                setTileText(e.target.value);
+                if (snapshotDeferredRef.current) {
+                  snapshotDeferredRef.current = false;
+                  onBeforeTileTextEdit?.();
+                }
+                const val = e.target.value.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+                setTileText(val);
                 if (selectedTile)
-                  onLiveTileText?.(selectedTile.Id, e.target.value);
+                  onLiveTileText?.(selectedTile.Id, val);
               }}
               onBlur={() => {
                 isEditingTextRef.current = false;
+                autoFocusedRef.current = false;
+                snapshotDeferredRef.current = false;
                 if (selectedTile && tileText !== (selectedTile.Text ?? ""))
                   onEditTile?.(selectedTile.Id, { Text: tileText });
                 onEndLiveTileText?.();
@@ -459,6 +483,7 @@ export function SidebarRight({
               >
                 <SquareOutlineIcon />
               </button>
+              <div className="sr-group-separator" />
               {/* Dark (#333333) */}
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
@@ -487,6 +512,7 @@ export function SidebarRight({
               >
                 <AlignLeftIcon />
               </button>
+              <div className="sr-group-separator" />
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
                 type="button"

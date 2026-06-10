@@ -325,17 +325,18 @@ export function TileGrids({
                       const allColsSingleTile =
                         cols.length > 1 &&
                         cols.every((c: any) => (c.Tiles ?? []).length === 1);
-                      const colHasMultipleTiles =
-                        (col.Tiles ?? []).length > 1;
+                      const colHasMultipleTiles = (col.Tiles ?? []).length > 1;
 
                       const height = previewResetHeight
                         ? `${TILE_H}px`
                         : col.ColId === previewLongColId &&
                             previewLongHeight !== null
                           ? `${previewLongHeight}px`
-                          : (allColsSingleTile && !isDraggingThis) || colHasMultipleTiles
+                          : (allColsSingleTile && !isDraggingThis) ||
+                              colHasMultipleTiles
                             ? `${TILE_H}px`
-                            : (derivedLongTileHeight ?? `${tile.Height || 80}px`);
+                            : (derivedLongTileHeight ??
+                              `${tile.Height || 80}px`);
                       const isTileDragging = tileDragId === tile.Id;
                       const isGhost =
                         isFreeResizeOppCol &&
@@ -350,8 +351,12 @@ export function TileGrids({
                       const hasText = !!displayText;
                       // mirrors CSS: font-size 15px × line-height 1.3, padding 8px×2, icon 22px + gap 4px
                       const tileHeightPx = parseInt(height, 10);
-                      const availableForText = tileHeightPx - 16 - (hasIcon ? 26 : 0);
-                      const maxTextLines = Math.max(1, Math.floor(availableForText / (15 * 1.3)));
+                      const availableForText =
+                        tileHeightPx - 16 - (hasIcon ? 26 : 0);
+                      const maxTextLines = Math.max(
+                        1,
+                        Math.floor(availableForText / (15 * 1.3)),
+                      );
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;
                       const showDelText = canEdit && hasIcon && hasText;
@@ -548,7 +553,10 @@ export function TileGrids({
                               <div
                                 className={`phone-tile-element${showDelText ? " phone-tile-element--deletable" : ""}`}
                               >
-                                <span className="phone-tile-text" style={{ WebkitLineClamp: maxTextLines }}>
+                                <span
+                                  className="phone-tile-text"
+                                  style={{ WebkitLineClamp: maxTextLines }}
+                                >
                                   {displayText}
                                 </span>
                                 {showDelText &&
@@ -560,80 +568,109 @@ export function TileGrids({
                             )}
                           </div>
 
-                          {interactive && !isDraggingThis && (onTileOptionsClick || onDeleteTile || (canAddColumn && onAddColumn)) && (
-                            <>
-                              {onTileOptionsClick && (
-                                <button
-                                  className="phone-tile-options-btn"
-                                  type="button"
-                                  aria-label="Tile options"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onTileOptionsClick(tile.Id, e.currentTarget.getBoundingClientRect());
-                                  }}
-                                >
-                                  <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor" aria-hidden="true">
-                                    <circle cx="1.5" cy="1.5" r="1.5" />
-                                    <circle cx="6" cy="1.5" r="1.5" />
-                                    <circle cx="10.5" cy="1.5" r="1.5" />
-                                  </svg>
-                                </button>
-                              )}
-                              {onDeleteTile && (
-                                <button
-                                  className="phone-tile-delete-btn"
-                                  type="button"
-                                  aria-label="Delete tile"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteTile(grid.InfoId, col.ColId, tile.Id);
-                                  }}
-                                >
-                                  <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
-                                    <rect x="0" y="0.5" width="10" height="1.5" rx="0.75" />
-                                  </svg>
-                                </button>
-                              )}
-                              {canAddColumn && onAddColumn && (
-                                <button
-                                  className="phone-tile-add-btn"
-                                  type="button"
-                                  aria-label="Add column to right"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAddColumn(grid.InfoId, col.ColId);
-                                  }}
-                                >
-                                  <svg
-                                    width="10"
-                                    height="10"
-                                    viewBox="0 0 10 10"
-                                    fill="none"
-                                    aria-hidden="true"
+                          {interactive &&
+                            !isDraggingThis &&
+                            (onTileOptionsClick ||
+                              onDeleteTile ||
+                              (canAddColumn && onAddColumn)) && (
+                              <>
+                                {onTileOptionsClick && (
+                                  <button
+                                    className="phone-tile-options-btn"
+                                    type="button"
+                                    aria-label="Tile options"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onTileOptionsClick(
+                                        tile.Id,
+                                        e.currentTarget.getBoundingClientRect(),
+                                      );
+                                    }}
                                   >
-                                    <line
-                                      x1="5"
-                                      y1="1"
-                                      x2="5"
-                                      y2="9"
-                                      stroke="currentColor"
-                                      strokeWidth="1.6"
-                                      strokeLinecap="round"
-                                    />
-                                    <line
-                                      x1="1"
-                                      y1="5"
-                                      x2="9"
-                                      y2="5"
-                                      stroke="currentColor"
-                                      strokeWidth="1.6"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
-                                </button>
-                              )}
-                            </>
-                          )}
+                                    <svg
+                                      width="12"
+                                      height="3"
+                                      viewBox="0 0 12 3"
+                                      fill="currentColor"
+                                      aria-hidden="true"
+                                    >
+                                      <circle cx="1.5" cy="1.5" r="1.5" />
+                                      <circle cx="6" cy="1.5" r="1.5" />
+                                      <circle cx="10.5" cy="1.5" r="1.5" />
+                                    </svg>
+                                  </button>
+                                )}
+                                {onDeleteTile && (
+                                  <button
+                                    className="phone-tile-delete-btn"
+                                    type="button"
+                                    aria-label="Delete tile"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteTile(
+                                        grid.InfoId,
+                                        col.ColId,
+                                        tile.Id,
+                                      );
+                                    }}
+                                  >
+                                    <svg
+                                      width="10"
+                                      height="2"
+                                      viewBox="0 0 10 2"
+                                      fill="currentColor"
+                                      aria-hidden="true"
+                                    >
+                                      <rect
+                                        x="0"
+                                        y="0.5"
+                                        width="10"
+                                        height="1.5"
+                                        rx="0.75"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                {canAddColumn && onAddColumn && (
+                                  <button
+                                    className="phone-tile-add-btn"
+                                    type="button"
+                                    aria-label="Add column to right"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onAddColumn(grid.InfoId, col.ColId);
+                                    }}
+                                  >
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 10 10"
+                                      fill="none"
+                                      aria-hidden="true"
+                                    >
+                                      <line
+                                        x1="5"
+                                        y1="1"
+                                        x2="5"
+                                        y2="9"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                        strokeLinecap="round"
+                                      />
+                                      <line
+                                        x1="1"
+                                        y1="5"
+                                        x2="9"
+                                        y2="5"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                              </>
+                            )}
 
                           {interactive && canResize && isSelected && (
                             <div
@@ -685,27 +722,58 @@ export function TileGrids({
                 );
               })}
             </div>
-            {(isAddRowDropActive || isDraggingTile || (interactive && !!onAddBtnClick)) && (
+            {(isAddRowDropActive ||
+              isDraggingTile ||
+              (interactive && !!onAddBtnClick)) && (
               <>
                 {isAddRowDropActive && <div className="block-drop-zone" />}
-                <div className={[
-                  'phone-add-row',
-                  isDraggingTile ? 'phone-add-row--tile-drop-zone' : '',
-                ].filter(Boolean).join(' ')}>
+                <div
+                  className={[
+                    "phone-add-row",
+                    isDraggingTile ? "phone-add-row--tile-drop-zone" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
                   {interactive && onAddBtnClick && (
                     <button
                       className="phone-add-btn"
                       type="button"
                       aria-label="Add content"
-                      onClick={(e) => onAddBtnClick(e,
-                        overrideAddBtnInsertBeforeInfoId !== undefined
-                          ? overrideAddBtnInsertBeforeInfoId
-                          : tileGrids[gridIdx + 1]?.InfoId ?? null
-                      )}
+                      onClick={(e) =>
+                        onAddBtnClick(
+                          e,
+                          overrideAddBtnInsertBeforeInfoId !== undefined
+                            ? overrideAddBtnInsertBeforeInfoId
+                            : (tileGrids[gridIdx + 1]?.InfoId ?? null),
+                        )
+                      }
                     >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <line
+                          x1="8"
+                          y1="2"
+                          x2="8"
+                          y2="14"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                        <line
+                          x1="2"
+                          y1="8"
+                          x2="14"
+                          y2="8"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
                       </svg>
                     </button>
                   )}

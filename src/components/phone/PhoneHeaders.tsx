@@ -68,7 +68,12 @@ export function PhoneLinkedHeader({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (!editing && !isNew) setDraft(pageName); }, [pageName, editing, isNew]);
-  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+  useEffect(() => {
+    if (editing) {
+      const id = setTimeout(() => inputRef.current?.focus(), 0);
+      return () => clearTimeout(id);
+    }
+  }, [editing]);
 
   function commit() {
     const name = draft.trim();

@@ -522,6 +522,26 @@ export function applyExtractBlock(prev: any[], infoId: string): { content: any[]
   return { content: prev.filter((b: any) => b.InfoId !== infoId), block };
 }
 
+export function freshBlockIds(block: any, ts = Date.now()): any {
+  if (block.InfoType === 'TileGrid') {
+    return {
+      ...block,
+      InfoId: `grid-${ts}`,
+      Columns: (block.Columns ?? []).map((col: any, ci: number) => ({
+        ...col,
+        ColId: `col-${ts}${ci}`,
+        Tiles: (col.Tiles ?? []).map((tile: any, ti: number) => ({
+          ...tile,
+          Id: `tile-${ts}${ci}${ti}`,
+        })),
+      })),
+    };
+  }
+  if (block.InfoType === 'Images') return { ...block, InfoId: `img-${ts}` };
+  if (block.InfoType === 'Description') return { ...block, InfoId: `desc-${ts}` };
+  return { ...block, InfoId: `cta-${ts}` };
+}
+
 export function applyInsertBlock(prev: any[], block: any, insertBeforeInfoId: string | null): any[] {
   if (insertBeforeInfoId === null) return [...prev, block];
   const idx = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
