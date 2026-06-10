@@ -301,13 +301,6 @@
   box-shadow: 0 0 0 2px rgba(59, 110, 232, 0.15);
 }
 
-.phone-weblink-frame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  display: block;
-  min-height: 0;
-}
 
 .phone-weblink-thumb-placeholder {
   flex: 1;

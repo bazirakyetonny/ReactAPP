@@ -25,6 +25,7 @@ import { CalendarPage } from "./CalendarPage";
 import { MyActivityPage } from "./MyActivityPage";
 import { MapPage } from "./MapPage";
 import { DeletePageButton, DeletePageModal } from "./phone/DeletePageButton";
+import { WeblinkFrame } from "./phone/WeblinkFrame";
 import { NavPathsOverlay } from "./NavPathsOverlay";
 
 const MODULE_PAGE_TYPES = new Set([
@@ -877,11 +878,9 @@ export function MainCanvas({
                   }
                 />
                 {isWebLink ? (
-                  <iframe
-                    className="phone-weblink-frame"
+                  <WeblinkFrame
                     src={frame.webLinkUrl}
                     title={frame.page?.PageName ?? "Web link"}
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                   />
                 ) : isModulePage ? (
                   renderModulePage(pageType, themeColors)
