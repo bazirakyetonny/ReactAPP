@@ -61,6 +61,24 @@ const DIRECT_LINK_TYPES = [
   { id: "Weblink", label: "Web link" },
 ] as const;
 
+function findTilePageId(tileId: string, allPagesWithContent: any[]): string | null {
+  for (const page of allPagesWithContent) {
+    let content: any[] = [];
+    try {
+      content = JSON.parse(page.PageStructure)?.InfoContent ?? [];
+    } catch {
+      continue;
+    }
+    for (const block of content) {
+      if (block.InfoType !== "TileGrid") continue;
+      for (const col of block.Columns ?? []) {
+        if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) return page.PageId;
+      }
+    }
+  }
+  return null;
+}
+
 function isPageConnected(pageId: string, allPagesWithContent: any[]): boolean {
   const homePage = allPagesWithContent.find(
     (p) => p.PageName?.toLowerCase() === "home",
@@ -127,9 +145,12 @@ export function TileActionMenu({
   const cv = dataStore.get("Current_Version");
   const pages: any[] = cv?.Pages ?? [];
   const allPagesWithContent: any[] = cv?.Page ?? [];
+  const currentPageId = findTilePageId(tileId, allPagesWithContent);
   const infoPages = pages.filter(
     (p: any) =>
-      !MODULE_TYPES.has(p.PageType) && p.PageName?.toLowerCase() !== "home",
+      !MODULE_TYPES.has(p.PageType) &&
+      p.PageName?.toLowerCase() !== "home" &&
+      p.PageId !== currentPageId,
   );
   const modulePages = pages.filter((p: any) => MODULE_TYPES.has(p.PageType));
   const forms: any[] = dataStore.get("SDT_DynamicFormsCollection") ?? [];
