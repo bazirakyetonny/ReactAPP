@@ -32,7 +32,7 @@ export function AppVersionMoodSelection1({
   const [moodSelectOpen, setMoodSelectOpen] = useState(false);
 
   const pages = useMemo(() => {
-    const raw = template?.Pages ?? [];
+    const raw = (template?.Pages ?? []).filter((p) => p.PageType === "Information");
     const homeIdx = raw.findIndex((p) => p.PageName?.toLowerCase() === "home");
     if (homeIdx <= 0) return raw;
     return [raw[homeIdx], ...raw.filter((_, i) => i !== homeIdx)];
