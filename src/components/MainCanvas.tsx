@@ -631,7 +631,15 @@ export function MainCanvas({
         ? mainPhoneFrameRef.current
         : (linkedFrameRefs.current.get(index) ?? null);
     if (!el || !stage) return;
-    const targetLeft = el.offsetLeft - (stage.clientWidth - el.offsetWidth) / 2;
+    // Use viewport rects: linked frames sit inside the position:relative
+    // .phone-frame-outer wrapper, so el.offsetLeft is relative to the wrapper,
+    // not the stage.
+    const stageRect = stage.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const targetLeft =
+      stage.scrollLeft +
+      (elRect.left - stageRect.left) -
+      (stage.clientWidth - elRect.width) / 2;
     stage.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
   }
 
