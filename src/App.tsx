@@ -33,6 +33,7 @@ import {
   createInfoPage,
   updatePageTitle,
   createLinkPage,
+  updateLinkPage,
   deletePage,
 } from "./services/pagesApi";
 import { getTrash, restoreTrash } from "./services/trashApi";
@@ -1023,7 +1024,7 @@ function App() {
 
     let finalAttrs: Record<string, any> = { ...attrs };
 
-    if (blockType === "Cta_Weblink" && attrs.CtaAction) {
+    if ((blockType === "Cta_Weblink" || blockType === "Cta_Form") && attrs.CtaAction) {
       const cv = dataStore.get("Current_Version");
       if (cv) {
         const url = attrs.CtaAction;
@@ -1482,6 +1483,58 @@ function App() {
           }
         }
       }
+      const allTileBlocks: any[] = [
+        ...infoContentRef.current,
+        ...(Object.values(navContentsRef.current) as any[][]).flat(),
+      ];
+      let currentTileAction: any = null;
+      for (const b of allTileBlocks) {
+        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
+        if (tile) { currentTileAction = tile.Action; break; }
+      }
+      if (currentTileAction?.ObjectId && currentTileAction.ObjectType === "WebLink") {
+        pushSnapshot();
+        handleEditTile(tileId, { Action: { ...currentTileAction, ObjectUrl: url } });
+        try {
+          await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentTileAction.ObjectId, url, WWPFormId: 0 });
+          const freshCv = dataStore.get("Current_Version") ?? cv;
+          const syncedCv = {
+            ...freshCv,
+            Page: (freshCv.Page ?? []).map((p: any) =>
+              p.PageId === currentTileAction.ObjectId
+                ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+                : p
+            ),
+            Pages: (freshCv.Pages ?? []).map((p: any) =>
+              p.PageId === currentTileAction.ObjectId
+                ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+                : p
+            ),
+          };
+          dataStore.set("Current_Version", syncedCv);
+          setCurrentVersion(syncedCv);
+          setNavUrls((prev) => ({ ...prev, [currentTileAction.ObjectId]: url }));
+        } catch {
+          const fallbackCv = dataStore.get("Current_Version") ?? cv;
+          try {
+            const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: action.label || url, url, WWPFormId: 0 });
+            if (!newPage?.PageId) throw new Error("no page");
+            const pageUrl = newPage.PageLinkStructure?.Url ?? url;
+            const updated = {
+              ...fallbackCv,
+              Page: [...(fallbackCv.Page ?? []), newPage],
+              Pages: [...(fallbackCv.Pages ?? []), newPage],
+            };
+            dataStore.set("Current_Version", updated);
+            setCurrentVersion(updated);
+            handleEditTile(tileId, { Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl, FormId: 0 } });
+            handleTileNavigate(newPage.PageId, parentIndex);
+            setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+            setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
+          } catch { /* ignore */ }
+        }
+        return;
+      }
       const existing = (cv.Page ?? []).find(
         (p: any) =>
           p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
@@ -1574,6 +1627,29 @@ function App() {
             break;
           }
         }
+      }
+      const allFormBlocks: any[] = [
+        ...infoContentRef.current,
+        ...(Object.values(navContentsRef.current) as any[][]).flat(),
+      ];
+      let currentFormAction: any = null;
+      for (const b of allFormBlocks) {
+        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
+        if (tile) { currentFormAction = tile.Action; break; }
+      }
+      if (currentFormAction?.ObjectId && currentFormAction.ObjectType === "DynamicForm") {
+        pushSnapshot();
+        handleEditTile(tileId, {
+          Action: { ...currentFormAction, FormId: Number(action.formId) },
+        });
+        updateLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageId: currentFormAction.ObjectId,
+          url: "",
+          WWPFormId: Number(action.formId),
+          WWPFormReferenceName: action.formReferenceName,
+        }).catch(() => { /* ignore */ });
+        return;
       }
       try {
         const newPage = await createLinkPage({
@@ -1712,6 +1788,60 @@ function App() {
       }
     }
 
+    const allCtaBlocks: any[] = [
+      ...infoContentRef.current,
+      ...(Object.values(navContentsRef.current) as any[][]).flat(),
+    ];
+    const ctaBlock = allCtaBlocks.find((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId);
+    const currentCtaAction = ctaBlock?.CtaAttributes?.Action;
+    if (currentCtaAction?.ObjectId && currentCtaAction.ObjectType === "WebLink") {
+      pushSnapshot();
+      handleEditCta(ctaId, {
+        CtaAction: url,
+        Action: { ...currentCtaAction, ObjectUrl: url },
+      });
+      try {
+        await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentCtaAction.ObjectId, url, WWPFormId: 0 });
+        const freshCv = dataStore.get("Current_Version") ?? cv;
+        const syncedCv = {
+          ...freshCv,
+          Page: (freshCv.Page ?? []).map((p: any) =>
+            p.PageId === currentCtaAction.ObjectId
+              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+              : p
+          ),
+          Pages: (freshCv.Pages ?? []).map((p: any) =>
+            p.PageId === currentCtaAction.ObjectId
+              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+              : p
+          ),
+        };
+        dataStore.set("Current_Version", syncedCv);
+        setCurrentVersion(syncedCv);
+        setNavUrls((prev) => ({ ...prev, [currentCtaAction.ObjectId]: url }));
+      } catch {
+        const fallbackCv = dataStore.get("Current_Version") ?? cv;
+        try {
+          const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: label || url, url, WWPFormId: 0 });
+          if (!newPage?.PageId) throw new Error("no page");
+          const pageUrl = newPage.PageLinkStructure?.Url ?? url;
+          const updated = {
+            ...fallbackCv,
+            Page: [...(fallbackCv.Page ?? []), newPage],
+            Pages: [...(fallbackCv.Pages ?? []), newPage],
+          };
+          dataStore.set("Current_Version", updated);
+          setCurrentVersion(updated);
+          handleEditCta(ctaId, {
+            CtaAction: url,
+            Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+          });
+          handleTileNavigate(newPage.PageId, ctaFrameIndex);
+          setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
+        } catch { /* ignore */ }
+      }
+      return;
+    }
     const existing = (cv.Page ?? []).find(
       (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
     );
@@ -1758,6 +1888,72 @@ function App() {
       setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
     } catch {
       handleEditCta(ctaId, { CtaAction: url });
+    }
+  }
+
+  async function handleTileWeblinkSave(tileId: string, url: string) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv || !url) return;
+    const frames = [
+      { blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid: string) => ({
+        blocks: navContentsRef.current[pid] ?? [],
+      })),
+    ];
+    let objectId: string | undefined;
+    let tileFrameIndex = -1;
+    outer: for (let fi = 0; fi < frames.length; fi++) {
+      for (const block of frames[fi].blocks) {
+        if (block.InfoType !== "TileGrid") continue;
+        for (const col of block.Columns ?? []) {
+          for (const tile of col.Tiles ?? []) {
+            if (tile.Id === tileId) {
+              objectId = tile.Action?.ObjectId;
+              tileFrameIndex = fi - 1;
+              break outer;
+            }
+          }
+        }
+      }
+    }
+    if (!objectId) return;
+    try {
+      await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: objectId, url, WWPFormId: 0 });
+      const freshCv = dataStore.get("Current_Version") ?? cv;
+      const syncedCv = {
+        ...freshCv,
+        Page: (freshCv.Page ?? []).map((p: any) =>
+          p.PageId === objectId
+            ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+            : p
+        ),
+        Pages: (freshCv.Pages ?? []).map((p: any) =>
+          p.PageId === objectId
+            ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
+            : p
+        ),
+      };
+      dataStore.set("Current_Version", syncedCv);
+      setCurrentVersion(syncedCv);
+      setNavUrls((prev) => ({ ...prev, [objectId as string]: url }));
+    } catch {
+      const fallbackCv = dataStore.get("Current_Version") ?? cv;
+      try {
+        const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: url, url, WWPFormId: 0 });
+        if (!newPage?.PageId) throw new Error("no page");
+        const pageUrl = newPage.PageLinkStructure?.Url ?? url;
+        const updated = {
+          ...fallbackCv,
+          Page: [...(fallbackCv.Page ?? []), newPage],
+          Pages: [...(fallbackCv.Pages ?? []), newPage],
+        };
+        dataStore.set("Current_Version", updated);
+        setCurrentVersion(updated);
+        handleEditTile(tileId, { Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl, FormId: 0 } });
+        handleTileNavigate(newPage.PageId, tileFrameIndex);
+        setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+        setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
+      } catch { /* ignore */ }
     }
   }
 
@@ -2128,6 +2324,7 @@ function App() {
             onEditCta={handleEditCta}
             onBeforeCtaEdit={pushSnapshot}
             onCtaWeblinkSave={handleCtaWeblinkSave}
+            onTileWeblinkSave={handleTileWeblinkSave}
             onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
             onEndLiveCtaLabel={() => setLiveCtaLabel(null)}
             selectedTileIds={selectedTileIds}
