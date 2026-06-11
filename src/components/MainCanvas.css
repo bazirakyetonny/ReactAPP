@@ -188,13 +188,6 @@
   object-fit: contain;
 }
 
-.phone-app-logo-placeholder {
-  width: 56px;
-  height: 22px;
-  background: #e5e7eb;
-  border-radius: 4px;
-}
-
 .phone-app-profile {
   display: flex;
   align-items: center;
