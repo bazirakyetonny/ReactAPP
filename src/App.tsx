@@ -60,7 +60,8 @@ function getLinkedPageUrl(page: any): string {
 }
 
 function App() {
-  i18n.locale = (dataStore.get("Current_Language") as string) || "en";
+  const langMap: Record<string, string> = { English: "en", Dutch: "nl" };
+  i18n.locale = langMap[dataStore.get("Current_Language") as string] ?? "en";
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
   const [reviewOnly, setReviewOnly] = useState(false);
 
