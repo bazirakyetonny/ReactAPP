@@ -1946,7 +1946,7 @@ function App() {
         onClosePublish={() => setShowPublishModal(false)}
         onFixIssues={() => {
           setShowPublishModal(false);
-          setAnalysisOpen(true);
+          openAnalysis();
         }}
         showShareModal={showShareModal}
         shareLink={
