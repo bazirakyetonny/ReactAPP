@@ -3,6 +3,17 @@
   display: inline-block;
 }
 
+/* ── Trigger chevron ────────────────────────────────────────── */
+.vd-chevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.vd-chevron--open {
+  transform: rotate(180deg);
+}
+
 /* ── Dropdown panel ─────────────────────────────────────────── */
 .vd-menu {
   position: absolute;
