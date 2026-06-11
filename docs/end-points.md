@@ -333,6 +333,35 @@ Returns the page hierarchy used to render the sidebar navigation tree.
 
 ---
 
+### POST /api/toolbox/v2/update-link-page
+Updates the URL or form binding of an existing WebLink or DynamicForm page. Call this when a tile or CTA that already has an `Action.ObjectId` has its URL or form changed.
+
+**Request body — weblink**
+```json
+{
+  "AppVersionId": "uuid",
+  "PageId": "uuid",
+  "Url": "https://example.com",
+  "WWPFormId": 0,
+  "WWPFormReferenceName": ""
+}
+```
+
+**Request body — dynamic form**
+```json
+{
+  "AppVersionId": "uuid",
+  "PageId": "uuid",
+  "Url": "",
+  "WWPFormId": 39,
+  "WWPFormReferenceName": "uuid"
+}
+```
+
+**Response** `SDT_Error`
+
+---
+
 ### POST /api/toolbox/v2/create-service-page
 
 **Request body**

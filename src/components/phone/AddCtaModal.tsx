@@ -82,7 +82,7 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false
   const [error, setError] = useState<string | null>(null);
 
   const forms = supplierId
-    ? allForms.filter(f => f.SupplierId === supplierId)
+    ? allForms.filter(f => String(f.SupplierId) === supplierId)
     : allForms;
 
   function handleFormChange(formId: string) {

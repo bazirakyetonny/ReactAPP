@@ -1,0 +1,36 @@
+.phone-weblink-wrapper {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.phone-weblink-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  z-index: 1;
+}
+
+.phone-weblink-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: weblink-spin 0.75s linear infinite;
+}
+
+@keyframes weblink-spin {
+  to { transform: rotate(360deg); }
+}
+
+.phone-weblink-frame {
+  width: calc(100% + 20px);
+  height: 100%;
+  border: none;
+  display: block;
+}

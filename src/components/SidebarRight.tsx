@@ -224,6 +224,7 @@ export function SidebarRight({
   onEditCta,
   onBeforeCtaEdit,
   onCtaWeblinkSave,
+  onTileWeblinkSave,
   onLiveCtaLabel,
   onEndLiveCtaLabel,
   moodId,
@@ -249,6 +250,7 @@ export function SidebarRight({
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
   onCtaWeblinkSave?: (ctaId: string, url: string, label: string) => void;
+  onTileWeblinkSave?: (tileId: string, url: string) => void;
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
   moodId?: string;
@@ -484,6 +486,7 @@ export function SidebarRight({
                 }}
                 onBlur={() => {
                   isEditingActionRef.current = false;
+                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, actionUrl);
                 }}
               />
             </div>
