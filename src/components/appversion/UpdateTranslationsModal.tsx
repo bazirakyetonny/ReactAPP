@@ -11,7 +11,7 @@ interface UpdateTranslationsModalProps {
   baseLanguage: string;
   currentTranslateLanguages: string; // JSON-encoded string[]
   onClose: () => void;
-  onUpdated: () => void;
+  onUpdated: (selectedLanguages: string[]) => void;
 }
 
 function parseTranslateLanguages(raw: string): string[] {
@@ -57,7 +57,7 @@ export function UpdateTranslationsModal({
     setError(null);
     try {
       await updateVersionTranslationLanguages(versionId, selected);
-      onUpdated();
+      onUpdated(selected);
     } catch {
       setError("Failed to update translation languages. Please try again.");
     } finally {

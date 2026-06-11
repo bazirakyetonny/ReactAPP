@@ -1,18 +1,18 @@
-import type { CategoryTemplates } from '../types';
-import type { SDTAppVersion } from '../services/appVersionsApi';
-import { CreateAppVersionModal } from './appversion/CreateAppVersionModal';
-import { RenameAppVersionModal } from './appversion/RenameAppVersionModal';
-import { MoveToTrashModal } from './appversion/MoveToTrashModal';
-import { DuplicateAppVersionModal } from './appversion/DuplicateAppVersionModal';
-import { UpdateTranslationsModal } from './appversion/UpdateTranslationsModal';
-import { UpdateDescriptionModal } from './appversion/UpdateDescriptionModal';
-import { TemplatePublishModal } from './appversion/TemplatePublishModal';
-import { CreateAppVersionTemplateModal } from './appversion/CreateAppVersionTemplateModal';
-import { PublishModal } from './appversion/PublishModal';
-import { ShareLinkModal } from './appversion/ShareLinkModal';
-import { TrashModal } from './appversion/TrashModal';
-import { AddCtaModal } from './phone/AddCtaModal';
-import { TileImageModal } from './phone/TileImageModal';
+import type { CategoryTemplates } from "../types";
+import type { SDTAppVersion } from "../services/appVersionsApi";
+import { CreateAppVersionModal } from "./appversion/CreateAppVersionModal";
+import { RenameAppVersionModal } from "./appversion/RenameAppVersionModal";
+import { MoveToTrashModal } from "./appversion/MoveToTrashModal";
+import { DuplicateAppVersionModal } from "./appversion/DuplicateAppVersionModal";
+import { UpdateTranslationsModal } from "./appversion/UpdateTranslationsModal";
+import { UpdateDescriptionModal } from "./appversion/UpdateDescriptionModal";
+import { TemplatePublishModal } from "./appversion/TemplatePublishModal";
+import { CreateAppVersionTemplateModal } from "./appversion/CreateAppVersionTemplateModal";
+import { PublishModal } from "./appversion/PublishModal";
+import { ShareLinkModal } from "./appversion/ShareLinkModal";
+import { TrashModal } from "./appversion/TrashModal";
+import { AddCtaModal } from "./phone/AddCtaModal";
+import { TileImageModal } from "./phone/TileImageModal";
 
 interface EditorModalsProps {
   showPublishModal: boolean;
@@ -60,9 +60,11 @@ interface EditorModalsProps {
   onCloseUpdateDescription: () => void;
   onDescriptionUpdated: () => void;
 
-  updateTranslationsVersion: (SDTAppVersion & { TranslateLanguages?: string[] }) | null;
+  updateTranslationsVersion:
+    | (SDTAppVersion & { TranslateLanguages?: string[] })
+    | null;
   onCloseUpdateTranslations: () => void;
-  onTranslationsUpdated: () => void;
+  onTranslationsUpdated: (selectedLanguages: string[]) => void;
 
   tileImageModal: {
     tileWidth: number;
@@ -97,22 +99,55 @@ interface EditorModalsProps {
 }
 
 export function EditorModals({
-  showPublishModal, currentVersion, appVersions, analysisIssueCount,
-  onPublished, onClosePublish, onFixIssues,
-  showPublishAsTemplateModal, onClosePublishAsTemplate, onTemplatePublished,
-  showUnpublishTemplateModal, onCloseUnpublishTemplate, onTemplateUnpublished,
-  showShareModal, shareLink, onCloseShare,
-  showCreateModal, templatesCollection, themeColors, themeIcons,
-  onCloseCreate, onVersionCreated,
-  showCreateTemplateModal, onCloseCreateTemplate, onTemplateCreated,
-  renameVersion, onCloseRename, onVersionRenamed,
-  trashVersion, onCloseTrash, onVersionDeleted,
-  duplicateVersion, onCloseDuplicate, onVersionDuplicated,
-  updateDescriptionVersion, onCloseUpdateDescription, onDescriptionUpdated,
-  updateTranslationsVersion, onCloseUpdateTranslations, onTranslationsUpdated,
-  showTrashModal, onCloseTrashModal, onTrashChanged,
-  tileImageModal, onTileImageConfirm, onCloseTileImage,
-  pendingCta, onConfirmCta, onCancelCta,
+  showPublishModal,
+  currentVersion,
+  appVersions,
+  analysisIssueCount,
+  onPublished,
+  onClosePublish,
+  onFixIssues,
+  showPublishAsTemplateModal,
+  onClosePublishAsTemplate,
+  onTemplatePublished,
+  showUnpublishTemplateModal,
+  onCloseUnpublishTemplate,
+  onTemplateUnpublished,
+  showShareModal,
+  shareLink,
+  onCloseShare,
+  showCreateModal,
+  templatesCollection,
+  themeColors,
+  themeIcons,
+  onCloseCreate,
+  onVersionCreated,
+  showCreateTemplateModal,
+  onCloseCreateTemplate,
+  onTemplateCreated,
+  renameVersion,
+  onCloseRename,
+  onVersionRenamed,
+  trashVersion,
+  onCloseTrash,
+  onVersionDeleted,
+  duplicateVersion,
+  onCloseDuplicate,
+  onVersionDuplicated,
+  updateDescriptionVersion,
+  onCloseUpdateDescription,
+  onDescriptionUpdated,
+  updateTranslationsVersion,
+  onCloseUpdateTranslations,
+  onTranslationsUpdated,
+  showTrashModal,
+  onCloseTrashModal,
+  onTrashChanged,
+  tileImageModal,
+  onTileImageConfirm,
+  onCloseTileImage,
+  pendingCta,
+  onConfirmCta,
+  onCancelCta,
 }: EditorModalsProps) {
   return (
     <>
@@ -205,7 +240,9 @@ export function EditorModals({
           versionId={updateTranslationsVersion.AppVersionId}
           versionName={updateTranslationsVersion.AppVersionName}
           baseLanguage={updateTranslationsVersion.AppVersionLanguage}
-          currentTranslateLanguages={updateTranslationsVersion.TranslateLanguages}
+          currentTranslateLanguages={
+            updateTranslationsVersion.AppVersionMultiLanguages
+          }
           onClose={onCloseUpdateTranslations}
           onUpdated={onTranslationsUpdated}
         />
