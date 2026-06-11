@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./MultiSelect.css";
+import { CheckboxSpan } from './CheckboxSpan';
 
 export interface MultiSelectOption {
   value: string;
@@ -156,14 +157,10 @@ export function MultiSelect({
             />
           </div>
 
-          <label className="ms-item ms-item--all">
-            <input
-              type="checkbox"
-              checked={allFilteredSelected}
-              onChange={toggleSelectAll}
-            />
+          <div className="ms-item ms-item--all" onClick={toggleSelectAll}>
+            <CheckboxSpan checked={allFilteredSelected} onChange={toggleSelectAll} ariaLabel="Select All" />
             <span className="ms-item-label">Select All</span>
-          </label>
+          </div>
 
           <div className="ms-divider" />
 
@@ -172,14 +169,10 @@ export function MultiSelect({
               <div className="ms-empty">No results</div>
             ) : (
               filtered.map((opt) => (
-                <label key={opt.value} className="ms-item">
-                  <input
-                    type="checkbox"
-                    checked={value.includes(opt.value)}
-                    onChange={() => toggleItem(opt.value)}
-                  />
+                <div key={opt.value} className="ms-item" onClick={() => toggleItem(opt.value)}>
+                  <CheckboxSpan checked={value.includes(opt.value)} onChange={() => toggleItem(opt.value)} ariaLabel={opt.label} />
                   <span className="ms-item-label">{opt.label}</span>
-                </label>
+                </div>
               ))
             )}
           </div>

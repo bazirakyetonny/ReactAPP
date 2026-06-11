@@ -1,4 +1,5 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import ReactDOM from "react-dom";
 import "./css/PublishModal.css";
 import { getLocation } from "../../services/locationApi";
@@ -24,7 +25,6 @@ export function PublishModal({
   onClose,
   onFixIssues,
 }: PublishModalProps) {
-  const checkboxId = useId();
   const [notify, setNotify] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,16 +102,11 @@ export function PublishModal({
             </div>
           )}
 
-          <div className="pm-checkbox-row">
-            <input
-              id={checkboxId}
-              type="checkbox"
-              checked={notify}
-              onChange={(e) => setNotify(e.target.checked)}
-            />
-            <label className="pm-checkbox-label" htmlFor={checkboxId}>
+          <div className="pm-checkbox-row" onClick={() => setNotify(!notify)}>
+            <CheckboxSpan checked={notify} onChange={() => setNotify(!notify)} ariaLabel="Notify users" />
+            <span className="pm-checkbox-label">
               Send &lsquo;A new version is available&rsquo; message to users.
-            </label>
+            </span>
           </div>
 
           {error && <div className="pm-error">{error}</div>}

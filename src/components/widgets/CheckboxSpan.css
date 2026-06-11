@@ -1,0 +1,8 @@
+.cb-span {
+  font-size: 16px;
+  line-height: 1;
+  color: #1a3a6e;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}

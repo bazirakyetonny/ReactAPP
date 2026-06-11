@@ -188,13 +188,6 @@
   color: #111827;
 }
 
-.ms-item input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #1a3a6e;
-  cursor: pointer;
-  flex-shrink: 0;
-}
 
 .ms-item-label {
   line-height: 1.3;
