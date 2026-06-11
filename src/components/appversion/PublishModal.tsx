@@ -4,6 +4,7 @@ import ReactDOM from "react-dom";
 import "./css/PublishModal.css";
 import { getLocation } from "../../services/locationApi";
 import { publishVersion } from "../../services/publishApi";
+import { translateAppVersionBeforePublish } from "../../services/translationApi";
 import type { SDTAppVersion } from "../../services/appVersionsApi";
 
 interface PublishModalProps {
@@ -49,6 +50,27 @@ export function PublishModal({
     setLoading(true);
     setError(null);
     try {
+      const version = appVersions.find(
+        (v) => v.AppVersionId === currentVersionId,
+      );
+      let langs: string[] = [];
+      try {
+        const parsed = JSON.parse(version?.AppVersionMultiLanguages ?? "[]");
+        langs = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        // ignore malformed language list
+      }
+      if (version && langs.length) {
+        try {
+          await translateAppVersionBeforePublish(
+            currentVersionId,
+            version.AppVersionLanguage,
+            langs,
+          );
+        } catch {
+          // a translation failure should not block publishing
+        }
+      }
       await publishVersion(currentVersionId, notify);
       onPublished();
     } catch {
