@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom";
 import "./css/TrashModal.css";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import {
   getTrash,
   bulkRestoreTrash,
@@ -221,15 +222,10 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                     key={item.TrashId}
                     className={`tm-item${checked ? " tm-item--checked" : ""}`}
                   >
-                    <label className="tm-item-label">
-                      <input
-                        type="checkbox"
-                        className="tm-checkbox"
-                        checked={checked}
-                        onChange={() => toggleItem(item.TrashId)}
-                      />
+                    <div className="tm-item-label" onClick={() => toggleItem(item.TrashId)}>
+                      <CheckboxSpan checked={checked} onChange={() => toggleItem(item.TrashId)} ariaLabel={name} />
                       <span className="tm-item-name">{name}</span>
-                    </label>
+                    </div>
                     <span className="tm-item-time">
                       {relativeTime(item.DeletedAt)}
                     </span>

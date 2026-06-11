@@ -13,7 +13,7 @@ export function BusyModal({ onReviewOnly }: BusyModalProps) {
   async function handleTakeControl() {
     setTaking(true);
     try {
-      await releaseToolbox();
+      await releaseToolbox(true);
       window.location.reload();
     } catch {
       setTaking(false);

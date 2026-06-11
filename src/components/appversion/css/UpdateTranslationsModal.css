@@ -103,13 +103,6 @@
   cursor: pointer;
 }
 
-.utl-check-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #1a3a6e;
-  cursor: pointer;
-  flex-shrink: 0;
-}
 
 .utl-empty {
   font-size: 13px;

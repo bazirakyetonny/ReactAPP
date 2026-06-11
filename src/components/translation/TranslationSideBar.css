@@ -50,6 +50,13 @@
   display: none;
 }
 
+/* Blocks must never be compressed to fit the frame — overflow scrolls instead.
+   Without this, .ts-desc-editor (overflow: hidden → min-height 0) collapses to
+   just its toolbar when the page content is taller than the phone frame. */
+.ts-phone-scroll > * {
+  flex-shrink: 0;
+}
+
 /* Hide interactive add-row affordance — sidebar is read-only */
 .ts-phone-frame .phone-add-row {
   display: none;
@@ -191,14 +198,19 @@
   height: 14px;
 }
 
-/* Editor content area */
+/* Editor content area.
+   Quill's own CSS sizes .ql-container/.ql-editor with height: 100%, which
+   collapses to 0 when a host page's styles constrain an ancestor. Force
+   content-driven height so the editor stays visible when embedded. */
 .ts-desc-editor .ql-container.ql-snow {
   border: none;
   font-size: 12px;
   line-height: 1.5;
+  height: auto;
 }
 
 .ts-desc-editor .ql-editor {
+  height: auto;
   min-height: 80px;
   max-height: 200px;
   overflow-y: auto;

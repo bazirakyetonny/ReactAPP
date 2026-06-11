@@ -63,6 +63,10 @@ export function createWidget(
   // console.log("Previewlink", Previewlink);
   // console.log("IsBusy", isBusy);
 
+  document
+    .querySelector(".CellContentHolder")
+    ?.classList.remove("CellContentHolder");
+
   return createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <App />

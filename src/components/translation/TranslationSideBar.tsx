@@ -230,6 +230,12 @@ export function TranslationSideBar({
                   }
                   const tileHeight =
                     derivedHeight ?? `${tile.Height || TILE_H}px`;
+                  // Cap tile height in dense grids: in a 2-col grid the column
+                  // holding more than one tile is capped; in a 3-col grid every
+                  // tile is capped.
+                  const capHeight =
+                    cols.length >= 3 ||
+                    (cols.length === 2 && (col.Tiles ?? []).length > 1);
                   const isTileHighlighted =
                     highlightBlockId === block.InfoId && highlightTileId === tile.Id;
                   return (
@@ -237,7 +243,10 @@ export function TranslationSideBar({
                       key={tile.Id}
                       data-tile-id={tile.Id}
                       className={`phone-tile-wrap${isTileHighlighted ? ' phone-tile-wrap--analysis' : ''}`}
-                      style={{ height: tileHeight }}
+                      style={{
+                        height: tileHeight,
+                        maxHeight: capHeight ? `${TILE_H}px` : undefined,
+                      }}
                     >
                       {isTileHighlighted && highlightMessage && (
                         <div className="phone-tile-analysis-label">{highlightMessage}</div>

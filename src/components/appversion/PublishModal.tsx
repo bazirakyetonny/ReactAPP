@@ -1,8 +1,10 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import ReactDOM from "react-dom";
 import "./css/PublishModal.css";
 import { getLocation } from "../../services/locationApi";
 import { publishVersion } from "../../services/publishApi";
+import { translateAppVersionBeforePublish } from "../../services/translationApi";
 import type { SDTAppVersion } from "../../services/appVersionsApi";
 import { i18n } from "../../i18n/i18n";
 
@@ -25,7 +27,6 @@ export function PublishModal({
   onClose,
   onFixIssues,
 }: PublishModalProps) {
-  const checkboxId = useId();
   const [notify, setNotify] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,27 @@ export function PublishModal({
     setLoading(true);
     setError(null);
     try {
+      const version = appVersions.find(
+        (v) => v.AppVersionId === currentVersionId,
+      );
+      let langs: string[] = [];
+      try {
+        const parsed = JSON.parse(version?.AppVersionMultiLanguages ?? "[]");
+        langs = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        // ignore malformed language list
+      }
+      if (version && langs.length) {
+        try {
+          await translateAppVersionBeforePublish(
+            currentVersionId,
+            version.AppVersionLanguage,
+            langs,
+          );
+        } catch {
+          // a translation failure should not block publishing
+        }
+      }
       await publishVersion(currentVersionId, notify);
       onPublished();
     } catch {
@@ -102,14 +124,9 @@ export function PublishModal({
             </div>
           )}
 
-          <div className="pm-checkbox-row">
-            <input
-              id={checkboxId}
-              type="checkbox"
-              checked={notify}
-              onChange={(e) => setNotify(e.target.checked)}
-            />
-            <label className="pm-checkbox-label" htmlFor={checkboxId}>
+          <div className="pm-checkbox-row" onClick={() => setNotify(!notify)}>
+            <CheckboxSpan checked={notify} onChange={() => setNotify(!notify)} ariaLabel="Notify users" />
+             <label className="pm-checkbox-label" htmlFor={checkboxId}>
               {i18n.t("navbar.publish.notify_residents")}
             </label>
           </div>

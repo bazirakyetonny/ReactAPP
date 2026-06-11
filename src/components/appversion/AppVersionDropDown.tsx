@@ -267,7 +267,9 @@ export function AppVersionDropDown({
         disabled={disabled}
       >
         {versionName ?? "My version"}
-        <ChevronDownIcon />
+        <span className={`vd-chevron${open ? " vd-chevron--open" : ""}`}>
+          <ChevronDownIcon />
+        </span>
       </button>
 
       {open && (
@@ -413,18 +415,22 @@ export function AppVersionDropDown({
                     >
                       Move To Trash
                     </button>
-                    <button
-                      className="vd-sub-item vd-sub-item--has-sub"
-                      type="button"
-                      onMouseEnter={(e) => {
-                        cancelSubHide();
-                        showCatSub(v.AppVersionId, e.currentTarget);
-                      }}
-                      onMouseLeave={scheduleCatSubHide}
-                    >
-                      <span>Category [{v.TemplateCategoryName || "None"}]</span>
-                      <ChevronRightIcon />
-                    </button>
+                    {canCreateTemplate && (
+                      <button
+                        className="vd-sub-item vd-sub-item--has-sub"
+                        type="button"
+                        onMouseEnter={(e) => {
+                          cancelSubHide();
+                          showCatSub(v.AppVersionId, e.currentTarget);
+                        }}
+                        onMouseLeave={scheduleCatSubHide}
+                      >
+                        <span>
+                          Category [{v.TemplateCategoryName || "None"}]
+                        </span>
+                        <ChevronRightIcon />
+                      </button>
+                    )}
                   </div>
                 );
               })(),

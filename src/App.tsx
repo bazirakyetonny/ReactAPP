@@ -37,6 +37,7 @@ import {
   deletePage,
 } from "./services/pagesApi";
 import { getTrash, restoreTrash } from "./services/trashApi";
+import { translateAppVersion } from "./services/translationApi";
 import { NEW_PAGE_SENTINEL } from "./utils/linkedFrames";
 import type { TileMenuAction } from "./components/tile/TileActionMenu";
 import { buildLinkedFrames } from "./utils/linkedFrames";
@@ -97,6 +98,32 @@ function App() {
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Kick off translation whenever a new app version becomes current,
+  // prioritising the home page.
+  useEffect(() => {
+    if (isPreviewMode) return;
+    const versionId = currentVersion?.AppVersionId;
+    if (!versionId) return;
+    let langs: string[] = [];
+    try {
+      langs = JSON.parse(currentVersion?.AppVersionMultiLanguages ?? "[]");
+    } catch {
+      // ignore malformed language list
+    }
+    if (!langs.length) return;
+    const pages: any[] = currentVersion?.Page ?? currentVersion?.Pages ?? [];
+    const homePageId = pages.find(
+      (p: any) => p.PageName?.toLowerCase() === "home",
+    )?.PageId;
+    translateAppVersion({
+      appVersionId: versionId,
+      languageFrom: currentVersion?.AppVersionLanguage ?? "",
+      languageToCollection: langs,
+      activePageId: homePageId,
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentVersion?.AppVersionId]);
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>(
     dataStore.get("CurrentThemeId") ?? themes[0]?.ThemeId ?? "",
@@ -1151,6 +1178,9 @@ function App() {
       Page: (cv.Page ?? []).map((p: any) =>
         p.PageId === pageId ? { ...p, PageName: newName } : p,
       ),
+      Pages: (cv.Pages ?? []).map((p: any) =>
+        p.PageId === pageId ? { ...p, PageName: newName } : p,
+      ),
     };
     dataStore.set("Current_Version", updated);
     setCurrentVersion(updated);
@@ -1323,11 +1353,39 @@ function App() {
       .catch(() => {});
   }
 
-  function handleTranslationsUpdated() {
+  async function handleTranslationsUpdated(selectedLanguages: string[]) {
+    const version = updateTranslationsVersion;
     setUpdateTranslationsVersion(null);
-    getAppVersions()
-      .then(setAppVersions)
-      .catch(() => {});
+    if (version && selectedLanguages.length) {
+      const homePageId = version.Pages?.find(
+        (p) => p.PageName?.toLowerCase() === "home",
+      )?.PageId;
+      translateAppVersion({
+        appVersionId: version.AppVersionId,
+        languageFrom: version.AppVersionLanguage,
+        languageToCollection: selectedLanguages,
+        activePageId: homePageId,
+      }).catch(() => {});
+    }
+    try {
+      if (version?.AppVersionId === currentVersion?.AppVersionId) {
+        // Reload the active version so the translation sidebar picks up
+        // the new AppVersionMultiLanguages.
+        const [versions, fetched] = await Promise.all([
+          getAppVersions(),
+          getActiveAppVersion(),
+        ]);
+        setAppVersions(versions);
+        const fullVersion = {
+          ...(fetched as any),
+          Page: (fetched as any).Page ?? (fetched as any).Pages ?? [],
+        };
+        dataStore.set("Current_Version", fullVersion);
+        setCurrentVersion(fullVersion);
+      } else {
+        setAppVersions(await getAppVersions());
+      }
+    } catch {}
   }
 
   // ── Preview tile navigation (no selection, no sidebar) ───────────────────

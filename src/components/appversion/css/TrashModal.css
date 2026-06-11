@@ -286,13 +286,6 @@
   min-width: 0;
 }
 
-.tm-checkbox {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: #1a3a6e;
-}
 
 .tm-item-name {
   font-size: 13px;
