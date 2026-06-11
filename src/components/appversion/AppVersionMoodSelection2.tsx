@@ -1,5 +1,6 @@
 import "./css/AppVersionMoodSelection2.css";
 import type { Mood, Theme } from "../../types";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import { dataStore } from "../../data/datastore";
 
 interface AppVersionMoodSelection2Props {
@@ -68,14 +69,10 @@ export function AppVersionMoodSelection2({
       </div>
 
       {!hideNoMood && (
-        <label className="ms2-no-mood">
-          <input
-            type="checkbox"
-            checked={noMood}
-            onChange={(e) => onNoMoodChange(e.target.checked)}
-          />
+        <div className="ms2-no-mood" onClick={() => onNoMoodChange(!noMood)}>
+          <CheckboxSpan checked={noMood} onChange={() => onNoMoodChange(!noMood)} ariaLabel="Do not use color moods" />
           Do not use color moods
-        </label>
+        </div>
       )}
     </div>
   );

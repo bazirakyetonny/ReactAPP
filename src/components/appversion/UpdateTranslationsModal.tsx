@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/UpdateTranslationsModal.css";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import type { SupportedLanguages } from "../../types";
 import { dataStore } from "../../data/datastore";
 import { updateVersionTranslationLanguages } from "../../services/appVersionsApi";
@@ -97,14 +98,10 @@ export function UpdateTranslationsModal({
                 <p className="utl-empty">No other languages available.</p>
               ) : (
                 translatable.map((lang) => (
-                  <label key={lang.value} className="utl-check-item">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(lang.value)}
-                      onChange={() => toggle(lang.value)}
-                    />
+                  <div key={lang.value} className="utl-check-item" onClick={() => toggle(lang.value)}>
+                    <CheckboxSpan checked={selected.includes(lang.value)} onChange={() => toggle(lang.value)} ariaLabel={lang.label} />
                     <span>{lang.label}</span>
-                  </label>
+                  </div>
                 ))
               )}
             </div>
