@@ -340,8 +340,6 @@ export const i18n = new I18n({
       add_image: "Add image",
       remove_image: "Remove image",
       select_tile: "Select a tile to edit",
-      light_text: "Light text & icon (#ffffff)",
-      dark_text: "Dark text & icon (#333333)",
     },
     version_history: {
       close: "Close",
@@ -379,7 +377,7 @@ export const i18n = new I18n({
     tile: {
       add_tile: "Add a new tile",
       add_template_bottom: "Add Tile Below",
-      delete_tile: "Delete this tile",
+      delete_tile: "Delete tile",
       title: "Title",
       add_menu_page: "Add Menu Page",
       add_content_page: "Add Content Page",
@@ -410,6 +408,7 @@ export const i18n = new I18n({
       menu: {
         no_pages_available: "No Pages Available",
         no_forms_available: "No forms available",
+        no_modules_available: "No modules available",
       },
       success: {
         published: "App published successfully",
@@ -450,6 +449,7 @@ export const i18n = new I18n({
       title_placeholder: "Enter Page Title",
       delete_page: "Delete Page",
       name_placeholder: "Page name…",
+      delete_failed: "Failed to delete page. Please try again.",
     },
     section: {
       delete: "Delete",
@@ -837,8 +837,6 @@ export const i18n = new I18n({
       add_image: "Afbeelding toevoegen",
       remove_image: "Afbeelding verwijderen",
       select_tile: "Selecteer een tegel om te bewerken",
-      light_text: "Lichte tekst & icoon (#ffffff)",
-      dark_text: "Donkere tekst & icoon (#333333)",
     },
     version_history: {
       close: "Sluit",
@@ -872,11 +870,12 @@ export const i18n = new I18n({
       map: "Kaart",
       myactivity: "Mijn Activiteit",
       calendar: "Kalender",
+      bulletinboard: "Prikbord",
     },
     tile: {
       add_tile: "Voeg een nieuwe tegel toe",
       add_template_bottom: "Voeg Tegel Hieronder Toe",
-      delete_tile: "Verwijder deze tegel",
+      delete_tile: "Verwijder tegel",
       title: "Titel",
       add_menu_page: "Voeg Menu­pagina Toe",
       add_content_page: "Voeg Inhouds­pagina Toe",
@@ -908,6 +907,7 @@ export const i18n = new I18n({
       menu: {
         no_pages_available: "Geen pagina's beschikbaar",
         no_forms_available: "Geen formulieren beschikbaar",
+        no_modules_available: "Geen modules beschikbaar",
       },
       success: {
         published: "App succesvol gepubliceerd",
@@ -950,6 +950,7 @@ export const i18n = new I18n({
       title_placeholder: "Voer Paginatitel in",
       delete_page: "Verwijder Pagina",
       name_placeholder: "Paginanaam…",
+      delete_failed: "Pagina verwijderen mislukt. Probeer opnieuw.",
     },
     section: {
       delete: "Verwijder",

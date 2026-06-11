@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { dataStore } from "../../data/datastore";
 import { AddCtaModal } from "../phone/AddCtaModal";
 import "./TileActionMenu.css";
+import { i18n } from "../../i18n/i18n";
 
 export type TileMenuAction =
   | { type: "new-page" }
@@ -47,19 +48,6 @@ function pageObjectUrl(p: any): string {
   }
   return "";
 }
-
-const MODULE_LABELS: Record<string, string> = {
-  BulletinBoard: "Bulletin Board",
-  Calendar: "Calendar",
-  MyActivity: "My Activity",
-  Map: "Map",
-};
-
-const DIRECT_LINK_TYPES = [
-  { id: "Email", label: "Email" },
-  { id: "Phone", label: "Phone" },
-  { id: "Weblink", label: "Web link" },
-] as const;
 
 function findTilePageId(tileId: string, allPagesWithContent: any[]): string | null {
   for (const page of allPagesWithContent) {
@@ -155,6 +143,28 @@ export function TileActionMenu({
   const modulePages = pages.filter((p: any) => MODULE_TYPES.has(p.PageType));
   const forms: any[] = dataStore.get("SDT_DynamicFormsCollection") ?? [];
 
+  const menuItems = [
+    { id: "new-page",       label: i18n.t("tile.information_page"), hasSub: false },
+    { id: "existing-pages", label: i18n.t("tile.existing_pages"),   hasSub: true  },
+    { id: "direct-link",    label: i18n.t("tile.call_to_action"),   hasSub: true  },
+    { id: "forms",          label: i18n.t("tile.forms"),            hasSub: true  },
+    { id: "modules",        label: i18n.t("tile.modules"),          hasSub: true  },
+    { id: "copy-tile",      label: i18n.t("tile.copy_tile"),        hasSub: false },
+  ];
+
+  const directLinkTypes = [
+    { id: "Email",   label: i18n.t("tile.email") },
+    { id: "Phone",   label: i18n.t("tile.phone") },
+    { id: "Weblink", label: i18n.t("sidebar.action_list.dropdown.weblink") },
+  ];
+
+  const moduleLabels: Record<string, string> = {
+    BulletinBoard: i18n.t("default.bulletinboard"),
+    Calendar:      i18n.t("default.calendar"),
+    MyActivity:    i18n.t("default.myactivity"),
+    Map:           i18n.t("default.map"),
+  };
+
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (directLinkTypeRef.current) return;
@@ -181,15 +191,6 @@ export function TileActionMenu({
     onAction(tileId, action);
     onClose();
   }
-
-  const menuItems = [
-    { id: "new-page", label: "New Page", hasSub: false },
-    { id: "existing-pages", label: "Existing Pages", hasSub: true },
-    { id: "direct-link", label: "Direct Link", hasSub: true },
-    { id: "forms", label: "Forms", hasSub: true },
-    { id: "modules", label: "Modules", hasSub: true },
-    { id: "copy-tile", label: "Copy Tile", hasSub: false },
-  ];
 
   return ReactDOM.createPortal(
     <>
@@ -218,7 +219,7 @@ export function TileActionMenu({
               activeItem === "existing-pages" && (
                 <div className="tam__sub">
                   {infoPages.length === 0 ? (
-                    <div className="tam__sub-empty">No pages yet</div>
+                    <div className="tam__sub-empty">{i18n.t("messages.menu.no_pages_available")}</div>
                   ) : (
                     infoPages.map((p: any) => {
                       const connected = isPageConnected(
@@ -264,10 +265,10 @@ export function TileActionMenu({
                 </div>
               )}
 
-            {/* Direct Link submenu — Email / Phone / Web link */}
+            {/* Direct Link submenu */}
             {item.id === "direct-link" && activeItem === "direct-link" && (
               <div className="tam__sub">
-                {DIRECT_LINK_TYPES.map((lt) => (
+                {directLinkTypes.map((lt) => (
                   <button
                     key={lt.id}
                     className="tam__sub-item"
@@ -286,7 +287,7 @@ export function TileActionMenu({
             {item.id === "forms" && activeItem === "forms" && (
               <div className="tam__sub">
                 {forms.length === 0 ? (
-                  <div className="tam__sub-empty">No forms available</div>
+                  <div className="tam__sub-empty">{i18n.t("messages.menu.no_forms_available")}</div>
                 ) : (
                   forms.map((f: any) => (
                     <button
@@ -313,7 +314,7 @@ export function TileActionMenu({
             {item.id === "modules" && activeItem === "modules" && (
               <div className="tam__sub">
                 {modulePages.length === 0 ? (
-                  <div className="tam__sub-empty">No modules available</div>
+                  <div className="tam__sub-empty">{i18n.t("messages.menu.no_modules_available")}</div>
                 ) : (
                   modulePages.map((p: any) => (
                     <button
@@ -329,7 +330,7 @@ export function TileActionMenu({
                         });
                       }}
                     >
-                      {MODULE_LABELS[p.PageType] ?? p.PageName}
+                      {moduleLabels[p.PageType] ?? p.PageName}
                     </button>
                   ))
                 )}

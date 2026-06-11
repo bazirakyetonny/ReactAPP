@@ -500,7 +500,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#ffffff" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title={i18n.t("sidebar.light_text")}
+                title={i18n.t("sidebar.text_color")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&
@@ -514,7 +514,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title={i18n.t("sidebar.dark_text")}
+                title={i18n.t("sidebar.text_color")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&

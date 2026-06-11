@@ -95,6 +95,7 @@ export function PhoneLinkedHeader({
           className="phone-back-btn"
           type="button"
           aria-label={i18n.t("navbar.go_back")}
+          title={i18n.t("navbar.go_back")}
           onClick={onBack}
           onMouseDown={isNew ? e => e.preventDefault() : undefined}
         >
@@ -138,6 +139,7 @@ export function PhoneLinkedHeader({
               className="phone-linked-edit-btn"
               type="button"
               aria-label={i18n.t("navbar.rename_page")}
+              title={i18n.t("navbar.rename_page")}
               onClick={() => setEditing(true)}
             >
               <PencilIcon />

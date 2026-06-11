@@ -152,7 +152,7 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false
       <div className="acm-modal">
         <div className="acm-header">
           <span className="acm-title">{cfg.title}</span>
-          <button className="acm-close" type="button" onClick={onCancel}>×</button>
+          <button className="acm-close" type="button" aria-label={i18n.t("navbar.share.close")} title={i18n.t("navbar.share.close")} onClick={onCancel}>×</button>
         </div>
 
         <div className="acm-body">
