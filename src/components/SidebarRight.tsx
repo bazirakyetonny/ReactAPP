@@ -260,6 +260,9 @@ export function SidebarRight({
 }) {
   const [tileText, setTileText] = useState(selectedTile?.Text ?? "");
   const isEditingTextRef = useRef(false);
+  // Tile the current focus session belongs to — guards against committing
+  // stale text onto a tile selected after focus (e.g. a freshly added tile)
+  const editingTileIdRef = useRef<string | null>(null);
   const [actionUrl, setActionUrl] = useState(
     selectedTile?.Action?.ObjectUrl ?? "",
   );
@@ -268,9 +271,17 @@ export function SidebarRight({
   const autoFocusedRef = useRef(false);
   const snapshotDeferredRef = useRef(false);
 
+  // Selection changed: any in-progress edit belongs to the previous tile,
+  // so end the session and re-sync unconditionally
+  useEffect(() => {
+    isEditingTextRef.current = false;
+    editingTileIdRef.current = null;
+    setTileText(selectedTile?.Text ?? "");
+  }, [selectedTile?.Id]);
+
   useEffect(() => {
     if (!isEditingTextRef.current) setTileText(selectedTile?.Text ?? "");
-  }, [selectedTile?.Id, selectedTile?.Text]);
+  }, [selectedTile?.Text]);
 
   useEffect(() => {
     if (!isEditingActionRef.current)
@@ -413,6 +424,7 @@ export function SidebarRight({
               disabled={!selectedTile}
               onFocus={() => {
                 isEditingTextRef.current = true;
+                editingTileIdRef.current = selectedTile?.Id ?? null;
                 if (autoFocusedRef.current) {
                   autoFocusedRef.current = false;
                 } else {
@@ -421,6 +433,10 @@ export function SidebarRight({
                 }
               }}
               onChange={(e) => {
+                // Typing always edits the currently selected tile, even if the
+                // selection changed without the input re-firing focus
+                isEditingTextRef.current = true;
+                editingTileIdRef.current = selectedTile?.Id ?? null;
                 if (snapshotDeferredRef.current) {
                   snapshotDeferredRef.current = false;
                   onBeforeTileTextEdit?.();
@@ -431,10 +447,16 @@ export function SidebarRight({
                   onLiveTileText?.(selectedTile.Id, val);
               }}
               onBlur={() => {
+                const editedTileId = editingTileIdRef.current;
                 isEditingTextRef.current = false;
+                editingTileIdRef.current = null;
                 autoFocusedRef.current = false;
                 snapshotDeferredRef.current = false;
-                if (selectedTile && tileText !== (selectedTile.Text ?? ""))
+                if (
+                  selectedTile &&
+                  selectedTile.Id === editedTileId &&
+                  tileText !== (selectedTile.Text ?? "")
+                )
                   onEditTile?.(selectedTile.Id, { Text: tileText });
                 onEndLiveTileText?.();
               }}
