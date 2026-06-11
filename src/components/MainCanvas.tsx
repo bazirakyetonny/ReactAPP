@@ -595,6 +595,27 @@ export function MainCanvas({
   const activeFrameIndex =
     manualActiveIndex !== null ? manualActiveIndex : derivedActiveIndex;
 
+  // Clicking inside a phone frame but away from any tile/CTA deselects the
+  // current tile/CTA while the frame stays active. CTA clicks stop
+  // propagation; tile clicks bubble, so exclude them by ancestor lookup.
+  // Drags end with a click on the frames' common ancestor — ignore clicks
+  // where the pointer travelled since mousedown.
+  const frameMouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  function handleFrameMouseDown(index: number) {
+    return (e: React.MouseEvent) => {
+      setManualActiveIndex(index);
+      frameMouseDownPos.current = { x: e.clientX, y: e.clientY };
+    };
+  }
+  function handleFrameClick(e: React.MouseEvent) {
+    if (isPreviewMode) return;
+    const down = frameMouseDownPos.current;
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-tile-id], [data-cta-id]")) return;
+    onDeselectTile?.();
+  }
+
   // Notify parent when the active frame changes (for translation sidebar sync)
   useEffect(() => {
     if (!onActiveFrameChange) return;
@@ -696,7 +717,8 @@ export function MainCanvas({
           <div
             className={`phone-frame${activeFrameIndex === -1 ? " phone-frame--active" : " phone-frame--inactive"}`}
             ref={mainPhoneFrameRef}
-            onMouseDown={() => setManualActiveIndex(-1)}
+            onMouseDown={handleFrameMouseDown(-1)}
+            onClick={handleFrameClick}
           >
             <PhoneStatusBar rightExtra={statusBarExtra} />
             <PhoneAppHeader />
@@ -849,7 +871,8 @@ export function MainCanvas({
                   else linkedFrameRefs.current.delete(i);
                 }}
                 data-frame-page-id={frame.page?.PageId}
-                onMouseDown={() => setManualActiveIndex(i)}
+                onMouseDown={handleFrameMouseDown(i)}
+                onClick={handleFrameClick}
               >
                 <PhoneStatusBar />
                 <PhoneLinkedHeader

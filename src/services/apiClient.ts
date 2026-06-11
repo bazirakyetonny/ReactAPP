@@ -12,6 +12,9 @@ export class AuthError extends Error {
 }
 
 export function getBaseUrl(): string {
+  if (window.location.hostname !== "localhost") {
+    return window.location.origin;
+  }
   return import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 }
 

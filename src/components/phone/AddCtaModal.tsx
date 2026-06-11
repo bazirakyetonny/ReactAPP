@@ -124,6 +124,8 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false
     setError(null);
   }
 
+  const canSave = action.trim() !== '' && label.trim() !== '';
+
   function handleSave() {
     const err = cfg.validate(action);
     if (err) { setError(err); return; }
@@ -216,7 +218,7 @@ export function AddCtaModal({ ctaType, onConfirm, onCancel, hideSupplier = false
         </div>
 
         <div className="acm-footer">
-          <button className="acm-btn acm-btn--primary" type="button" onClick={handleSave}>Save</button>
+          <button className="acm-btn acm-btn--primary" type="button" onClick={handleSave} disabled={!canSave}>Save</button>
           <button className="acm-btn acm-btn--secondary" type="button" onClick={onCancel}>Cancel</button>
         </div>
       </div>

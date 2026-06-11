@@ -58,8 +58,8 @@ export function PublishModal({
   }
 
   function handleFixIssues() {
-    onFixIssues?.();
     onClose();
+    onFixIssues?.();
   }
 
   const modal = (
@@ -96,8 +96,8 @@ export function PublishModal({
             <div className="pm-warning">
               <span className="pm-warning-icon">⚠</span>
               <span>
-                {issueCount} Issue{issueCount !== 1 ? "s" : ""}:{" "}
-                {issueCount} Invalid URL{issueCount !== 1 ? "s" : ""}
+                {issueCount} Issue{issueCount !== 1 ? "s" : ""}: {issueCount}{" "}
+                Invalid URL{issueCount !== 1 ? "s" : ""}
               </span>
             </div>
           )}
@@ -150,5 +150,8 @@ export function PublishModal({
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
+  return ReactDOM.createPortal(
+    modal,
+    document.getElementById("root") ?? document.body,
+  );
 }

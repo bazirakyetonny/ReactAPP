@@ -159,7 +159,12 @@
   color: #ffffff;
 }
 
-.acm-btn--primary:hover { background: #1e4080; }
+.acm-btn--primary:hover:not(:disabled) { background: #1e4080; }
+
+.acm-btn--primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 
 .acm-btn--secondary {
   background: #f3f4f6;
