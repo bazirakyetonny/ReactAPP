@@ -63,7 +63,10 @@ export function TemplateSidebar({
           <button
             key={template.TemplateId}
             className={`tmpl-card${template.TemplateId === appliedTemplateId ? " tmpl-card--applied" : ""}`}
-            onClick={() => handleSelect(template)}
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelect(template);
+            }}
             title={template.TemplateName}
           >
             <div
