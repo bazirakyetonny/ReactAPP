@@ -4,6 +4,7 @@ import type { AppVersion, Theme } from "../types";
 import type { AnalysisIssue } from "../utils/analysisUtils";
 import { AppVersionDropDown } from "./appversion/AppVersionDropDown";
 import { dataStore } from "../data/datastore";
+import { i18n } from "../i18n/i18n";
 
 interface NavBarProps {
   version?: Pick<AppVersion, "AppVersionName" | "IsPublishedTemplate">;
@@ -425,12 +426,12 @@ export function NavBar({
           type="button"
           title={
             analysisOpen
-              ? "Close analysis"
+              ? i18n.t("navbar.analyse.close")
               : isAnalyzing
-                ? "Analysing…"
+                ? i18n.t("navbar.analyse.analysing")
                 : analysisIssueCount > 0
-                  ? `${analysisIssueCount} issue${analysisIssueCount !== 1 ? "s" : ""} found`
-                  : "Analysis"
+                  ? i18n.t("navbar.analyse.issues_found", { count: analysisIssueCount })
+                  : i18n.t("navbar.analyse.label")
           }
           onClick={analysisOpen ? onAnalysisClose : onAnalysisOpen}
           disabled={locked && !analysisOpen}
@@ -449,7 +450,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title="Share"
+          title={i18n.t("navbar.share.label")}
           onClick={onShareClick}
           disabled={locked}
         >
@@ -458,7 +459,7 @@ export function NavBar({
         <button
           className={`navbar-icon-btn${isMultiSelectMode ? " navbar-icon-btn--active" : ""}`}
           type="button"
-          title="Select frame"
+          title={i18n.t("navbar.select_frame")}
           onClick={onMultiSelectToggle}
           disabled={locked && !isMultiSelectMode}
         >
@@ -470,7 +471,7 @@ export function NavBar({
           >
             <CloudIcon />
             <span>
-              {isSaving ? "Saving…" : saveError ? "Save failed" : "Saved"}
+              {isSaving ? i18n.t("navbar.autoSave.saving") : saveError ? i18n.t("navbar.autoSave.save_failed") : i18n.t("navbar.autoSave.saved")}
             </span>
           </div>
         )}
@@ -482,7 +483,7 @@ export function NavBar({
               className="navbar-analysis-nav-btn"
               onClick={onAnalysisPrev}
               disabled={analysisIssueCount === 0}
-              title="Previous issue"
+              title={i18n.t("navbar.analyse.previous_issue")}
               type="button"
             >
               <svg
@@ -505,7 +506,7 @@ export function NavBar({
               className="navbar-analysis-nav-btn"
               onClick={onAnalysisNext}
               disabled={analysisIssueCount === 0}
-              title="Next issue"
+              title={i18n.t("navbar.analyse.next_issue")}
               type="button"
             >
               <svg
@@ -528,9 +529,9 @@ export function NavBar({
               {isAnalyzing && analysisIssueCount === 0 ? (
                 <span className="navbar-analysis-spinner" />
               ) : analysisIssueCount === 0 ? (
-                "0 issues"
+                i18n.t("navbar.analyse.no_issues")
               ) : (
-                `${safeIndex + 1}/${analysisIssueCount} issues`
+                i18n.t("navbar.analyse.issue_counter", { current: safeIndex + 1, total: analysisIssueCount })
               )}
             </span>
           </div>
@@ -544,7 +545,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title="Undo"
+          title={i18n.t("undo")}
           disabled={!canUndo || locked}
           onClick={onUndo}
         >
@@ -553,7 +554,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title="Redo"
+          title={i18n.t("redo")}
           disabled={!canRedo || locked}
           onClick={onRedo}
         >
@@ -562,7 +563,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title="History"
+          title={i18n.t("navbar.history.label")}
           onClick={onHistoryToggle}
           disabled={locked && !isHistoryOpen}
         >
@@ -571,7 +572,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title="Trash"
+          title={i18n.t("navbar.trash.label")}
           onClick={onTrashClick}
           disabled={locked}
         >
@@ -583,7 +584,7 @@ export function NavBar({
             <button
               className="navbar-icon-btn"
               type="button"
-              title="Translation"
+              title={i18n.t("translate")}
               onClick={onTranslationToggle}
               disabled={locked && !isTranslationOpen}
             >
@@ -594,7 +595,7 @@ export function NavBar({
         <button
           className={`navbar-icon-btn${showNavPaths ? " navbar-icon-btn--active" : ""}`}
           type="button"
-          title="Show navigation"
+          title={i18n.t("navbar.show_navigation")}
           onClick={onToggleNavPaths}
           disabled={locked}
         >
@@ -603,7 +604,7 @@ export function NavBar({
         <button
           className={`navbar-icon-btn${isTreeOpen ? " navbar-icon-btn--active" : ""}`}
           type="button"
-          title="Go to pages overview"
+          title={i18n.t("link_to_tree")}
           onClick={onExpand}
           disabled={locked && !isTreeOpen}
         >
@@ -628,13 +629,13 @@ export function NavBar({
               className="navbar-publish"
               type="button"
               onClick={onUnpublishTemplate}
-              title="Unpublish Template"
+              title={i18n.t("navbar.publish.un_publish")}
               disabled={locked}
             >
               <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
                 <UploadIcon />
               </span>
-              Unpublish
+              {i18n.t("navbar.publish.un_publish")}
             </button>
           ) : (
             <button
@@ -644,7 +645,7 @@ export function NavBar({
               onClick={onPublishAsTemplate}
             >
               <UploadIcon />
-              Publish
+              {i18n.t("navbar.publish.label")}
             </button>
           )
         ) : (
@@ -655,7 +656,7 @@ export function NavBar({
             onClick={onPublish}
           >
             <UploadIcon />
-            Publish
+            {i18n.t("navbar.publish.label")}
           </button>
         )}
       </div>
