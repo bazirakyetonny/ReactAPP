@@ -1148,6 +1148,9 @@ function App() {
       Page: (cv.Page ?? []).map((p: any) =>
         p.PageId === pageId ? { ...p, PageName: newName } : p,
       ),
+      Pages: (cv.Pages ?? []).map((p: any) =>
+        p.PageId === pageId ? { ...p, PageName: newName } : p,
+      ),
     };
     dataStore.set("Current_Version", updated);
     setCurrentVersion(updated);
