@@ -10,7 +10,7 @@ type Tab = "Messages" | "Requests";
 export function MyActivityPage({ themeColors }: MyActivityPageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Messages");
 
-  const activeBg = themeColors?.primaryColor ?? "#5B87A8";
+  const activeBg = themeColors?.backgroundColor ?? "#5B87A8";
 
   return (
     <div

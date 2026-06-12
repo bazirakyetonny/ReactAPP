@@ -1,4 +1,11 @@
-export function BulletinBoardPage() {
+import type { ThemeColors } from "../types";
+
+interface BulletinBoardPageProps {
+  themeColors?: ThemeColors;
+}
+
+export function BulletinBoardPage({ themeColors }: BulletinBoardPageProps) {
+  const fabBg = themeColors?.backgroundColor ?? '#1F68A8';
   return (
     <div style={{
       width: '100%',
@@ -71,7 +78,7 @@ export function BulletinBoardPage() {
           right: '1rem',
           width: '2.75rem',
           height: '2.75rem',
-          backgroundColor: '#1F68A8',
+          backgroundColor: fabBg,
           border: 'none',
           borderRadius: '50%',
           display: 'flex',

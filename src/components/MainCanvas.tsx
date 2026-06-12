@@ -38,7 +38,7 @@ const MODULE_PAGE_TYPES = new Set([
 function renderModulePage(pageType: string, themeColors?: ThemeColors) {
   switch (pageType) {
     case "BulletinBoard":
-      return <BulletinBoardPage />;
+      return <BulletinBoardPage themeColors={themeColors} />;
     case "Calendar":
       return <CalendarPage themeColors={themeColors} />;
     case "MyActivity":
