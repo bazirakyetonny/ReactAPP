@@ -102,10 +102,7 @@
   cursor: pointer;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .delete-page-btn:hover {
@@ -128,10 +125,7 @@
   font-size: 11px;
   font-weight: 700;
   color: #111111;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -262,10 +256,7 @@
   align-items: center;
   padding: 3px;
   border-radius: 4px;
-  transition:
-    opacity 0.15s,
-    color 0.1s,
-    background 0.1s;
+  transition: opacity 0.15s, color 0.1s, background 0.1s;
 }
 
 .phone-linked-page-name-wrap--editable:hover .phone-linked-edit-btn {
@@ -293,7 +284,6 @@
   text-transform: uppercase;
   box-shadow: 0 0 0 2px rgba(59, 110, 232, 0.15);
 }
-
 
 .phone-weblink-thumb-placeholder {
   flex: 1;
@@ -323,9 +313,7 @@
 }
 
 .phone-screen--dragging .phone-tile-wrap--tile-drag-source {
-  transition:
-    height 0.12s ease,
-    min-height 0.12s ease;
+  transition: height 0.12s ease, min-height 0.12s ease;
 }
 
 .phone-screen--dragging .phone-add-row {
@@ -472,12 +460,14 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
   z-index: 3;
 }
 
 .phone-tile-element--deletable:hover .phone-tile-element-delete {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Ghost tile — shown faded in opposite column during free-resize drag */
@@ -503,9 +493,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0.9;
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.28),
-    0 3px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 /* Drop slot — shown at the tile insertion point within a column */
@@ -548,9 +536,7 @@
 
 /* Nav-active tile — blue outline marks tiles whose linked page is open */
 .phone-tile-wrap--nav-active .phone-tile {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #1a3a6e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #1a3a6e;
 }
 
 /* Multi-selected tile — teal border */
@@ -560,9 +546,7 @@
 
 /* Selected tile border — always visible once clicked (wins over nav-active) */
 .phone-tile-wrap.selected .phone-tile {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #3d5a9e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }
 
 /* Analysis highlight — dashed red outline; label overlaps bottom border. */
@@ -571,9 +555,7 @@
   outline-offset: 2px;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-fullwidth {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #ef4444;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
 }
 .phone-cta-block.phone-cta-block--analysis .phone-cta-round-wrap {
   outline: 2px solid #ef4444;
@@ -585,9 +567,7 @@
 }
 .block--analysis-highlight .phone-image-single,
 .block--analysis-highlight .phone-carousel-img {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #ef4444;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ef4444;
 }
 
 /* Analysis label — sits on the bottom border, half inside / half outside */
@@ -646,6 +626,7 @@
   padding: 0;
   z-index: 2;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
@@ -667,6 +648,7 @@
   padding: 0;
   z-index: 2;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
@@ -675,11 +657,13 @@
 .phone-tile-wrap.selected:hover .phone-tile-delete-btn,
 .phone-tile-wrap.selected:hover .phone-tile-add-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Non-selected tiles: only + on hover */
 .phone-tile-wrap:not(.selected):hover .phone-tile-add-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .phone-tile-add-btn {
@@ -700,22 +684,31 @@
   padding: 0;
   z-index: 2;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
 .phone-add-row {
   position: relative;
+  /* z-index:3 beats the tile overlay buttons (z-index:2) that overflow 9px above
+     the tile-wrap into this zone, preventing a pointer-event circular dependency
+     when a selected tile's buttons have pointer-events:auto */
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 10px;
   margin: 0px 10px;
   cursor: pointer;
-  transition: height 0.2s ease;
+  /* Slow collapse prevents flicker: any brief cursor escape during layout shift
+     resolves before the row finishes shrinking, so the cursor re-enters cleanly */
+  transition: height 0.3s ease;
 }
 
 .phone-add-row:hover {
   height: 36px;
+  /* Fast expand feels responsive and moves the boundary away from the cursor quickly */
+  transition: height 0.12s ease;
 }
 
 .phone-add-row::before {
@@ -749,14 +742,13 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition:
-    opacity 0.15s,
-    background 0.15s,
-    color 0.15s;
+  pointer-events: none;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
 .phone-add-row:hover .phone-add-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Always-visible state — used when the layout has no content */
@@ -790,9 +782,7 @@
   color: #374151;
   cursor: pointer;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
-  transition:
-    background 0.15s,
-    transform 0.1s;
+  transition: background 0.15s, transform 0.1s;
   z-index: 1;
 }
 
@@ -823,9 +813,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   flex-shrink: 0;
-  transition:
-    border-color 0.18s,
-    box-shadow 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .page-thumb-clip:hover {
@@ -1383,9 +1371,7 @@
   justify-content: center;
   gap: 8px;
   background: #fff;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   min-height: 110px;
   flex-shrink: 0;
 }
@@ -1735,9 +1721,7 @@
   cursor: pointer;
 }
 .phone-cta-block--selected .phone-cta-fullwidth {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px #3d5a9e;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3d5a9e;
 }
 .phone-cta-block--selected .phone-cta-round-wrap {
   outline: 2px solid #3d5a9e;

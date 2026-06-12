@@ -2,6 +2,7 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/RenameAppVersionModal.css";
 import { updateAppVersion } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface RenameAppVersionModalProps {
   versionId: string;
@@ -25,7 +26,7 @@ export function RenameAppVersionModal({
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Version name is required.");
+      setError(i18n.t("messages.error.empty_version_name"));
       return;
     }
     if (trimmed === currentName) {
@@ -38,7 +39,7 @@ export function RenameAppVersionModal({
       await updateAppVersion(versionId, trimmed, currentDescription);
       onRenamed(trimmed);
     } catch {
-      setError("Failed to rename version. Please try again.");
+      setError(i18n.t("navbar.appversion.rename_error"));
     } finally {
       setLoading(false);
     }
@@ -53,11 +54,11 @@ export function RenameAppVersionModal({
     <div className="rmv-overlay" onMouseDown={onClose}>
       <div className="rmv-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="rmv-header">
-          <span className="rmv-title">Rename Version</span>
+          <span className="rmv-title">{i18n.t("navbar.appversion.rename_version")}</span>
           <button
             className="rmv-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("version_history.close")}
             onClick={onClose}
           >
             ✕
@@ -67,7 +68,7 @@ export function RenameAppVersionModal({
         <div className="rmv-body">
           <div className="rmv-field">
             <label className="rmv-label" htmlFor="rmv-name">
-              Version name
+              {i18n.t("navbar.appversion.version_name")}
             </label>
             <input
               id="rmv-name"
@@ -90,7 +91,7 @@ export function RenameAppVersionModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
           <button
             className="rmv-btn-primary"
@@ -98,7 +99,7 @@ export function RenameAppVersionModal({
             disabled={loading || !name.trim()}
             onClick={handleSave}
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? i18n.t("navbar.appversion.saving") : i18n.t("navbar.appversion.save")}
           </button>
         </div>
       </div>

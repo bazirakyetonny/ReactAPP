@@ -127,6 +127,7 @@ export function TileActionMenu({
   const ref = useRef<HTMLDivElement>(null);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [directLinkType, setDirectLinkType] = useState<string | null>(null);
+  const [subSearch, setSubSearch] = useState("");
   const directLinkTypeRef = useRef<string | null>(null);
   directLinkTypeRef.current = directLinkType;
 
@@ -165,6 +166,8 @@ export function TileActionMenu({
     Map:           i18n.t("default.map"),
   };
 
+  useEffect(() => { setSubSearch(""); }, [activeItem]);
+
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (directLinkTypeRef.current) return;
@@ -186,6 +189,17 @@ export function TileActionMenu({
       document.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
+
+  const searchLower = subSearch.toLowerCase();
+  const filteredInfoPages = infoPages.filter((p: any) =>
+    (p.PageName ?? "").toLowerCase().includes(searchLower),
+  );
+  const filteredForms = forms.filter((f: any) =>
+    (f.PageName ?? f.FormName ?? "").toLowerCase().includes(searchLower),
+  );
+  const filteredModulePages = modulePages.filter((p: any) =>
+    (moduleLabels[p.PageType] ?? p.PageName ?? "").toLowerCase().includes(searchLower),
+  );
 
   function act(action: TileMenuAction) {
     onAction(tileId, action);
@@ -218,10 +232,25 @@ export function TileActionMenu({
             {item.id === "existing-pages" &&
               activeItem === "existing-pages" && (
                 <div className="tam__sub">
-                  {infoPages.length === 0 ? (
+                  <div className="tam__sub-search">
+                    <span className="tam__sub-search-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                    </span>
+                    <input
+                      className="tam__sub-search-input"
+                      type="text"
+                      placeholder={i18n.t("messages.menu.search")}
+                      value={subSearch}
+                      onChange={(e) => setSubSearch(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredInfoPages.length === 0 ? (
                     <div className="tam__sub-empty">{i18n.t("messages.menu.no_pages_available")}</div>
                   ) : (
-                    infoPages.map((p: any) => {
+                    filteredInfoPages.map((p: any) => {
                       const connected = isPageConnected(
                         p.PageId,
                         allPagesWithContent,
@@ -286,10 +315,25 @@ export function TileActionMenu({
             {/* Forms submenu */}
             {item.id === "forms" && activeItem === "forms" && (
               <div className="tam__sub">
-                {forms.length === 0 ? (
+                <div className="tam__sub-search">
+                  <span className="tam__sub-search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                  </span>
+                  <input
+                    className="tam__sub-search-input"
+                    type="text"
+                    placeholder={i18n.t("messages.menu.search")}
+                    value={subSearch}
+                    onChange={(e) => setSubSearch(e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+                {filteredForms.length === 0 ? (
                   <div className="tam__sub-empty">{i18n.t("messages.menu.no_forms_available")}</div>
                 ) : (
-                  forms.map((f: any) => (
+                  filteredForms.map((f: any) => (
                     <button
                       key={f.FormId}
                       className="tam__sub-item"
@@ -313,10 +357,25 @@ export function TileActionMenu({
             {/* Modules submenu */}
             {item.id === "modules" && activeItem === "modules" && (
               <div className="tam__sub">
-                {modulePages.length === 0 ? (
+                <div className="tam__sub-search">
+                  <span className="tam__sub-search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                  </span>
+                  <input
+                    className="tam__sub-search-input"
+                    type="text"
+                    placeholder={i18n.t("messages.menu.search")}
+                    value={subSearch}
+                    onChange={(e) => setSubSearch(e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+                {filteredModulePages.length === 0 ? (
                   <div className="tam__sub-empty">{i18n.t("messages.menu.no_modules_available")}</div>
                 ) : (
-                  modulePages.map((p: any) => (
+                  filteredModulePages.map((p: any) => (
                     <button
                       key={p.PageId}
                       className="tam__sub-item"

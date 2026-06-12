@@ -563,7 +563,7 @@ export function NavBar({
         <button
           className="navbar-icon-btn"
           type="button"
-          title={i18n.t("navbar.history.label")}
+          title={i18n.t("version_history.versionHistory")}
           onClick={onHistoryToggle}
           disabled={locked && !isHistoryOpen}
         >

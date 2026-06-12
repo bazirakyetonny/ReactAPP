@@ -2,6 +2,7 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/UpdateDescriptionModal.css";
 import { updateAppVersion } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface UpdateDescriptionModalProps {
   versionId: string;
@@ -29,7 +30,7 @@ export function UpdateDescriptionModal({
       await updateAppVersion(versionId, currentName, description.trim());
       onUpdated(description.trim());
     } catch {
-      setError("Failed to update description. Please try again.");
+      setError(i18n.t("navbar.appversion.update_description_error"));
     } finally {
       setLoading(false);
     }
@@ -39,11 +40,11 @@ export function UpdateDescriptionModal({
     <div className="udm-overlay" onMouseDown={onClose}>
       <div className="udm-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="udm-header">
-          <span className="udm-title">Edit Description</span>
+          <span className="udm-title">{i18n.t("navbar.appversion.edit_description")}</span>
           <button
             className="udm-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("version_history.close")}
             onClick={onClose}
           >
             ✕
@@ -67,7 +68,7 @@ export function UpdateDescriptionModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
           <button
             className="udm-btn-primary"
@@ -75,7 +76,7 @@ export function UpdateDescriptionModal({
             disabled={loading}
             onClick={handleSave}
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? i18n.t("navbar.appversion.saving") : i18n.t("navbar.appversion.save")}
           </button>
         </div>
       </div>

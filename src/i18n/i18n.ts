@@ -34,8 +34,8 @@ export const i18nModule = new I18n({
 export const i18n = new I18n({
   en: {
     tree: {
-      open_navigation_path: "Go to {{name}} page navigation",
-      open_navigation_detail: "Show {{name}} page navigation details",
+      open_navigation_path: "Go to %{name} page navigation",
+      open_navigation_detail: "Show %{name} page navigation details",
       minimise_tree: "Minimise pages overview",
       all_pages: "Show all pages",
       delete_page: "Delete Page",
@@ -133,6 +133,9 @@ export const i18n = new I18n({
         copy: "Copy",
         close: "Close",
         copied: "Linked copied to clipboard",
+        no_link: "No preview link available.",
+        copied_short: "Copied!",
+        cancel: "Cancel",
       },
       trash: {
         label: "Restore deleted items from trash",
@@ -192,11 +195,14 @@ export const i18n = new I18n({
         delete_version: "Delete Version",
         delete_version_message:
           "Are you sure you want to delete the version <strong>%{versionName}</strong>?",
+        new_template: "New Template",
         dropdow: {
           duplicate: "Duplicate",
           rename: "Rename",
           move_to_trash: "Move To Trash",
           description: "Description",
+          category_none: "None",
+          no_other_categories: "No other categories",
         },
         field_placeholder: "Enter Version Name",
         version_default_language: "Version Default Language:",
@@ -230,6 +236,15 @@ export const i18n = new I18n({
         template_generate_preview: "Generating preview...",
         back: "Back",
         edit_description: "Edit Description",
+        saving: "Saving…",
+        moving: "Moving…",
+        duplicate_error: "Failed to duplicate version. Please try again.",
+        rename_error: "Failed to rename version. Please try again.",
+        move_to_trash_confirm: "Are you sure you want to move %{name} to trash? This action cannot be undone.",
+        move_to_trash_error: "Failed to move version to trash. Please try again.",
+        update_translations_error: "Failed to update translation languages. Please try again.",
+        no_other_languages: "No other languages available.",
+        update_description_error: "Failed to update description. Please try again.",
       },
       copy_selection_label: "Copy Page Selection",
       next: "Next",
@@ -362,6 +377,11 @@ export const i18n = new I18n({
       restore_failure_message: "Failed to restore version. Please try again.",
       disclaimer_message:
         "Restoring this version will permanently overwrite your current content, design, and configurations, replacing them with the selected version history. This change cannot be undone.",
+      restoring: "Restoring…",
+      copying: "Copying…",
+      copy_as_new_version: "Copy as new version",
+      options: "Options",
+      load_failed: "Failed to load version history.",
     },
     default: {
       reception: "Reception",
@@ -409,6 +429,7 @@ export const i18n = new I18n({
         no_pages_available: "No Pages Available",
         no_forms_available: "No forms available",
         no_modules_available: "No modules available",
+        search: "Search...",
       },
       success: {
         published: "App published successfully",
@@ -522,8 +543,8 @@ export const i18n = new I18n({
 
   nl: {
     tree: {
-      open_navigation_path: "Ga naar {{name}} pagina navigatie",
-      open_navigation_detail: "Toon {{name}} pagina navigatie details",
+      open_navigation_path: "Ga naar %{name} pagina navigatie",
+      open_navigation_detail: "Toon %{name} pagina navigatie details",
       minimise_tree: "Pagina's overzicht minimaliseren",
       all_pages: "Alle Pagina's",
       delete_page: "Pagina verwijderen",
@@ -624,6 +645,9 @@ export const i18n = new I18n({
         copy: "Kopiëren",
         close: "Sluiten",
         copied: "Link gekopieerd naar klembord",
+        no_link: "Geen voorbeeldlink beschikbaar.",
+        copied_short: "Gekopieerd!",
+        cancel: "Annuleer",
       },
       trash: {
         label: "Herstel verwijderde items uit de prullenbak",
@@ -685,11 +709,14 @@ export const i18n = new I18n({
         delete_version: "Verwijder Versie",
         delete_version_message:
           "Weet je zeker dat je versie <strong>%{versionName}</strong> wilt verwijderen?",
+        new_template: "Nieuw Sjabloon",
         dropdow: {
           duplicate: "Dupliceer",
           rename: "Hernoem",
           move_to_trash: "Verplaats naar Prullenbak",
           description: "Beschrijving",
+          category_none: "Geen",
+          no_other_categories: "Geen andere categorieën",
         },
         field_placeholder: "Voer Versienaam in",
         version_default_language: "Versie Standaardtaal:",
@@ -723,6 +750,15 @@ export const i18n = new I18n({
         template_generate_preview: "Voorbeeld creëren..",
         back: "Terug",
         edit_description: "Bewerk beschrijving",
+        saving: "Opslaan…",
+        moving: "Verplaatsen…",
+        duplicate_error: "Kon versie niet dupliceren. Probeer het opnieuw.",
+        rename_error: "Kon versie niet hernoemen. Probeer het opnieuw.",
+        move_to_trash_confirm: "Weet je zeker dat je %{name} naar de prullenbak wilt verplaatsen? Deze actie kan niet ongedaan worden gemaakt.",
+        move_to_trash_error: "Kon versie niet naar prullenbak verplaatsen. Probeer het opnieuw.",
+        update_translations_error: "Kon vertalingstalen niet bijwerken. Probeer het opnieuw.",
+        no_other_languages: "Geen andere talen beschikbaar.",
+        update_description_error: "Kon beschrijving niet bijwerken. Probeer het opnieuw.",
       },
       copy_selection_label: "Paginaselectie kopiëren",
       next: "Volgende",
@@ -860,6 +896,11 @@ export const i18n = new I18n({
         "Kon versie niet herstellen. Probeer het opnieuw.",
       disclaimer_message:
         "Het herstellen van deze versie zal uw huidige inhoud, ontwerp en configuraties permanent overschrijven en vervangen door de geselecteerde versiegeschiedenis. Deze wijziging kan niet ongedaan worden gemaakt.",
+      restoring: "Bezig met herstellen…",
+      copying: "Bezig met kopiëren…",
+      copy_as_new_version: "Kopieer als nieuwe versie",
+      options: "Opties",
+      load_failed: "Kon versiegeschiedenis niet laden.",
     },
     default: {
       reception: "Receptie",
@@ -908,6 +949,7 @@ export const i18n = new I18n({
         no_pages_available: "Geen pagina's beschikbaar",
         no_forms_available: "Geen formulieren beschikbaar",
         no_modules_available: "Geen modules beschikbaar",
+        search: "Zoeken...",
       },
       success: {
         published: "App succesvol gepubliceerd",
