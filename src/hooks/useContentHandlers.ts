@@ -213,11 +213,14 @@ export function useContentHandlers({
     const isOpacityOnly = keys.length === 1 && "Opacity" in patch;
     const isTextOnly = keys.length === 1 && "Text" in patch;
     const isActionOnly = keys.length === 1 && "Action" in patch;
+    const isTextRemoval = isTextOnly && patch.Text === "";
     if (isHeightOnly) {
       if (!isResizingRef.current) {
         pushSnapshot();
         isResizingRef.current = true;
       }
+    } else if (isTextRemoval) {
+      pushSnapshot();
     } else if (!isOpacityOnly && !isTextOnly) {
       if (!isResizingRef.current) {
         pushSnapshot();

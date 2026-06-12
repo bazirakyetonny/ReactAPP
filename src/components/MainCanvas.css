@@ -401,6 +401,7 @@
   height: 22px;
   flex-shrink: 0;
   color: inherit;
+  pointer-events: none;
 }
 
 .phone-tile-icon svg {
@@ -408,10 +409,12 @@
   height: 22px;
   display: block;
   fill: currentColor;
+  pointer-events: none;
 }
 
 .phone-tile-icon svg * {
   fill: currentColor;
+  pointer-events: none;
 }
 
 .phone-tile-text {
@@ -452,9 +455,9 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: none;
-  background: #ef4444;
-  color: #ffffff;
+  border: 2px solid #ccc;
+  background: #ffffff;
+  color: #333333;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -662,8 +665,8 @@
   pointer-events: auto;
 }
 
-/* Non-selected tiles: only + on hover */
-.phone-tile-wrap:not(.selected):hover .phone-tile-add-btn {
+/* + button visible on hover for all tiles */
+.phone-tile-wrap:hover .phone-tile-add-btn {
   opacity: 1;
   pointer-events: auto;
 }
