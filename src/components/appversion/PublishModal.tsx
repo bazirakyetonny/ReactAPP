@@ -126,7 +126,7 @@ export function PublishModal({
 
           <div className="pm-checkbox-row" onClick={() => setNotify(!notify)}>
             <CheckboxSpan checked={notify} onChange={() => setNotify(!notify)} ariaLabel="Notify users" />
-             <label className="pm-checkbox-label" htmlFor={checkboxId}>
+            <label className="pm-checkbox-label">
               {i18n.t("navbar.publish.notify_residents")}
             </label>
           </div>
