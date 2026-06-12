@@ -5,7 +5,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  /* gap: 8px; */
+  gap: 72px;
   overflow: hidden;
   position: relative;
   min-width: 0;
@@ -188,13 +189,6 @@
   object-fit: contain;
 }
 
-.phone-app-logo-placeholder {
-  width: 56px;
-  height: 22px;
-  background: #e5e7eb;
-  border-radius: 4px;
-}
-
 .phone-app-profile {
   display: flex;
   align-items: center;
@@ -299,14 +293,6 @@
   background: #fff;
   text-transform: uppercase;
   box-shadow: 0 0 0 2px rgba(59, 110, 232, 0.15);
-}
-
-.phone-weblink-frame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  display: block;
-  min-height: 0;
 }
 
 .phone-weblink-thumb-placeholder {
@@ -486,12 +472,14 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
   z-index: 3;
 }
 
 .phone-tile-element--deletable:hover .phone-tile-element-delete {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Ghost tile — shown faded in opposite column during free-resize drag */
@@ -642,13 +630,14 @@
   z-index: 20;
 }
 
-/* Options button — top left */
+/* Options button — top left; z-index:4 beats phone-add-row (z-index:3) so
+   hovering the ⋯ icon doesn't reveal the insert row behind it */
 .phone-tile-options-btn {
   position: absolute;
-  top: -9px;
-  left: -9px;
-  width: 18px;
-  height: 18px;
+  top: -10px;
+  left: -10px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: none;
   background: #374151;
@@ -658,12 +647,14 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  z-index: 2;
+  z-index: 4;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
-/* Delete button — top right */
+/* Delete button — top right; z-index:4 matches options btn so hovering it
+   also prevents the insert row from revealing behind it */
 .phone-tile-delete-btn {
   position: absolute;
   top: -9px;
@@ -679,21 +670,23 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  z-index: 2;
+  z-index: 4;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
-/* All three icons visible only when hovering the selected tile */
+/* Options + delete visible only when hovering the selected tile */
 .phone-tile-wrap.selected:hover .phone-tile-options-btn,
-.phone-tile-wrap.selected:hover .phone-tile-delete-btn,
-.phone-tile-wrap.selected:hover .phone-tile-add-btn {
+.phone-tile-wrap.selected:hover .phone-tile-delete-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Non-selected tiles: only + on hover */
 .phone-tile-wrap:not(.selected):hover .phone-tile-add-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .phone-tile-add-btn {
@@ -714,22 +707,31 @@
   padding: 0;
   z-index: 2;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
 .phone-add-row {
   position: relative;
+  /* z-index:3 beats the tile overlay buttons (z-index:2) that overflow 9px above
+     the tile-wrap into this zone, preventing a pointer-event circular dependency
+     when a selected tile's buttons have pointer-events:auto */
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 10px;
   margin: 0px 10px;
   cursor: pointer;
-  transition: height 0.2s ease;
+  /* Slow collapse prevents flicker: any brief cursor escape during layout shift
+     resolves before the row finishes shrinking, so the cursor re-enters cleanly */
+  transition: height 0.3s ease;
 }
 
 .phone-add-row:hover {
   height: 36px;
+  /* Fast expand feels responsive and moves the boundary away from the cursor quickly */
+  transition: height 0.12s ease;
 }
 
 .phone-add-row::before {
@@ -763,14 +765,16 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
+  pointer-events: none;
   transition:
-    opacity 0.15s,
+    opacity 0.5s,
     background 0.15s,
     color 0.15s;
 }
 
 .phone-add-row:hover .phone-add-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Always-visible state — used when the layout has no content */

@@ -67,6 +67,27 @@ export interface CreateLinkPagePayload {
   WWPFormReferenceName?: string;
 }
 
+export interface UpdateLinkPagePayload {
+  appVersionId: string;
+  pageId: string;
+  url: string;
+  WWPFormId?: number;
+  WWPFormReferenceName?: string;
+}
+
+export function updateLinkPage(payload: UpdateLinkPagePayload): Promise<any> {
+  return apiPost<any>('/api/toolbox/v2/update-link-page', {
+    AppVersionId: payload.appVersionId,
+    PageId: payload.pageId,
+    Url: payload.url,
+    WWPFormId: payload.WWPFormId ?? 0,
+    WWPFormReferenceName: payload.WWPFormReferenceName ?? '',
+  }).then((d) => {
+    if (d?.MenuPage) return Array.isArray(d.MenuPage) ? d.MenuPage[0] : d.MenuPage;
+    return d;
+  });
+}
+
 export function createLinkPage(payload: CreateLinkPagePayload): Promise<any> {
   return apiPost<any>('/api/toolbox/v2/create-link-page', {
     appVersionId: payload.appVersionId,

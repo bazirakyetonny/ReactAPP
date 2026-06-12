@@ -86,10 +86,11 @@
   border-left: 1px solid #e2e8f0;
   padding-left: 12px;
   border-radius: 0;
+  cursor: pointer;
 }
 .tree-minimize-btn:hover {
   background: none;
-  color: #ef4444;
+  color: inherit;
 }
 
 /* ── SVG canvas ────────────────────────────────────────────────────────────── */
@@ -141,7 +142,11 @@
   fill: #ffffff;
   stroke: #cbd5e1;
   stroke-width: 0.75;
-  opacity: 0.55;
+  opacity: 0.75;
+}
+.tree-node-stack-shadow--far {
+  stroke-width: 1.5;
+  opacity: 0.45;
 }
 
 .tree-node-statusbar {
@@ -193,4 +198,20 @@
 }
 .tree-context-danger:hover {
   background: #fef2f2;
+}
+
+/* ── Hover tooltip ─────────────────────────────────────────────────────────── */
+.tree-tooltip {
+  position: absolute;
+  background: #1e3a5f;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 5px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 50;
+  transform: translate(-50%, calc(-100% - 10px));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }

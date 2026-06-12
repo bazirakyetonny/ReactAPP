@@ -113,13 +113,6 @@
   gap: 8px;
 }
 
-.pm-checkbox-row input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #1a3a6e;
-  cursor: pointer;
-  flex-shrink: 0;
-}
 
 .pm-checkbox-label {
   font-size: 13px;

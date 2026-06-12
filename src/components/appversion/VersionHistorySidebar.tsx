@@ -6,6 +6,7 @@ import {
   restoreHistoryVersion,
 } from "../../services/appVersionsApi";
 import "./css/VersionHistorySidebar.css";
+import { i18n } from "../../i18n/i18n";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ function EntryMenu({
         disabled={restoring}
         onClick={handleRestore}
       >
-        {restoring ? "Restoring…" : "Restore"}
+        {restoring ? i18n.t("version_history.restoring") : i18n.t("version_history.restoreThisVersion")}
       </button>
       <button
         className="vhs-dropdown-item"
@@ -99,7 +100,7 @@ function EntryMenu({
         disabled={copying}
         onClick={handleCopy}
       >
-        {copying ? "Copying…" : "Copy as new version"}
+        {copying ? i18n.t("version_history.copying") : i18n.t("version_history.copy_as_new_version")}
       </button>
     </div>
   );
@@ -148,20 +149,20 @@ export function VersionHistorySidebar({
         );
         setItems(sorted);
       })
-      .catch(() => setError("Failed to load version history."))
+      .catch(() => setError(i18n.t("version_history.load_failed")))
       .finally(() => setLoading(false));
   }, [appVersionId]);
 
   return (
-    <aside className="vhs-panel" aria-label="Version history">
+    <aside className="vhs-panel" aria-label={i18n.t("version_history.versionHistory")}>
       <div className="vhs-header">
-        <h2 className="vhs-title">Version History</h2>
+        <h2 className="vhs-title">{i18n.t("version_history.versionHistory")}</h2>
         <button
           className="vhs-close-btn"
           type="button"
-          title="Close"
+          title={i18n.t("version_history.close")}
           onClick={onClose}
-          aria-label="Close version history"
+          aria-label={i18n.t("version_history.close")}
         >
           ×
         </button>
@@ -172,14 +173,14 @@ export function VersionHistorySidebar({
         {loading && (
           <div className="vhs-state">
             <div className="vhs-spinner" aria-hidden="true" />
-            <span>Loading history…</span>
+            <span>{i18n.t("version_history.loading_history")}</span>
           </div>
         )}
 
         {!loading && error && <div className="vhs-state">{error}</div>}
 
         {!loading && !error && items.length === 0 && (
-          <div className="vhs-state">No history available.</div>
+          <div className="vhs-state">{i18n.t("version_history.no_version_history")}</div>
         )}
 
         {!loading &&
@@ -190,20 +191,20 @@ export function VersionHistorySidebar({
               key={item.AppVersionNumber}
               role="button"
               tabIndex={0}
-              title="Click to restore this version"
+              title={i18n.t("version_history.restoreThisVersion")}
               onClick={() => handleCardRestore(item, idx)}
               onKeyDown={(e) => e.key === "Enter" && handleCardRestore(item, idx)}
             >
               <div className="vhs-item-row">
                 <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
                 <span className="vhs-date">
-                  {restoringIndex === idx ? "Restoring…" : formatHistoryDate(item.PublishDate)}
+                  {restoringIndex === idx ? i18n.t("version_history.restoring") : formatHistoryDate(item.PublishDate)}
                 </span>
                 <button
                   className="vhs-dots-btn"
                   type="button"
-                  title="Options"
-                  aria-label="Version options"
+                  title={i18n.t("version_history.options")}
+                  aria-label={i18n.t("version_history.options")}
                   aria-haspopup="menu"
                   aria-expanded={openMenuIndex === idx}
                   onClick={(e) => {

@@ -118,9 +118,13 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
   useEffect(() => { setCtaAction(attrs.CtaAction ?? ''); }, [ctaId]);
 
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
-  const supplierId: string = attrs.CtaConnectedSupplierId ?? '';
+  const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+  const rawSupplierId = attrs.CtaConnectedSupplierId;
+  const supplierId: string = (rawSupplierId && rawSupplierId !== NULL_GUID)
+    ? String(rawSupplierId)
+    : '';
   const forms = supplierId
-    ? allForms.filter(f => f.SupplierId === supplierId)
+    ? allForms.filter(f => String(f.SupplierId) === supplierId)
     : allForms;
   const selectedFormId = forms.find(f => f.FormUrl === attrs.CtaAction)?.FormId?.toString() ?? '';
 
@@ -192,8 +196,12 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
             value={selectedFormId}
             onChange={e => {
               const form = forms.find(f => f.FormId?.toString() === e.target.value);
-              if (form) patch({ CtaAction: form.FormUrl, CtaLabel: attrs.CtaLabel || form.PageName });
-              else patch({ CtaAction: '' });
+              if (form) {
+                patch({ CtaAction: form.FormUrl, CtaLabel: attrs.CtaLabel || form.PageName });
+                if (form.FormUrl) onWeblinkSave?.(form.FormUrl, attrs.CtaLabel || form.PageName);
+              } else {
+                patch({ CtaAction: '' });
+              }
             }}
           >
             <option value="">Select a form…</option>

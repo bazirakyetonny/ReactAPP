@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom";
 import "./css/TrashModal.css";
+import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import {
   getTrash,
   bulkRestoreTrash,
   bulkDeleteTrash,
   type TrashItem,
 } from "../../services/trashApi";
+import { i18n } from "../../i18n/i18n";
 
 type TabKey = "pages" | "versions";
 type ConfirmAction = "restore" | "delete" | "emptyTrash";
@@ -55,7 +57,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
         setItems(data);
         setSelectedIds(new Set());
       })
-      .catch(() => setError("Failed to load trash."))
+      .catch(() => setError(i18n.t("navbar.trash.load_failed")))
       .finally(() => setLoading(false));
   }
 
@@ -101,7 +103,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
       loadItems();
       setConfirmAction(null);
     } catch {
-      setError("Action failed. Please try again.");
+      setError(i18n.t("navbar.trash.action_failed"));
     } finally {
       setActing(false);
     }
@@ -116,9 +118,9 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
   }
 
   const confirmLabels: Record<ConfirmAction, string> = {
-    restore: `Restore ${selectedTabItems.length} item${selectedTabItems.length !== 1 ? "s" : ""}?`,
-    delete: `Permanently delete ${selectedTabItems.length} item${selectedTabItems.length !== 1 ? "s" : ""}? This cannot be undone.`,
-    emptyTrash: `Permanently delete all ${tabItems.length} item${tabItems.length !== 1 ? "s" : ""} on this tab? This cannot be undone.`,
+    restore: i18n.t("navbar.trash.confirm_restore", { count: selectedTabItems.length }),
+    delete: i18n.t("navbar.trash.confirm_delete", { count: selectedTabItems.length }),
+    emptyTrash: i18n.t("navbar.trash.confirm_empty", { count: tabItems.length }),
   };
 
   const modal = (
@@ -126,11 +128,11 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
       <div className="tm-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="tm-header">
           <div className="tm-title-row">
-            <span className="tm-title">Trash</span>
+            <span className="tm-title">{i18n.t("navbar.trash.modal_title")}</span>
             <button
               className="tm-close"
               type="button"
-              aria-label="Close"
+              aria-label={i18n.t("navbar.share.close")}
               onClick={onClose}
             >
               ✕
@@ -142,7 +144,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
               <input
                 className="tm-search"
                 type="text"
-                placeholder="Search Trash"
+                placeholder={i18n.t("navbar.trash.search_in_trash")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -155,7 +157,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                   disabled={acting}
                   onClick={() => setConfirmAction("restore")}
                 >
-                  Restore
+                  {i18n.t("navbar.trash.restore")}
                 </button>
                 <button
                   className="tm-btn-danger"
@@ -163,7 +165,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                   disabled={acting}
                   onClick={() => setConfirmAction("delete")}
                 >
-                  Delete Forever
+                  {i18n.t("navbar.trash.delete_forever")}
                 </button>
               </div>
             ) : (
@@ -173,7 +175,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                 disabled={tabItems.length === 0 || acting}
                 onClick={() => setConfirmAction("emptyTrash")}
               >
-                <TrashIconSm /> Empty Trash
+                <TrashIconSm /> {i18n.t("navbar.trash.empty_trash_now")}
               </button>
             )}
           </div>
@@ -184,7 +186,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
               type="button"
               onClick={() => switchTab("pages")}
             >
-              Pages
+              {i18n.t("sidebar.pages")}
             </button>
             <button
               className={`tm-tab${activeTab === "versions" ? " tm-tab--active" : ""}`}
@@ -192,19 +194,19 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
               type="button"
               onClick={() => switchTab("versions")}
             >
-              Versions
+              {i18n.t("sidebar.versions")}
             </button>
           </div>
         </div>
 
         <div className="tm-body">
-          {loading && <div className="tm-status">Loading…</div>}
+          {loading && <div className="tm-status">{i18n.t("navbar.loading")}</div>}
           {!loading && error && !confirmAction && (
             <div className="tm-error-msg">{error}</div>
           )}
           {!loading && !error && tabItems.length === 0 && (
             <div className="tm-status">
-              No deleted {activeTab === "pages" ? "pages" : "versions"}
+              {activeTab === "pages" ? i18n.t("navbar.trash.no_deleted_pages") : i18n.t("navbar.trash.no_deleted_versions")}
             </div>
           )}
           {!loading && tabItems.length > 0 && (
@@ -220,15 +222,10 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
                     key={item.TrashId}
                     className={`tm-item${checked ? " tm-item--checked" : ""}`}
                   >
-                    <label className="tm-item-label">
-                      <input
-                        type="checkbox"
-                        className="tm-checkbox"
-                        checked={checked}
-                        onChange={() => toggleItem(item.TrashId)}
-                      />
+                    <div className="tm-item-label" onClick={() => toggleItem(item.TrashId)}>
+                      <CheckboxSpan checked={checked} onChange={() => toggleItem(item.TrashId)} ariaLabel={name} />
                       <span className="tm-item-name">{name}</span>
-                    </label>
+                    </div>
                     <span className="tm-item-time">
                       {relativeTime(item.DeletedAt)}
                     </span>
@@ -252,7 +249,7 @@ export function TrashModal({ onClose, onChanged }: TrashModalProps) {
           <ConfirmModal
             message={confirmLabels[confirmAction]}
             isDestructive={confirmAction !== "restore"}
-            confirmLabel={confirmAction === "restore" ? "Restore" : "Delete Forever"}
+            confirmLabel={confirmAction === "restore" ? i18n.t("navbar.trash.restore") : i18n.t("navbar.trash.delete_forever")}
             acting={acting}
             error={error}
             onCancel={() => { setConfirmAction(null); setError(null); }}
@@ -300,7 +297,7 @@ function ConfirmModal({
             disabled={acting}
             onClick={onCancel}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
           <button
             className={isDestructive ? "tm-btn-danger" : "tm-btn-primary"}

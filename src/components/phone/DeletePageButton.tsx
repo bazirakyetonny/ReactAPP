@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { deletePage } from '../../services/pagesApi';
 import './DeletePageModal.css';
+import { i18n } from '../../i18n/i18n';
 
 interface DeletePageButtonProps {
   onClick: () => void;
@@ -12,7 +13,8 @@ export function DeletePageButton({ onClick }: DeletePageButtonProps) {
     <button
       className="delete-page-btn"
       type="button"
-      aria-label="Delete page"
+      aria-label={i18n.t("page.delete_page")}
+      title={i18n.t("page.delete_page")}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
       <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +44,7 @@ export function DeletePageModal({ appVersionId, pageId, onClose, onDeleted, onBe
       await deletePage(appVersionId, pageId);
       onDeleted(pageId);
     } catch {
-      setError('Failed to delete page. Please try again.');
+      setError(i18n.t("page.delete_failed"));
       setLoading(false);
     }
   }
@@ -51,19 +53,19 @@ export function DeletePageModal({ appVersionId, pageId, onClose, onDeleted, onBe
     <div className="dpm-overlay" onMouseDown={onClose}>
       <div className="dpm-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="dpm-header">
-          <span className="dpm-title">Delete Page</span>
-          <button className="dpm-close" type="button" aria-label="Close" onClick={onClose}>✕</button>
+          <span className="dpm-title">{i18n.t("page.delete_page")}</span>
+          <button className="dpm-close" type="button" aria-label={i18n.t("navbar.share.close")} title={i18n.t("navbar.share.close")} onClick={onClose}>✕</button>
         </div>
         <div className="dpm-body">
-          <p className="dpm-message">Are you sure you want to delete this page?</p>
+          <p className="dpm-message">{i18n.t("delete_page_warning_message")}</p>
           {error && <div className="dpm-error">{error}</div>}
         </div>
         <div className="dpm-footer">
           <button className="dpm-btn-primary" type="button" disabled={loading} onClick={handleConfirm}>
-            {loading ? 'Deleting…' : 'Delete'}
+            {loading ? i18n.t("navbar.loading") : i18n.t("section.delete")}
           </button>
           <button className="dpm-btn-secondary" type="button" onClick={onClose} disabled={loading}>
-            Cancel
+            {i18n.t("cta_modal_forms.cancel")}
           </button>
         </div>
       </div>

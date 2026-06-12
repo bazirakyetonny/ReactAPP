@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { getMedia, uploadMedia, deleteMedia } from '../../services/mediaApi';
 import type { MediaItem } from '../../services/mediaApi';
+import { i18n } from '../../i18n/i18n';
 
 interface MediaLibraryModalProps {
   initialImages: { InfoImageId: string; InfoImageValue?: string }[];
@@ -185,7 +186,7 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
 
         <div className="media-modal-header">
           <span>Edit Content</span>
-          <button className="media-modal-close" type="button" onClick={onCancel} aria-label="Close">×</button>
+          <button className="media-modal-close" type="button" onClick={onCancel} aria-label={i18n.t("navbar.share.close")} title={i18n.t("navbar.share.close")}>×</button>
         </div>
 
         <div
@@ -315,7 +316,8 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
                   type="button"
                   disabled={deletingId === item.MediaId}
                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.MediaId); }}
-                  aria-label="Delete image"
+                  aria-label={i18n.t("sidebar.image_upload.delete_image_title")}
+                  title={i18n.t("sidebar.image_upload.delete_image_title")}
                 >
                   {deletingId === item.MediaId ? (
                     <svg width="33" height="33" viewBox="0 0 33 33" fill="none">
@@ -346,7 +348,7 @@ export function MediaLibraryModal({ initialImages, onSelect, onCancel, singleSel
         {confirmDeleteId && (
           <div className="media-confirm-overlay">
             <div className="media-confirm-dialog">
-              <button className="media-confirm-close" type="button" onClick={() => setConfirmDeleteId(null)} aria-label="Close">×</button>
+              <button className="media-confirm-close" type="button" onClick={() => setConfirmDeleteId(null)} aria-label={i18n.t("navbar.share.close")} title={i18n.t("navbar.share.close")}>×</button>
               <h3 className="media-confirm-title">Delete selected media files</h3>
               <p className="media-confirm-message">Are you sure you want to delete this media file?</p>
               <div className="media-confirm-actions">
