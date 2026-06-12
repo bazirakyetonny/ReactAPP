@@ -2,6 +2,7 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/MoveToTrashModal.css";
 import { deleteVersion } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface MoveToTrashModalProps {
   versionId: string;
@@ -26,7 +27,7 @@ export function MoveToTrashModal({
       await deleteVersion(versionId);
       onDeleted();
     } catch {
-      setError("Failed to move version to trash. Please try again.");
+      setError(i18n.t("navbar.appversion.move_to_trash_error"));
       setLoading(false);
     }
   }
@@ -35,11 +36,11 @@ export function MoveToTrashModal({
     <div className="mtv-overlay" onMouseDown={onClose}>
       <div className="mtv-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="mtv-header">
-          <span className="mtv-title">Move to Trash</span>
+          <span className="mtv-title">{i18n.t("navbar.appversion.dropdow.move_to_trash")}</span>
           <button
             className="mtv-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("version_history.close")}
             onClick={onClose}
           >
             ✕
@@ -48,9 +49,7 @@ export function MoveToTrashModal({
 
         <div className="mtv-body">
           <p className="mtv-message">
-            Are you sure you want to move{" "}
-            <strong>{versionName}</strong> to trash? This action cannot
-            be undone.
+            {i18n.t("navbar.appversion.move_to_trash_confirm", { name: versionName })}
           </p>
           {error && <div className="mtv-error">{error}</div>}
         </div>
@@ -62,7 +61,7 @@ export function MoveToTrashModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
           <button
             className="mtv-btn-danger"
@@ -70,7 +69,7 @@ export function MoveToTrashModal({
             disabled={loading}
             onClick={handleConfirm}
           >
-            {loading ? "Moving…" : "Move to Trash"}
+            {loading ? i18n.t("navbar.appversion.moving") : i18n.t("navbar.appversion.dropdow.move_to_trash")}
           </button>
         </div>
       </div>

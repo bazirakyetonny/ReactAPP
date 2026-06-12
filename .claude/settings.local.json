@@ -25,7 +25,8 @@
       "Skill(linked-pages)",
       "Bash(npm run *)",
       "Bash(git add *)",
-      "Write(.claude/skills/extract-component-workspace/*)"
+      "Write(.claude/skills/extract-component-workspace/*)",
+      "mcp__github__create_pull_request"
     ]
   },
   "enabledPlugins": {

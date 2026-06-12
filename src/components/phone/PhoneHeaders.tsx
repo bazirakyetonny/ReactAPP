@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { dataStore } from "../../data/datastore";
 import comfortaLogo from "../../assets/ComfortaLogo1.png";
+import { i18n } from '../../i18n/i18n';
 
 function ProfileIcon() {
   return (
@@ -137,7 +138,8 @@ export function PhoneLinkedHeader({
         <button
           className="phone-back-btn"
           type="button"
-          aria-label="Go back"
+          aria-label={i18n.t("navbar.go_back")}
+          title={i18n.t("navbar.go_back")}
           onClick={onBack}
           onMouseDown={isNew ? (e) => e.preventDefault() : undefined}
         >
@@ -150,8 +152,8 @@ export function PhoneLinkedHeader({
           ref={inputRef}
           className="phone-linked-page-name-input"
           value={draft}
-          placeholder={isNew ? "Page name…" : undefined}
-          onChange={(e) => setDraft(e.target.value)}
+          placeholder={isNew ? i18n.t("page.name_placeholder") : undefined}
+          onChange={e => setDraft(e.target.value)}
           onBlur={() => {
             if (isNew) {
               if (draft.trim()) commit();
@@ -189,7 +191,8 @@ export function PhoneLinkedHeader({
             <button
               className="phone-linked-edit-btn"
               type="button"
-              aria-label="Rename page"
+              aria-label={i18n.t("navbar.rename_page")}
+              title={i18n.t("navbar.rename_page")}
               onClick={() => setEditing(true)}
             >
               <PencilIcon />

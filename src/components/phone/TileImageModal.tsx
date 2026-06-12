@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { getMedia, uploadMedia, uploadCroppedMedia } from '../../services/mediaApi';
 import type { MediaItem } from '../../services/mediaApi';
 import './TileImageModal.css';
+import { i18n } from '../../i18n/i18n';
 
 interface TileImageModalProps {
   tileWidth: number;
@@ -212,7 +213,7 @@ export function TileImageModal({ tileWidth, tileHeight, initialOriginalUrl, init
 
         <div className="media-modal-header">
           <span>Tile Background Image</span>
-          <button className="media-modal-close" type="button" onClick={onCancel} aria-label="Close">×</button>
+          <button className="media-modal-close" type="button" onClick={onCancel} aria-label={i18n.t("navbar.share.close")} title={i18n.t("navbar.share.close")}>×</button>
         </div>
 
         {/* Upload zone — doubles as preview+crop when image selected */}

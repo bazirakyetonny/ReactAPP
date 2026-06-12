@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SelectionOverlay } from './SelectionOverlay';
 import type { ThemeColors, ThemeIcon, ThemeCtaColor, TileDropPreview, BlockInsertPreview } from '../../types';
+import { i18n } from '../../i18n/i18n';
 import { TILE_H, TILE_GAP } from '../../constants';
 import { resolveColor, resolveIconSVG } from '../../utils/tileUtils';
 import { TileGrids } from './TileGrids';
@@ -145,7 +146,7 @@ export interface DraggableScreenProps {
 
 export function DraggableScreen({
   infoContent,
-  tileGrids,
+  tileGrids: _tileGrids,
   themeColors,
   themeIcons,
   selectedTileId,
@@ -909,7 +910,8 @@ export function DraggableScreen({
             <button
               className="phone-add-btn"
               type="button"
-              aria-label="Add content block"
+              aria-label={i18n.t("sidebar.add_section")}
+                  title={i18n.t("sidebar.add_section")}
               onClick={(e) => openAddMenu(e, infoContent[0]?.InfoId ?? null)}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -970,7 +972,8 @@ export function DraggableScreen({
                 {!isPreviewMode && (tileDragZoneActive || blockDragZoneActive) && <div className="block-drop-zone" />}
                 {!isPreviewMode && !effectiveBlockDragActive && !(tileDragZoneActive || blockDragZoneActive) && (
                   <div className="phone-add-row">
-                    <button className="phone-add-btn" type="button" aria-label="Add content block"
+                    <button className="phone-add-btn" type="button" aria-label={i18n.t("sidebar.add_section")}
+                  title={i18n.t("sidebar.add_section")}
                       onClick={(e) => openAddMenu(e, nextInfoId)}>
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -1065,7 +1068,8 @@ export function DraggableScreen({
                     <button
                       className="phone-add-btn"
                       type="button"
-                      aria-label="Add content block"
+                      aria-label={i18n.t("sidebar.add_section")}
+                  title={i18n.t("sidebar.add_section")}
                       onClick={(e) => openAddMenu(e, nextInfoId)}
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -1108,7 +1112,8 @@ export function DraggableScreen({
                     <button
                       className="phone-add-btn"
                       type="button"
-                      aria-label="Add content block"
+                      aria-label={i18n.t("sidebar.add_section")}
+                  title={i18n.t("sidebar.add_section")}
                       onClick={(e) => openAddMenu(e, nextInfoId)}
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -1152,7 +1157,8 @@ export function DraggableScreen({
                     <button
                       className="phone-add-btn"
                       type="button"
-                      aria-label="Add content block"
+                      aria-label={i18n.t("sidebar.add_section")}
+                  title={i18n.t("sidebar.add_section")}
                       onClick={(e) => openAddMenu(e, nextInfoId)}
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

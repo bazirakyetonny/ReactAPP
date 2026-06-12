@@ -6,6 +6,7 @@ import { getLocation } from "../../services/locationApi";
 import { publishVersion } from "../../services/publishApi";
 import { translateAppVersionBeforePublish } from "../../services/translationApi";
 import type { SDTAppVersion } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface PublishModalProps {
   currentVersionId: string;
@@ -74,7 +75,7 @@ export function PublishModal({
       await publishVersion(currentVersionId, notify);
       onPublished();
     } catch {
-      setError("Failed to publish. Please try again.");
+      setError(i18n.t("navbar.publish.publish_failed"));
       setLoading(false);
     }
   }
@@ -89,11 +90,11 @@ export function PublishModal({
       <div className="pm-modal" onMouseDown={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="pm-header">
-          <span className="pm-title">Publish</span>
+          <span className="pm-title">{i18n.t("navbar.publish.label")}</span>
           <button
             className="pm-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("navbar.share.close")}
             onClick={onClose}
           >
             ✕
@@ -103,15 +104,14 @@ export function PublishModal({
         {/* Body */}
         <div className="pm-body">
           <p className="pm-info-row">
-            <strong>Current published version:</strong>{" "}
+            <strong>{i18n.t("navbar.publish.current_version")}</strong>{" "}
             {publishedVersionName ?? "—"}
           </p>
           <p className="pm-info-row">
-            <strong>Version being published:</strong> {currentVersionName}
+            <strong>{i18n.t("navbar.publish.new_version")}</strong> {currentVersionName}
           </p>
           <p className="pm-description">
-            Are you sure you want to publish? Publishing this version will
-            replace the current version for all users.
+            {i18n.t("navbar.publish.modal_description")}
           </p>
 
           {issueCount > 0 && (
@@ -126,9 +126,9 @@ export function PublishModal({
 
           <div className="pm-checkbox-row" onClick={() => setNotify(!notify)}>
             <CheckboxSpan checked={notify} onChange={() => setNotify(!notify)} ariaLabel="Notify users" />
-            <span className="pm-checkbox-label">
-              Send &lsquo;A new version is available&rsquo; message to users.
-            </span>
+            <label className="pm-checkbox-label">
+              {i18n.t("navbar.publish.notify_residents")}
+            </label>
           </div>
 
           {error && <div className="pm-error">{error}</div>}
@@ -142,7 +142,7 @@ export function PublishModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {i18n.t("navbar.publish.modal_cancel")}
           </button>
           {issueCount > 0 && (
             <button
@@ -151,7 +151,7 @@ export function PublishModal({
               onClick={handleFixIssues}
               disabled={loading}
             >
-              Fix Issues
+              {i18n.t("navbar.publish.fix_issues")}
             </button>
           )}
           <button
@@ -160,7 +160,7 @@ export function PublishModal({
             onClick={handlePublish}
             disabled={loading}
           >
-            {loading ? "Publishing…" : "Publish"}
+            {loading ? i18n.t("navbar.publish.publishing") : i18n.t("navbar.publish.modal_confirm")}
           </button>
         </div>
       </div>

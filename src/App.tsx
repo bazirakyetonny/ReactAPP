@@ -49,6 +49,7 @@ import { useAnalysis } from "./hooks/useAnalysis";
 import { useMultiSelect } from "./hooks/useMultiSelect";
 import { BusyModal } from "./components/BusyModal";
 import { usePageGraph } from "./components/tree/usePageGraph";
+import { i18n } from "./i18n/i18n";
 
 function getLinkedPageUrl(page: any): string {
   if (page?.PageLinkStructure?.Url) return page.PageLinkStructure.Url;
@@ -60,6 +61,8 @@ function getLinkedPageUrl(page: any): string {
 }
 
 function App() {
+  const langMap: Record<string, string> = { English: "en", Dutch: "nl" };
+  i18n.locale = langMap[dataStore.get("Current_Language") as string] ?? "en";
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
   const [reviewOnly, setReviewOnly] = useState(false);
 

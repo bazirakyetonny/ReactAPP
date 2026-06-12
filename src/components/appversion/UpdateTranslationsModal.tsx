@@ -5,6 +5,7 @@ import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import type { SupportedLanguages } from "../../types";
 import { dataStore } from "../../data/datastore";
 import { updateVersionTranslationLanguages } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface UpdateTranslationsModalProps {
   versionId: string;
@@ -35,7 +36,6 @@ export function UpdateTranslationsModal({
   const languages: SupportedLanguages[] =
     dataStore.get("SupportedLanguages") ?? [];
 
-  // Languages available for translation = all except the base language
   const translatable = languages.filter((l) => l.value !== baseLanguage);
 
   const baseLabel =
@@ -60,7 +60,7 @@ export function UpdateTranslationsModal({
       await updateVersionTranslationLanguages(versionId, selected);
       onUpdated(selected);
     } catch {
-      setError("Failed to update translation languages. Please try again.");
+      setError(i18n.t("navbar.appversion.update_translations_error"));
     } finally {
       setLoading(false);
     }
@@ -69,33 +69,29 @@ export function UpdateTranslationsModal({
   const modal = (
     <div className="utl-overlay" onMouseDown={onClose}>
       <div className="utl-modal" onMouseDown={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="utl-header">
           <span className="utl-title">{versionName}</span>
           <button
             className="utl-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("version_history.close")}
             onClick={onClose}
           >
             ✕
           </button>
         </div>
 
-        {/* Body */}
         <div className="utl-body">
-          {/* Base language — read-only */}
           <div className="utl-field">
-            <span className="utl-label">Version Default Language:</span>
+            <span className="utl-label">{i18n.t("navbar.appversion.version_default_language")}</span>
             <div className="utl-base-lang">{baseLabel}</div>
           </div>
 
-          {/* Translation checkboxes */}
           <div className="utl-field">
-            <span className="utl-label">Translation Languages:</span>
+            <span className="utl-label">{i18n.t("navbar.appversion.version_translation_languages")}</span>
             <div className="utl-check-list">
               {translatable.length === 0 ? (
-                <p className="utl-empty">No other languages available.</p>
+                <p className="utl-empty">{i18n.t("navbar.appversion.no_other_languages")}</p>
               ) : (
                 translatable.map((lang) => (
                   <div key={lang.value} className="utl-check-item" onClick={() => toggle(lang.value)}>
@@ -110,7 +106,6 @@ export function UpdateTranslationsModal({
           {error && <div className="utl-error">{error}</div>}
         </div>
 
-        {/* Footer */}
         <div className="utl-footer">
           <button
             className="utl-btn-primary"
@@ -118,7 +113,7 @@ export function UpdateTranslationsModal({
             disabled={loading}
             onClick={handleSave}
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? i18n.t("navbar.appversion.saving") : i18n.t("navbar.appversion.save")}
           </button>
           <button
             className="utl-btn-secondary"
@@ -126,7 +121,7 @@ export function UpdateTranslationsModal({
             disabled={loading}
             onClick={onClose}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
         </div>
       </div>
