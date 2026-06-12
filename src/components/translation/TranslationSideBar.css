@@ -62,6 +62,11 @@
   display: none;
 }
 
+/* Hide tile element remove buttons (icon/text delete) — sidebar is read-only */
+.ts-phone-frame .phone-tile-element-delete {
+  display: none;
+}
+
 /* ── Status bar lang select ─────────────────────────────────────────────────── */
 
 /* Groups the lang select + status icons on the right side of the status bar */
