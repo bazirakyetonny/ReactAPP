@@ -665,8 +665,8 @@
   pointer-events: auto;
 }
 
-/* Non-selected tiles: only + on hover */
-.phone-tile-wrap:not(.selected):hover .phone-tile-add-btn {
+/* + button visible on hover for all tiles */
+.phone-tile-wrap:hover .phone-tile-add-btn {
   opacity: 1;
   pointer-events: auto;
 }
