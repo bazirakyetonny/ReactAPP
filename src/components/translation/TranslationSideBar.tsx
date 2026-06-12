@@ -9,7 +9,11 @@ import { InlineDescriptionEditor } from "./InlineDescriptionEditor";
 import { ImageBlock } from "../phone/ImageBlock";
 import { CtaBlock } from "../phone/CtaBlock";
 import { resolveColor, resolveIconSVG } from "../../utils/tileUtils";
-import { TILE_H, TILE_GAP } from "../../constants";
+import { TILE_H, TILE_GAP, MODULE_PAGE_TYPES } from "../../constants";
+import { BulletinBoardPage } from "../BulletinBoardPage";
+import { CalendarPage } from "../CalendarPage";
+import { MyActivityPage } from "../MyActivityPage";
+import { MapPage } from "../MapPage";
 import {
   translateAppVersion,
   getTranslatedPage,
@@ -22,6 +26,7 @@ export function TranslationSideBar({
   appVersionLanguage,
   appVersionMultiLanguages,
   activePageId,
+  pageType,
   themeColors,
   themeIcons,
   ctaColors,
@@ -36,6 +41,7 @@ export function TranslationSideBar({
   appVersionLanguage: string;
   appVersionMultiLanguages: string[];
   activePageId: string;
+  pageType?: string;
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   ctaColors?: ThemeCtaColor[];
@@ -197,6 +203,18 @@ export function TranslationSideBar({
     setSdtPage(next);
     saveNow(next);
     setEditingKey(null);
+  }
+
+  // ── Module page renderer ─────────────────────────────────────────────────────
+
+  function renderModulePage() {
+    switch (pageType) {
+      case "BulletinBoard": return <BulletinBoardPage themeColors={themeColors} />;
+      case "Calendar":      return <CalendarPage themeColors={themeColors} />;
+      case "MyActivity":    return <MyActivityPage themeColors={themeColors} />;
+      case "Map":           return <MapPage themeColors={themeColors} />;
+      default:              return null;
+    }
   }
 
   // ── Editable block renderer ───────────────────────────────────────────────────
@@ -460,7 +478,11 @@ export function TranslationSideBar({
               editOnClick
             />
 
-            <div className="ts-phone-scroll" ref={scrollRef}>{renderEditableBlocks()}</div>
+            <div className="ts-phone-scroll" ref={scrollRef}>
+              {pageType && MODULE_PAGE_TYPES.has(pageType)
+                ? renderModulePage()
+                : renderEditableBlocks()}
+            </div>
           </div>
         )}
       </div>
