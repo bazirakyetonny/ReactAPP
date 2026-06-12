@@ -12,7 +12,7 @@ export function MapPage({ themeColors }: MapPageProps) {
   const [mapSrc, setMapSrc] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  const spinnerColor = themeColors?.primaryColor ?? '#1F68A8';
+  const spinnerColor = themeColors?.backgroundColor ?? '#1F68A8';
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_MAPS_API_KEY ?? '';
