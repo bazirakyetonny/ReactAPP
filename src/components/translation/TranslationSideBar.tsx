@@ -70,6 +70,7 @@ export function TranslationSideBar({
   const [isLoading, setIsLoading] = useState(false);
   const isMounted = useRef(true);
   const isFirstRender = useRef(true);
+  const prevVersionIdRef = useRef(appVersionId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayContent: any[] = sdtPage?.PageStructure?.InfoContent ?? [];
@@ -88,7 +89,8 @@ export function TranslationSideBar({
     setEditingKey(null);
   }
 
-  // On mount: translate then fetch initial language
+  // On mount (user opened the translation sidebar): queue translation for the
+  // active page then fetch its translated content for display.
   useEffect(() => {
     isMounted.current = true;
     async function load() {
@@ -103,6 +105,8 @@ export function TranslationSideBar({
         });
         const result = await getTranslatedPage(activePageId, firstLang);
         if (isMounted.current) applyResult(result);
+      } catch {
+        // ignore — sidebar stays empty
       } finally {
         if (isMounted.current) setIsLoading(false);
       }
@@ -134,12 +138,23 @@ export function TranslationSideBar({
     });
   }, [highlightBlockId, highlightTileId, sdtPage]);
 
-  // On language change or active page change (skip first render)
+  // On language change or active page change: fetch translated content.
+  // Skips initial mount render and version switches (translations not ready then).
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      prevVersionIdRef.current = appVersionId;
       return;
     }
+
+    const versionChanged = appVersionId !== prevVersionIdRef.current;
+    prevVersionIdRef.current = appVersionId;
+
+    if (versionChanged) {
+      setSdtPage(null);
+      return;
+    }
+
     if (!activePageId || !selectedLang) return;
     let cancelled = false;
     setIsLoading(true);
@@ -153,7 +168,7 @@ export function TranslationSideBar({
     return () => {
       cancelled = true;
     };
-  }, [selectedLang, activePageId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedLang, activePageId, appVersionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Save helpers ─────────────────────────────────────────────────────────────
 
