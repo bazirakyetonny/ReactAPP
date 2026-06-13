@@ -5,6 +5,7 @@ import { SidebarCtaControls } from "./SidebarCtaControls";
 import { ColorPalette } from "./sidebar_right/ColorPalette";
 import { TileIconSelector } from "./sidebar_right/TileIconSelector";
 import { MultiSelectPanel } from "./sidebar_right/MultiSelectPanel";
+import { i18n } from "../i18n/i18n";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -224,6 +225,7 @@ export function SidebarRight({
   onEditCta,
   onBeforeCtaEdit,
   onCtaWeblinkSave,
+  onTileWeblinkSave,
   onLiveCtaLabel,
   onEndLiveCtaLabel,
   moodId,
@@ -249,6 +251,7 @@ export function SidebarRight({
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
   onCtaWeblinkSave?: (ctaId: string, url: string, label: string) => void;
+  onTileWeblinkSave?: (tileId: string, url: string) => void;
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
   moodId?: string;
@@ -326,7 +329,7 @@ export function SidebarRight({
         (selectedTileIds?.size ?? 0) === 0 &&
         (selectedCtaIds?.size ?? 0) === 0 && (
           <div className="sr-empty-state">
-            Select a tile or button to edit its properties
+            {i18n.t("sidebar.select_tile_placeholder")}
           </div>
         )}
 
@@ -359,7 +362,7 @@ export function SidebarRight({
               <button
                 className="sr-icon-btn sr-icon-btn--in-group"
                 type="button"
-                title={selectedTile?.BGImageUrl ? "Change image" : "Add image"}
+                title={selectedTile?.BGImageUrl ? i18n.t("sidebar.change_image") : i18n.t("sidebar.add_image")}
                 disabled={!selectedTile}
                 onClick={onOpenTileImage}
               >
@@ -397,7 +400,7 @@ export function SidebarRight({
                 <button
                   className="sr-icon-btn sr-icon-btn--danger"
                   type="button"
-                  title="Remove image"
+                  title={i18n.t("sidebar.remove_image")}
                   onClick={() =>
                     onEditTile?.(selectedTile.Id, {
                       BGImageUrl: null,
@@ -418,7 +421,7 @@ export function SidebarRight({
               className="sr-input"
               type="text"
               placeholder={
-                selectedTile ? "Enter title" : "Select a tile to edit"
+                selectedTile ? i18n.t("sidebar.input_place_holder") : i18n.t("sidebar.select_tile")
               }
               value={tileText}
               disabled={!selectedTile}
@@ -484,6 +487,7 @@ export function SidebarRight({
                 }}
                 onBlur={() => {
                   isEditingActionRef.current = false;
+                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, actionUrl);
                 }}
               />
             </div>
@@ -496,7 +500,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#ffffff" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title="Light text & icon (#ffffff)"
+                title={i18n.t("sidebar.text_color")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&
@@ -510,7 +514,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Color === "#333333" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title="Dark text & icon (#333333)"
+                title={i18n.t("sidebar.text_color")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&
@@ -525,7 +529,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${selectedTile?.Align === "left" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title="Left align"
+                title={i18n.t("sidebar.align_left")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&
@@ -538,7 +542,7 @@ export function SidebarRight({
               <button
                 className={`sr-tool-btn sr-tool-btn--in-group${!selectedTile?.Align || selectedTile?.Align === "center" ? " sr-tool-btn-active" : ""}`}
                 type="button"
-                title="Center align"
+                title={i18n.t("sidebar.align_center")}
                 disabled={!selectedTile}
                 onClick={() =>
                   selectedTile &&

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { ThemeIcon } from "../../types";
 import "./TileIconSelector.css";
+import { i18n } from "../../i18n/i18n";
 
 function SearchIcon() {
   return (
@@ -82,6 +83,30 @@ interface TileIconSelectorProps {
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
 }
 
+const CATEGORY_I18N_KEY: Record<string, string> = {
+  general:                            "sidebar.icon_category.general",
+  real_estate_rental:                 "sidebar.icon_category.real_estate_rental",
+  community_connection:               "sidebar.icon_category.community_connection",
+  building_furnishing:                "sidebar.icon_category.building_furnishing",
+  services_hospitality:               "sidebar.icon_category.services_hospitality",
+  mobility_transport:                 "sidebar.icon_category.mobility_transport",
+  care_wellbeing:                     "sidebar.icon_category.care_wellbeing",
+  communication_media:                "sidebar.icon_category.communication_media",
+  "Technical Services & Support":     "sidebar.icon_category.general",
+  "Real Estate & Rental":             "sidebar.icon_category.real_estate_rental",
+  "Community & Connection":           "sidebar.icon_category.community_connection",
+  "Building & Furnishing":            "sidebar.icon_category.building_furnishing",
+  "Services & Hospitality":           "sidebar.icon_category.services_hospitality",
+  "Mobility & Transport":             "sidebar.icon_category.mobility_transport",
+  "Care & Wellbeing":                 "sidebar.icon_category.care_wellbeing",
+  "Communication & Media":            "sidebar.icon_category.communication_media",
+};
+
+function translateCategory(cat: string): string {
+  const key = CATEGORY_I18N_KEY[cat];
+  return key ? i18n.t(key) : cat;
+}
+
 export function TileIconSelector({
   themeIcons,
   selectedTile,
@@ -147,7 +172,7 @@ export function TileIconSelector({
             <input
               className="sr-category-field"
               type="text"
-              placeholder="Search icons…"
+              placeholder={i18n.t("sidebar.search_icons")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
@@ -157,11 +182,11 @@ export function TileIconSelector({
               className="sr-category-field"
               value={activeCategory}
               onChange={(e) => setCategory(e.target.value)}
-              aria-label="Icon category"
+              aria-label={i18n.t("sidebar.icon_category_label")}
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat}
+                  {translateCategory(cat)}
                 </option>
               ))}
             </select>
@@ -176,7 +201,7 @@ export function TileIconSelector({
               <button
                 className="sr-category-btn"
                 type="button"
-                title="Close search"
+                title={i18n.t("sidebar.close_search")}
                 onClick={closeSearch}
               >
                 <XIcon />
@@ -185,7 +210,7 @@ export function TileIconSelector({
               <button
                 className="sr-category-btn"
                 type="button"
-                title="Search icons"
+                title={i18n.t("sidebar.search_icons")}
                 onClick={openSearch}
               >
                 <SearchIcon />

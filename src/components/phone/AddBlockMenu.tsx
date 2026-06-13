@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { i18n } from '../../i18n/i18n';
 
 export interface AddBlockMenuProps {
   pos: { x: number; y: number };
@@ -9,24 +10,24 @@ export interface AddBlockMenuProps {
   onPaste?: () => void;
 }
 
-const CTA_SUB_ITEMS = [
-  { label: 'Address',  type: 'Cta_Address' },
-  { label: 'Phone',    type: 'Cta_Phone' },
-  { label: 'Email',    type: 'Cta_Email' },
-  { label: 'Form',     type: 'Cta_Form' },
-  { label: 'Weblink',  type: 'Cta_Weblink' },
-] as const;
-
-const ADD_BLOCK_ITEMS = [
-  { label: 'Call To Action', type: 'Cta',         sub: true },
-  { label: 'Description',    type: 'Description',  sub: false },
-  { label: 'Image',          type: 'Image',        sub: false },
-  { label: 'Tile',           type: 'TileGrid',     sub: false },
-] as const;
-
 export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddBlockMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [ctaHovered, setCtaHovered] = useState(false);
+
+  const ctaSubItems = [
+    { label: i18n.t("sidebar.action_list.dropdown.address"), type: 'Cta_Address' },
+    { label: i18n.t("sidebar.action_list.dropdown.phone"),   type: 'Cta_Phone' },
+    { label: i18n.t("sidebar.action_list.dropdown.email"),   type: 'Cta_Email' },
+    { label: i18n.t("sidebar.action_list.dropdown.form"),    type: 'Cta_Form' },
+    { label: i18n.t("sidebar.action_list.dropdown.weblink"), type: 'Cta_Weblink' },
+  ] as const;
+
+  const addBlockItems = [
+    { label: i18n.t("sidebar.action_list.call_to_action"), type: 'Cta',         sub: true },
+    { label: i18n.t("sidebar.action_list.description"),    type: 'Description',  sub: false },
+    { label: i18n.t("sidebar.action_list.image"),          type: 'Image',        sub: false },
+    { label: i18n.t("sidebar.action_list.tile"),           type: 'TileGrid',     sub: false },
+  ] as const;
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -45,7 +46,7 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
 
   return ReactDOM.createPortal(
     <div ref={ref} className="add-block-menu" style={{ left: pos.x, top: pos.y }}>
-      {ADD_BLOCK_ITEMS.map(item => (
+      {addBlockItems.map(item => (
         <div
           key={item.type}
           className="add-block-menu__item-wrap"
@@ -68,7 +69,7 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
 
           {item.sub && ctaHovered && (
             <div className="add-block-menu__sub">
-              {CTA_SUB_ITEMS.map(sub => (
+              {ctaSubItems.map(sub => (
                 <button
                   key={sub.type}
                   className="add-block-menu__sub-item"
@@ -90,7 +91,7 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
             onMouseDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onPaste?.(); onClose(); }}
           >
-            <span>Paste</span>
+            <span>{i18n.t("sidebar.action_list.paste")}</span>
           </button>
         </div>
       )}

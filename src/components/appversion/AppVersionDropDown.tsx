@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import "./css/AppVersionDropDown.css";
 import type { AppVersion, CategoryTemplates } from "../../types";
 import { dataStore } from "../../data/datastore";
+import { i18n } from "../../i18n/i18n";
 
 interface AppVersionDropDownProps {
   versionName?: string;
@@ -284,7 +285,7 @@ export function AppVersionDropDown({
               }}
             >
               <PlusIcon />
-              New Version
+              {i18n.t("navbar.appversion.create_new")}
             </button>
           )}
 
@@ -298,7 +299,7 @@ export function AppVersionDropDown({
               }}
             >
               <PlusIcon />
-              New Template
+              {i18n.t("navbar.appversion.new_template")}
             </button>
           )}
 
@@ -366,7 +367,7 @@ export function AppVersionDropDown({
                         setOpen(false);
                       }}
                     >
-                      Duplicate
+                      {i18n.t("navbar.appversion.dropdow.duplicate")}
                     </button>
                     <button
                       className="vd-sub-item"
@@ -377,7 +378,7 @@ export function AppVersionDropDown({
                         setOpen(false);
                       }}
                     >
-                      Rename
+                      {i18n.t("navbar.appversion.dropdow.rename")}
                     </button>
                     {canCreateTemplate ? (
                       <button
@@ -389,7 +390,7 @@ export function AppVersionDropDown({
                           setOpen(false);
                         }}
                       >
-                        Description
+                        {i18n.t("navbar.appversion.dropdow.description")}
                       </button>
                     ) : (
                       <button
@@ -401,7 +402,7 @@ export function AppVersionDropDown({
                           setOpen(false);
                         }}
                       >
-                        Update Translations
+                        {i18n.t("navbar.appversion.update_translations")}
                       </button>
                     )}
                     <button
@@ -413,7 +414,7 @@ export function AppVersionDropDown({
                         setOpen(false);
                       }}
                     >
-                      Move To Trash
+                      {i18n.t("navbar.appversion.dropdow.move_to_trash")}
                     </button>
                     {canCreateTemplate && (
                       <button
@@ -426,7 +427,10 @@ export function AppVersionDropDown({
                         onMouseLeave={scheduleCatSubHide}
                       >
                         <span>
-                          Category [{v.TemplateCategoryName || "None"}]
+                          {i18n.t("category")} [
+                          {v.TemplateCategoryName ||
+                            i18n.t("navbar.appversion.dropdow.category_none")}
+                          ]
                         </span>
                         <ChevronRightIcon />
                       </button>
@@ -460,7 +464,11 @@ export function AppVersionDropDown({
                     onMouseLeave={scheduleCatSubHide}
                   >
                     {otherCats.length === 0 ? (
-                      <span className="vd-sub-empty">No other categories</span>
+                      <span className="vd-sub-empty">
+                        {i18n.t(
+                          "navbar.appversion.dropdow.no_other_categories",
+                        )}
+                      </span>
                     ) : (
                       otherCats.map((cat) => (
                         <button

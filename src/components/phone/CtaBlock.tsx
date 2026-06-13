@@ -3,6 +3,7 @@ import type { ThemeCtaColor } from '../../types';
 import { resolveCtaColor } from '../../utils/tileUtils';
 import { ctaIcons } from '../../data/ctaIcons';
 import imgPlaceholder from '../../assets/image.png';
+import { i18n } from '../../i18n/i18n';
 
 function TrashIcon() {
   return (
@@ -162,7 +163,8 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
                 <button
                   className="phone-cta-img-edit"
                   type="button"
-                  aria-label="Select image"
+                  aria-label={imgUrl ? i18n.t("sidebar.change_image") : i18n.t("sidebar.add_image")}
+                  title={imgUrl ? i18n.t("sidebar.change_image") : i18n.t("sidebar.add_image")}
                   onMouseDown={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); onSelectImage(block.InfoId); }}
                 >
@@ -181,7 +183,8 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
           <button
             className="phone-block-action-btn"
             type="button"
-            aria-label="Delete CTA"
+            aria-label={i18n.t("section.delete")}
+            title={i18n.t("section.delete")}
             onMouseDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onDelete?.(block.InfoId); }}
           >

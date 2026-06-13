@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/ShareLinkModal.css";
+import { i18n } from "../../i18n/i18n";
 
 interface ShareLinkModalProps {
   shareLink: string;
@@ -21,11 +22,11 @@ export function ShareLinkModal({ shareLink, onClose }: ShareLinkModalProps) {
     <div className="slm-overlay" onMouseDown={onClose}>
       <div className="slm-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="slm-header">
-          <span className="slm-title">Share link for a preview</span>
+          <span className="slm-title">{i18n.t("navbar.share.modal_title")}</span>
           <button
             className="slm-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("navbar.share.close")}
             onClick={onClose}
           >
             ✕
@@ -34,8 +35,7 @@ export function ShareLinkModal({ shareLink, onClose }: ShareLinkModalProps) {
 
         <div className="slm-body">
           <p className="slm-description">
-            A shareable link has been generated for you. Copy it and share for
-            previews!
+            {i18n.t("navbar.share.modal_description")}
           </p>
           {shareLink ? (
             <a
@@ -47,20 +47,20 @@ export function ShareLinkModal({ shareLink, onClose }: ShareLinkModalProps) {
               {shareLink}
             </a>
           ) : (
-            <span className="slm-link-empty">No preview link available.</span>
+            <span className="slm-link-empty">{i18n.t("navbar.share.no_link")}</span>
           )}
         </div>
 
         <div className="slm-footer">
           <button className="slm-btn-secondary" type="button" onClick={onClose}>
-            Cancel
+            {i18n.t("navbar.share.cancel")}
           </button>
           <button
             className="slm-btn-primary"
             type="button"
             onClick={handleCopy}
           >
-            {copied ? "Copied!" : "Copy"}
+            {copied ? i18n.t("navbar.share.copied_short") : i18n.t("navbar.share.copy")}
           </button>
         </div>
       </div>

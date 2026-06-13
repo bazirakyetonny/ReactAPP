@@ -107,11 +107,3 @@
   user-select: none;
 }
 
-.ms2-no-mood input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  flex-shrink: 0;
-  accent-color: #1a3a6e;
-  cursor: pointer;
-}

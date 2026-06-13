@@ -6,6 +6,7 @@ import type {
 } from "../../types";
 import { TILE_H, TILE_GAP } from "../../constants";
 import { resolveColor, resolveIconSVG } from "../../utils/tileUtils";
+import { i18n } from "../../i18n/i18n";
 
 export interface SplitPreview {
   gridId: string;
@@ -359,7 +360,7 @@ export function TileGrids({
                       );
                       const canEdit = isSelected && !isDraggingThis;
                       const showDelIcon = canEdit && hasIcon;
-                      const showDelText = canEdit && hasIcon && hasText;
+                      const showDelText = canEdit && hasText;
 
                       const delBtn = (
                         onClick: (e: React.MouseEvent) => void,
@@ -369,6 +370,7 @@ export function TileGrids({
                           className="phone-tile-element-delete"
                           type="button"
                           aria-label={label}
+                          title={label}
                           onClick={(e) => {
                             e.stopPropagation();
                             onClick(e);
@@ -578,7 +580,8 @@ export function TileGrids({
                                   <button
                                     className="phone-tile-options-btn"
                                     type="button"
-                                    aria-label="Tile options"
+                                    aria-label={i18n.t("tile.open_tile_menu")}
+                                    title={i18n.t("tile.open_tile_menu")}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onTileOptionsClick(
@@ -604,7 +607,8 @@ export function TileGrids({
                                   <button
                                     className="phone-tile-delete-btn"
                                     type="button"
-                                    aria-label="Delete tile"
+                                    aria-label={i18n.t("tile.delete_tile")}
+                                    title={i18n.t("tile.delete_tile")}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onDeleteTile(
@@ -635,7 +639,8 @@ export function TileGrids({
                                   <button
                                     className="phone-tile-add-btn"
                                     type="button"
-                                    aria-label="Add column to right"
+                                    aria-label={i18n.t("tile.add_tile")}
+                                    title={i18n.t("tile.add_tile")}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onAddColumn(grid.InfoId, col.ColId);
@@ -739,7 +744,8 @@ export function TileGrids({
                     <button
                       className="phone-add-btn"
                       type="button"
-                      aria-label="Add content"
+                      aria-label={i18n.t("sidebar.add_section")}
+                      title={i18n.t("sidebar.add_section")}
                       onClick={(e) =>
                         onAddBtnClick(
                           e,

@@ -2,6 +2,7 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 import "./css/DuplicateAppVersionModal.css";
 import { copyAppVersion } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface DuplicateAppVersionModalProps {
   versionId: string;
@@ -23,7 +24,7 @@ export function DuplicateAppVersionModal({
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Version name is required.");
+      setError(i18n.t("messages.error.empty_version_name"));
       return;
     }
     setLoading(true);
@@ -32,7 +33,7 @@ export function DuplicateAppVersionModal({
       await copyAppVersion(versionId, trimmed);
       onDuplicated();
     } catch {
-      setError("Failed to duplicate version. Please try again.");
+      setError(i18n.t("navbar.appversion.duplicate_error"));
     } finally {
       setLoading(false);
     }
@@ -47,11 +48,11 @@ export function DuplicateAppVersionModal({
     <div className="dv-overlay" onMouseDown={onClose}>
       <div className="dv-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="dv-header">
-          <span className="dv-title">Duplicate version</span>
+          <span className="dv-title">{i18n.t("navbar.appversion.duplicate_title")}</span>
           <button
             className="dv-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("version_history.close")}
             onClick={onClose}
           >
             ✕
@@ -78,7 +79,7 @@ export function DuplicateAppVersionModal({
             disabled={loading || !name.trim()}
             onClick={handleSave}
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? i18n.t("navbar.appversion.saving") : i18n.t("navbar.appversion.save")}
           </button>
           <button
             className="dv-btn-secondary"
@@ -86,7 +87,7 @@ export function DuplicateAppVersionModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {i18n.t("navbar.appversion.cancel")}
           </button>
         </div>
       </div>
