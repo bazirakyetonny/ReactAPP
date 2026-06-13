@@ -2487,6 +2487,7 @@ function App() {
             activePageId={transPageId}
             pageName={transPageName}
             pageType={transPageType}
+            pageUrl={navUrls[transPageId]}
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
