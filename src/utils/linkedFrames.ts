@@ -19,6 +19,8 @@ interface BuildLinkedFramesParams {
   setSelectedTileId: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedCtaId: React.Dispatch<React.SetStateAction<string | null>>;
   setPendingCta: React.Dispatch<React.SetStateAction<any>>;
+  setNavStack: React.Dispatch<React.SetStateAction<string[]>>;
+  navSourceTiles: Record<string, string>;
   navUpdater: (pageId: string) => (transform: (blocks: any[]) => any[]) => void;
   handleCloseFromIndex: (stackIndex: number) => void;
   handleEditTile: (tileId: string, patch: Record<string, any>) => void;
@@ -34,7 +36,7 @@ export function buildLinkedFrames({
   navStack, navContents, navUrls, allPages,
   pushSnapshot, isResizingRef,
   selectedTileId, setSelectedTileId, setSelectedCtaId, setPendingCta,
-  navUpdater, handleCloseFromIndex,
+  setNavStack, navSourceTiles, navUpdater, handleCloseFromIndex,
   handleEditTile, handleSelectCta, handleEditCta, handleTileDoubleClick,
   getClipboard,
   onCommitNewPage, onCancelNewPage,
@@ -63,6 +65,13 @@ export function buildLinkedFrames({
       },
       onDeleteTile: (gridId: string, colId: string, tileId: string) => {
         if (selectedTileId === tileId) setSelectedTileId(null);
+        const linkedPageId = Object.entries(navSourceTiles).find(([, src]) => src === tileId)?.[0];
+        if (linkedPageId) {
+          setNavStack((prev) => {
+            const idx = prev.indexOf(linkedPageId);
+            return idx === -1 ? prev : prev.slice(0, idx);
+          });
+        }
         pushSnapshot();
         update(prev => applyDeleteTile(prev, gridId, colId, tileId));
       },
@@ -130,6 +139,14 @@ export function buildLinkedFrames({
         update(prev => applyEditDescription(prev, infoId, html));
       },
       onDeleteBlock: (infoId: string) => {
+        const block = (navContents[pageId] ?? []).find((b: any) => b.InfoId === infoId);
+        const linkedPageId = block?.CtaAttributes?.Action?.ObjectId as string | undefined;
+        if (linkedPageId) {
+          setNavStack((prev) => {
+            const idx = prev.indexOf(linkedPageId);
+            return idx === -1 ? prev : prev.slice(0, idx);
+          });
+        }
         pushSnapshot();
         update(prev => applyDeleteBlock(prev, infoId));
       },

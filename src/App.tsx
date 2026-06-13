@@ -405,6 +405,8 @@ function App() {
     navContents,
     setNavContents,
     navStack,
+    setNavStack,
+    navSourceTiles,
     selectedTileId,
     setSelectedTileId,
     setSelectedCtaId,
@@ -2171,6 +2173,8 @@ function App() {
     handleEditCta,
     handleTileDoubleClick,
     getClipboard: () => clipboard,
+    setNavStack,
+    navSourceTiles,
     onCommitNewPage: handleCommitNewPage,
     onCancelNewPage: handleCancelNewPage,
   });
