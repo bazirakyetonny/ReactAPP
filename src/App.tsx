@@ -134,6 +134,7 @@ function App() {
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [translationRevision, setTranslationRevision] = useState(0);
+  const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
     null,
   );
@@ -590,12 +591,15 @@ function App() {
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, saveError, savedAt, runSave } = useAutoSave(
+  const { isSaving, saveError, savedAt, runSave, flushSave } = useAutoSave(
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
   );
   runSaveRef.current = runSave;
+
+  const flushSaveRef = useRef(flushSave);
+  flushSaveRef.current = flushSave;
 
   // ── Analysis ─────────────────────────────────────────────────────────────
 
@@ -611,6 +615,9 @@ function App() {
     disabled: isPreviewMode,
     translationLanguages,
     translationRevision,
+    navTranslationRevision,
+    isTranslationOpen,
+    activePageId: transPageId,
   });
 
   const {
@@ -922,7 +929,7 @@ function App() {
         blockId: issue.blockId,
         tileId: issue.subItemId,
         language: issue.language,
-        message: issue.category === 1 ? "Invalid URL" : "Text too long",
+        message: issue.category === 1 ? i18n.t("navbar.analyse.invalid_url") : i18n.t("navbar.analyse.text_too_long"),
       });
     } else {
       setIsTranslationOpen(false);
@@ -960,8 +967,8 @@ function App() {
           tileId: currentAnalysisIssue.subItemId,
           message:
             currentAnalysisIssue.category === 1
-              ? "Invalid URL"
-              : "Text too long",
+              ? i18n.t("navbar.analyse.invalid_url")
+              : i18n.t("navbar.analyse.text_too_long"),
         }
       : null;
 
@@ -997,6 +1004,82 @@ function App() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isTranslationOpen]);
+
+  // When the active frame changes, translate the page the user just left —
+  // but only if its content or name actually changed since they arrived.
+  // null = home frame; resolved to the real home PageId before comparisons.
+  const prevFramePageIdRef = useRef<string | null>(null);
+  const frameSnapshotRef = useRef<{
+    pageId: string;
+    contentJson: string;
+    pageName: string;
+  } | null>(null);
+  useEffect(() => {
+    const prevRaw = prevFramePageIdRef.current;
+    prevFramePageIdRef.current = activeFramePageId;
+
+    const cv = dataStore.get("Current_Version");
+    const pages: any[] = cv?.Page ?? [];
+    const homeId = pages.find((p: any) => p.PageName?.toLowerCase() === "home")?.PageId;
+
+    const prevId = prevRaw ?? homeId;
+    const currentId = activeFramePageId ?? homeId;
+
+    // Determine whether the previous page was actually edited
+    let shouldTranslate = false;
+    if (prevId && prevId !== currentId) {
+      const snap = frameSnapshotRef.current;
+      if (snap && snap.pageId === prevId) {
+        const prevContent = prevId === homeId
+          ? infoContentRef.current
+          : (navContentsRef.current[prevId] ?? []);
+        const prevPage = pages.find((p: any) => p.PageId === prevId);
+        shouldTranslate =
+          JSON.stringify(prevContent) !== snap.contentJson ||
+          (prevPage?.PageName ?? "") !== snap.pageName;
+      } else {
+        shouldTranslate = true; // no baseline snapshot — translate to be safe
+      }
+    }
+
+    // Take a fresh snapshot of the page we just landed on
+    if (currentId) {
+      const content = currentId === homeId
+        ? infoContentRef.current
+        : (navContentsRef.current[currentId] ?? []);
+      const page = pages.find((p: any) => p.PageId === currentId);
+      frameSnapshotRef.current = {
+        pageId: currentId,
+        contentJson: JSON.stringify(content),
+        pageName: page?.PageName ?? "",
+      };
+    }
+
+    if (!shouldTranslate) return;
+
+    async function saveAndTranslate() {
+      await flushSaveRef.current(prevId!);
+
+      const freshCv = dataStore.get("Current_Version");
+      const langs: string[] = (() => {
+        try { return JSON.parse(freshCv?.AppVersionMultiLanguages ?? "[]"); }
+        catch { return []; }
+      })();
+
+      try {
+        await translateAppVersion({
+          appVersionId: freshCv?.AppVersionId ?? "",
+          languageFrom: freshCv?.AppVersionLanguage ?? "",
+          languageToCollection: langs,
+          activePageId: prevId!,
+        });
+        setNavTranslationRevision((r) => r + 1);
+      } catch {}
+    }
+
+    saveAndTranslate().catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFramePageId]);
 
   useEffect(() => {
     if (Object.keys(navContents).length === 0) return;
@@ -2169,6 +2252,7 @@ function App() {
         onAnalysisClose={() => {
           setAnalysisOpen(false);
           setTranslationHighlight(null);
+          setIsTranslationOpen(false);
         }}
         onPublish={() => setShowPublishModal(true)}
         onPublishAsTemplate={() => setShowPublishAsTemplateModal(true)}

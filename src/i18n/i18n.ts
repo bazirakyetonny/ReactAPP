@@ -124,6 +124,8 @@ export const i18n = new I18n({
         next_issue: "Next issue",
         issue_counter: "%{current}/%{total} issues",
         rerun: "Re-run analysis",
+        invalid_url: "Invalid URL",
+        text_too_long: "Text too long",
       },
       share: {
         label: "Share an interactive preview of this app",
@@ -636,6 +638,8 @@ export const i18n = new I18n({
         next_issue: "Volgend probleem",
         issue_counter: "%{current}/%{total} problemen",
         rerun: "Analyse opnieuw uitvoeren",
+        invalid_url: "Ongeldige URL",
+        text_too_long: "Tekst te lang",
       },
       share: {
         label: "Deel een interactief voorbeeld van deze app",

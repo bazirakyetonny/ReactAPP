@@ -19,9 +19,15 @@ interface UseAnalysisParams {
   translationLanguages?: string[];
   /** Increment to trigger a re-check of translated page text (e.g. after sidebar save) */
   translationRevision?: number;
+  /** Increment to trigger a full re-check of all translated pages after nav-triggered translateAppVersion */
+  navTranslationRevision?: number;
+  /** True while the translation sidebar is visible; gates getTranslatedPage calls */
+  isTranslationOpen?: boolean;
+  /** Active page in the translation sidebar; limits getTranslatedPage to that page */
+  activePageId?: string;
 }
 
-export function useAnalysis({ infoContent, navContents, pages, versionId, disabled, translationLanguages, translationRevision }: UseAnalysisParams) {
+export function useAnalysis({ infoContent, navContents, pages, versionId, disabled, translationLanguages, translationRevision, navTranslationRevision, isTranslationOpen, activePageId }: UseAnalysisParams) {
   // Sync issues (text length, etc.) update quickly; URL issues update after network checks.
   // Separating them lets the count reflect content changes immediately without waiting for HTTP.
   const [syncIssues, setSyncIssues] = useState<AnalysisIssue[]>([]);
@@ -42,10 +48,14 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
   const navContentsRef = useRef(navContents);
   const pagesRef = useRef(pages);
   const translationLanguagesRef = useRef(translationLanguages ?? []);
+  const isTranslationOpenRef = useRef(isTranslationOpen ?? false);
+  const activePageIdRef = useRef(activePageId ?? "");
   infoContentRef.current = infoContent;
   navContentsRef.current = navContents;
   pagesRef.current = pages;
   translationLanguagesRef.current = translationLanguages ?? [];
+  isTranslationOpenRef.current = isTranslationOpen ?? false;
+  activePageIdRef.current = activePageId ?? "";
 
   const PAGE_LINK_TYPES = new Set(['Information', 'BulletinBoard', 'Calendar', 'MyActivity', 'Map']);
 
@@ -155,14 +165,17 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
     setUrlIssues(issues);
   }
 
-  async function runTranslatedTextChecks() {
+  async function runTranslatedTextChecks(pageId?: string) {
     const langs = translationLanguagesRef.current;
     if (langs.length === 0) return;
     const { homeId, homeName } = homeInfo();
-    const pageEntries = [
+    const allEntries = [
       { pageId: homeId, pageName: homeName },
       ...reachablePages().map(p => ({ pageId: p.pageId, pageName: p.pageName })),
     ];
+    const pageEntries = pageId
+      ? allEntries.filter(e => e.pageId === pageId)
+      : allEntries;
     const results = await Promise.all(
       langs.flatMap(lang =>
         pageEntries.map(async ({ pageId, pageName }) => {
@@ -297,11 +310,27 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
     if (translRevTimerRef.current) clearTimeout(translRevTimerRef.current);
     translRevTimerRef.current = setTimeout(() => {
       cancelRef.current = false;
-      runTranslatedTextChecks();
+      runTranslatedTextChecks(activePageIdRef.current || undefined);
     }, 300);
     return () => { if (translRevTimerRef.current) clearTimeout(translRevTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [translationRevision, disabled]);
+
+  // After nav-triggered translateAppVersion completes, re-check all translated pages.
+  useEffect(() => {
+    if (disabled || !navTranslationRevision) return;
+    cancelRef.current = false;
+    runTranslatedTextChecks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTranslationRevision, disabled]);
+
+  // When the translation sidebar opens, refresh counts for the active page only.
+  useEffect(() => {
+    if (disabled || !isTranslationOpen || !firstUrlDoneRef.current) return;
+    cancelRef.current = false;
+    runTranslatedTextChecks(activePageIdRef.current || undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTranslationOpen, disabled]);
 
   function rerun() {
     setSyncIssues(runSyncChecks());
