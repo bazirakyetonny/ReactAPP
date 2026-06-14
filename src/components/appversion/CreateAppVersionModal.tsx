@@ -50,8 +50,11 @@ export function CreateAppVersionModal({
     dataStore.get("SupportedLanguages") ?? [];
 
   const defaultLanguage: string = dataStore.get("Current_Language") ?? "";
+  // Match by value (code) first, then by label — ensures we always store a code, not a display name.
   const defaultLanguageCode: string =
-    languages.find((l) => l.label === defaultLanguage)?.value ?? defaultLanguage;
+    languages.find((l) => l.value === defaultLanguage || l.label === defaultLanguage)?.value ??
+    languages[0]?.value ??
+    "";
 
   const [versionName, setVersionName] = useState("");
   const [versionLanguage, setVersionLanguage] = useState("");
@@ -165,7 +168,7 @@ export function CreateAppVersionModal({
       const result = await createAppVersion({
         AppVersionName: name,
         AppVersionLanguage: versionLanguage,
-        TranslateLanguages: translateLanguages,
+        TranslateLanguages: translateLanguages.filter((l) => l !== versionLanguage),
         MoodId: isBlank
           ? noMood
             ? undefined

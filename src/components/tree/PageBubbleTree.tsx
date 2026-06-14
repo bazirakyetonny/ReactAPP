@@ -58,6 +58,8 @@ export function PageBubbleTree({
 
   const initialFocus = navStack.length > 0 ? navStack[navStack.length - 1] : homeId;
   const [focusedPageId, setFocusedPageId] = useState(initialFocus);
+  // Start with the exact navStack path the editor has open, not BFS shortest
+  const [currentPath, setCurrentPath] = useState<string[]>(navStack);
   const [viewMode, setViewMode] = useState<'focused' | 'all'>('focused');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; pageId: string } | null>(null);
   const [deleteModalPageId, setDeleteModalPageId] = useState<string | null>(null);
@@ -86,8 +88,8 @@ export function PageBubbleTree({
     if (viewMode === 'all') {
       return { visibleNodes: nodes as SimNode[], visibleEdges: edges };
     }
-    // Full BFS path from home to the focused page
-    const pathIds = new Set([homeId, ...getPath(focusedPageId)]);
+    // Use currentPath (editor navStack on open, BFS after in-tree navigation)
+    const pathIds = new Set([homeId, ...currentPath]);
     // Direct children of the focused page
     const childIds = new Set(
       edges.filter(e => e.source === focusedPageId).map(e => e.target as string)
@@ -174,22 +176,44 @@ export function PageBubbleTree({
     return () => window.removeEventListener('click', dismiss);
   }, [contextMenu]);
 
-  const focusPath = getPath(focusedPageId);
-  const breadcrumbIds = [homeId, ...focusPath];
+  const breadcrumbIds = [homeId, ...currentPath];
+
+  // Resolve the path to a node using the current tree context instead of BFS.
+  // Walks [home, ...currentPath] from deepest to shallowest to find which
+  // context ancestor has an edge into nodeId, then builds the path via that ancestor.
+  function pathToInContext(nodeId: string): string[] {
+    if (nodeId === homeId) return [];
+    const idx = currentPath.indexOf(nodeId);
+    if (idx !== -1) return currentPath.slice(0, idx + 1);
+    const contextNodes = [homeId, ...currentPath];
+    for (let i = contextNodes.length - 1; i >= 0; i--) {
+      const parentId = contextNodes[i];
+      const linked = edges.some(e => e.source === parentId && e.target === nodeId);
+      if (linked) {
+        if (parentId === homeId) return [nodeId];
+        return [...currentPath.slice(0, currentPath.indexOf(parentId) + 1), nodeId];
+      }
+    }
+    return getPath(nodeId);
+  }
 
   function handleNodeClick(nodeId: string) {
+    const path = pathToInContext(nodeId);
     setFocusedPageId(nodeId);
+    setCurrentPath(path);
     setViewMode('focused');
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node?.isOrphan) {
+      onNavigateToPath(path);
+    }
   }
 
   function handleEdgeClick(edge: GraphEdge) {
     const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id;
     const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id;
-    // Build path by following the drawn stroke: path-to-source + target.
-    // This ensures we always navigate via the clicked edge, not BFS shortest path.
-    const pathToSource = getPath(srcId);
-    const fullPath = [...pathToSource, targetId];
+    const fullPath = [...pathToInContext(srcId), targetId];
     setFocusedPageId(targetId);
+    setCurrentPath(fullPath);
     onNavigateToPath(fullPath);
   }
 
@@ -295,7 +319,7 @@ export function PageBubbleTree({
                 return (
                   <span key={id} className="tree-breadcrumb-item">
                     {i > 0 && <span className="tree-breadcrumb-sep">›</span>}
-                    <button type="button" className="tree-breadcrumb-btn" onClick={() => setFocusedPageId(id)}>
+                    <button type="button" className="tree-breadcrumb-btn" onClick={() => { setFocusedPageId(id); setCurrentPath(getPath(id)); }}>
                       {name}
                     </button>
                   </span>

@@ -76,7 +76,10 @@ export function useNavigation() {
       Page: (cv.Page ?? []).filter((p: any) => p.PageId !== pageId),
       Pages: (cv.Pages ?? []).filter((p: any) => p.PageId !== pageId),
     });
-    setNavStack((prev) => prev.filter((id) => id !== pageId));
+    setNavStack((prev) => {
+      const idx = prev.indexOf(pageId);
+      return idx === -1 ? prev : prev.slice(0, idx);
+    });
     setNavContents((prev) => {
       const n = { ...prev };
       delete n[pageId];
