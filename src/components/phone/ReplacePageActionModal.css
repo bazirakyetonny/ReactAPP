@@ -1,0 +1,99 @@
+.rpa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpa-modal {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rpa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rpa-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.rpa-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.rpa-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.rpa-body {
+  padding: 20px;
+}
+
+.rpa-message {
+  font-size: 13px;
+  color: #374151;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.rpa-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rpa-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.rpa-btn--primary {
+  background: #1a3a6e;
+  color: #ffffff;
+}
+
+.rpa-btn--primary:hover {
+  background: #162f5c;
+}
+
+.rpa-btn--secondary {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0 16px;
+}
+
+.rpa-btn--secondary:hover {
+  background: #f9fafb;
+}
