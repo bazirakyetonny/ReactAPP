@@ -31,6 +31,8 @@ interface Props {
   navContents: Record<string, any[]>;
   setNavContents: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
   navStack: string[];
+  setNavStack: React.Dispatch<React.SetStateAction<string[]>>;
+  navSourceTiles: Record<string, string>;
   selectedTileId: string | null;
   setSelectedTileId: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedCtaId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -46,6 +48,8 @@ export function useContentHandlers({
   navContents,
   setNavContents,
   navStack,
+  setNavStack,
+  navSourceTiles,
   selectedTileId,
   setSelectedTileId,
   setSelectedCtaId,
@@ -63,6 +67,13 @@ export function useContentHandlers({
 
   function handleDeleteTile(gridId: string, colId: string, tileId: string) {
     if (selectedTileId === tileId) setSelectedTileId(null);
+    const linkedPageId = Object.entries(navSourceTiles).find(([, src]) => src === tileId)?.[0];
+    if (linkedPageId) {
+      setNavStack((prev) => {
+        const idx = prev.indexOf(linkedPageId);
+        return idx === -1 ? prev : prev.slice(0, idx);
+      });
+    }
     pushSnapshot();
     setInfoContent((prev) => applyDeleteTile(prev, gridId, colId, tileId));
   }
@@ -150,6 +161,14 @@ export function useContentHandlers({
   }
 
   function handleDeleteBlock(infoId: string) {
+    const block = infoContent.find((b: any) => b.InfoId === infoId);
+    const linkedPageId = block?.CtaAttributes?.Action?.ObjectId as string | undefined;
+    if (linkedPageId) {
+      setNavStack((prev) => {
+        const idx = prev.indexOf(linkedPageId);
+        return idx === -1 ? prev : prev.slice(0, idx);
+      });
+    }
     pushSnapshot();
     setInfoContent((prev) => applyDeleteBlock(prev, infoId));
   }

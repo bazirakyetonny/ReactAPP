@@ -405,6 +405,8 @@ function App() {
     navContents,
     setNavContents,
     navStack,
+    setNavStack,
+    navSourceTiles,
     selectedTileId,
     setSelectedTileId,
     setSelectedCtaId,
@@ -954,6 +956,26 @@ function App() {
   function handleAnalysisNext() {
     if (analysisIssues.length === 0) return;
     goToAnalysisIssue((analysisIndex + 1) % analysisIssues.length);
+  }
+
+  function handlePublishClick() {
+    const cv = dataStore.get("Current_Version");
+    const pages: any[] = cv?.Page ?? [];
+    const homeId = pages.find((p: any) => p.PageName?.toLowerCase() === "home")?.PageId;
+    const currentPageId = activeFramePageId ?? homeId;
+    const langs: string[] = (() => {
+      try { return JSON.parse(cv?.AppVersionMultiLanguages ?? "[]"); }
+      catch { return []; }
+    })();
+    if (currentPageId && langs.length > 0) {
+      translateAppVersion({
+        appVersionId: cv?.AppVersionId ?? "",
+        languageFrom: cv?.AppVersionLanguage ?? "",
+        languageToCollection: langs,
+        activePageId: currentPageId,
+      }).catch(() => {});
+    }
+    setShowPublishModal(true);
   }
 
   const currentAnalysisIssue =
@@ -2151,6 +2173,8 @@ function App() {
     handleEditCta,
     handleTileDoubleClick,
     getClipboard: () => clipboard,
+    setNavStack,
+    navSourceTiles,
     onCommitNewPage: handleCommitNewPage,
     onCancelNewPage: handleCancelNewPage,
   });
@@ -2254,7 +2278,7 @@ function App() {
           setTranslationHighlight(null);
           setIsTranslationOpen(false);
         }}
-        onPublish={() => setShowPublishModal(true)}
+        onPublish={handlePublishClick}
         onPublishAsTemplate={() => setShowPublishAsTemplateModal(true)}
         onUnpublishTemplate={() => setShowUnpublishTemplateModal(true)}
         onShareClick={() => setShowShareModal(true)}
@@ -2467,6 +2491,7 @@ function App() {
             activePageId={transPageId}
             pageName={transPageName}
             pageType={transPageType}
+            pageUrl={navUrls[transPageId]}
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}

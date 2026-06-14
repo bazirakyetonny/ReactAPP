@@ -1828,6 +1828,12 @@
   border-radius: 6px;
   flex-shrink: 0;
 }
+.phone-cta-round svg,
+.phone-cta-round svg *,
+.phone-cta-icon-box svg,
+.phone-cta-icon-box svg * {
+  pointer-events: none;
+}
 .phone-cta-img-wrap {
   position: relative;
   flex-shrink: 0;

@@ -14,6 +14,7 @@ import { BulletinBoardPage } from "../BulletinBoardPage";
 import { CalendarPage } from "../CalendarPage";
 import { MyActivityPage } from "../MyActivityPage";
 import { MapPage } from "../MapPage";
+import { WeblinkFrame } from "../phone/WeblinkFrame";
 import {
   translateAppVersion,
   getTranslatedPage,
@@ -27,6 +28,7 @@ export function TranslationSideBar({
   appVersionMultiLanguages,
   activePageId,
   pageType,
+  pageUrl,
   themeColors,
   themeIcons,
   ctaColors,
@@ -42,6 +44,7 @@ export function TranslationSideBar({
   appVersionMultiLanguages: string[];
   activePageId: string;
   pageType?: string;
+  pageUrl?: string;
   themeColors?: ThemeColors;
   themeIcons?: ThemeIcon[];
   ctaColors?: ThemeCtaColor[];
@@ -496,7 +499,9 @@ export function TranslationSideBar({
             <div className="ts-phone-scroll" ref={scrollRef}>
               {pageType && MODULE_PAGE_TYPES.has(pageType)
                 ? renderModulePage()
-                : renderEditableBlocks()}
+                : (pageType === "WebLink" || pageType === "DynamicForm") && pageUrl
+                  ? <WeblinkFrame src={pageUrl} title={pageName ?? pageType} />
+                  : renderEditableBlocks()}
             </div>
           </div>
         )}
