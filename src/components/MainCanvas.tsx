@@ -27,18 +27,12 @@ import { MapPage } from "./MapPage";
 import { DeletePageButton, DeletePageModal } from "./phone/DeletePageButton";
 import { WeblinkFrame } from "./phone/WeblinkFrame";
 import { NavPathsOverlay } from "./NavPathsOverlay";
-
-const MODULE_PAGE_TYPES = new Set([
-  "BulletinBoard",
-  "Calendar",
-  "MyActivity",
-  "Map",
-]);
+import { MODULE_PAGE_TYPES } from "../constants";
 
 function renderModulePage(pageType: string, themeColors?: ThemeColors) {
   switch (pageType) {
     case "BulletinBoard":
-      return <BulletinBoardPage />;
+      return <BulletinBoardPage themeColors={themeColors} />;
     case "Calendar":
       return <CalendarPage themeColors={themeColors} />;
     case "MyActivity":

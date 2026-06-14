@@ -358,9 +358,10 @@ export function TileGrids({
                         1,
                         Math.floor(availableForText / (15 * 1.3)),
                       );
-                      const canEdit = isSelected && !isDraggingThis;
-                      const showDelIcon = canEdit && hasIcon;
-                      const showDelText = canEdit && hasText;
+                      const canEdit =
+                        isSelected && !isDraggingThis && !!onEditTile;
+                      const showDelIcon = canEdit && hasIcon && hasText;
+                      const showDelText = canEdit && hasIcon && hasText;
 
                       const delBtn = (
                         onClick: (e: React.MouseEvent) => void,

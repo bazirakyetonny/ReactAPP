@@ -1,8 +1,15 @@
-export function BulletinBoardPage() {
+import type { ThemeColors } from "../types";
+
+interface BulletinBoardPageProps {
+  themeColors?: ThemeColors;
+}
+
+export function BulletinBoardPage({ themeColors }: BulletinBoardPageProps) {
+  const fabBg = themeColors?.backgroundColor ?? '#1F68A8';
   return (
     <div style={{
       width: '100%',
-      height: '100vh',
+      height: '100%',
       position: 'relative',
       backgroundColor: 'transparent',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -66,12 +73,12 @@ export function BulletinBoardPage() {
       <button
         disabled
         style={{
-          position: 'fixed',
+          position: 'absolute',
           bottom: '1rem',
           right: '1rem',
           width: '2.75rem',
           height: '2.75rem',
-          backgroundColor: '#1F68A8',
+          backgroundColor: fabBg,
           border: 'none',
           borderRadius: '50%',
           display: 'flex',

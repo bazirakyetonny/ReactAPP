@@ -412,6 +412,7 @@
   height: 22px;
   flex-shrink: 0;
   color: inherit;
+  pointer-events: none;
 }
 
 .phone-tile-icon svg {
@@ -419,10 +420,12 @@
   height: 22px;
   display: block;
   fill: currentColor;
+  pointer-events: none;
 }
 
 .phone-tile-icon svg * {
   fill: currentColor;
+  pointer-events: none;
 }
 
 .phone-tile-text {
@@ -683,7 +686,7 @@
   pointer-events: auto;
 }
 
-/* + visible on hover for all tiles, selected or not */
+/* + button visible on hover for all tiles */
 .phone-tile-wrap:hover .phone-tile-add-btn {
   opacity: 1;
   pointer-events: auto;

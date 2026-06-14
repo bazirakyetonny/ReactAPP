@@ -12,10 +12,7 @@ export function CalendarPage({ themeColors }: CalendarPageProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const headerBg = themeColors?.primaryColor ?? '#1F68A8';
-  const border   = themeColors?.borderColor ?? '#e5e7eb';
-  const muted    = themeColors?.secondaryColor ?? '#9ca3af';
-  const accent   = themeColors?.accentColor ?? '#ef4444';
+  const headerBg = themeColors?.backgroundColor ?? '#1F68A8';
 
   const now = new Date();
   const isToday = currentDate.toDateString() === now.toDateString();
@@ -85,8 +82,8 @@ export function CalendarPage({ themeColors }: CalendarPageProps) {
               {/* Time label */}
               <div style={{
                 width: '52px', flexShrink: 0,
-                paddingLeft: '8px', fontSize: '11px',
-                color: muted, lineHeight: 1, userSelect: 'none',
+                paddingLeft: '8px', fontSize: '14px', fontWeight: 500,
+                color: '#a0a1a4', lineHeight: 1, userSelect: 'none',
               }}>
                 {label}
               </div>
@@ -97,7 +94,8 @@ export function CalendarPage({ themeColors }: CalendarPageProps) {
                 <div style={{
                   position: 'absolute', left: 0, right: 0,
                   top: '50%', height: '1px',
-                  backgroundColor: '#dcdbd9',
+                  backgroundColor: '#dcdbd9', 
+                  marginRight: '6px',
                   transform: 'translateY(-50%)',
                 }} />
 

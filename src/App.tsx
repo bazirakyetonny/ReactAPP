@@ -489,6 +489,7 @@ function App() {
     : homePage;
   const transPageId = transPage?.PageId ?? homePage?.PageId ?? "";
   const transPageName = transPage?.PageName ?? "Home";
+  const transPageType = transPage?.PageType ?? homePage?.PageType ?? "Information";
 
   // When a WebLink page enters the nav stack (tree, analysis, or tile navigation),
   // ensure its URL is in navUrls so the iframe renders correctly.
@@ -2381,6 +2382,7 @@ function App() {
             appVersionMultiLanguages={appVersionMultiLanguages}
             activePageId={transPageId}
             pageName={transPageName}
+            pageType={transPageType}
             themeColors={selectedTheme?.ThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}

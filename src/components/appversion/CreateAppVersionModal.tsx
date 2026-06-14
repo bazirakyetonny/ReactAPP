@@ -50,6 +50,8 @@ export function CreateAppVersionModal({
     dataStore.get("SupportedLanguages") ?? [];
 
   const defaultLanguage: string = dataStore.get("Current_Language") ?? "";
+  const defaultLanguageCode: string =
+    languages.find((l) => l.label === defaultLanguage)?.value ?? defaultLanguage;
 
   const [versionName, setVersionName] = useState("");
   const [versionLanguage, setVersionLanguage] = useState("");
@@ -94,14 +96,14 @@ export function CreateAppVersionModal({
     setError(null);
     if (id === BLANK_ID) {
       setVersionName("");
-      setVersionLanguage(defaultLanguage);
+      setVersionLanguage(defaultLanguageCode);
     }
     setStep(2);
   }
 
   function handleNextToDetails() {
     setVersionName(selectedTemplate?.AppVersionName ?? "");
-    setVersionLanguage(selectedTemplate?.AppVersionLanguage ?? defaultLanguage);
+    setVersionLanguage(selectedTemplate?.AppVersionLanguage ?? defaultLanguageCode);
     setError(null);
     setStep(3);
   }
