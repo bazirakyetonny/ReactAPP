@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import ReactDOM from "react-dom";
+import { i18n } from "../i18n/i18n";
 import "./AlertMessage.css";
 
 export type AlertStatus = "success" | "warning" | "danger";
@@ -17,13 +18,12 @@ const ICONS: Record<AlertStatus, string> = {
   danger: "✕",
 };
 
-const TITLES: Record<AlertStatus, string> = {
-  success: "Success",
-  warning: "Warning",
-  danger: "Error",
-};
-
 export function AlertMessage({ message, status, visible, onClose }: AlertMessageProps) {
+  const TITLES: Record<AlertStatus, string> = {
+    success: i18n.t("alert.success"),
+    warning: i18n.t("alert.warning"),
+    danger: i18n.t("alert.error"),
+  };
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(onClose, 3000);

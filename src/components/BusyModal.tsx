@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
 import { releaseToolbox } from "../services/toolboxApi";
+import { i18n } from "../i18n/i18n";
 import "./BusyModal.css";
 
 interface BusyModalProps {
@@ -24,15 +25,11 @@ export function BusyModal({ onReviewOnly }: BusyModalProps) {
     <div className="bm-overlay">
       <div className="bm-modal">
         <div className="bm-header">
-          <span className="bm-title">Access Blocked</span>
+          <span className="bm-title">{i18n.t("busy_modal.title")}</span>
         </div>
 
         <div className="bm-body">
-          <p className="bm-message">
-            Access blocked — two receptionists or managers are already using
-            this app builder. You can review the content in read-only mode, take
-            control by releasing the current session, or go back.
-          </p>
+          <p className="bm-message">{i18n.t("busy_modal.message")}</p>
         </div>
 
         <div className="bm-footer">
@@ -41,7 +38,7 @@ export function BusyModal({ onReviewOnly }: BusyModalProps) {
             type="button"
             onClick={() => window.history.back()}
           >
-            Close
+            {i18n.t("navbar.share.close")}
           </button>
           <div className="bm-footer-right">
             <button
@@ -49,7 +46,7 @@ export function BusyModal({ onReviewOnly }: BusyModalProps) {
               type="button"
               onClick={onReviewOnly}
             >
-              Review only
+              {i18n.t("busy_modal.review_only")}
             </button>
             <button
               className="bm-btn-primary"
@@ -57,7 +54,7 @@ export function BusyModal({ onReviewOnly }: BusyModalProps) {
               disabled={taking}
               onClick={handleTakeControl}
             >
-              {taking ? "Taking control…" : "Take control"}
+              {taking ? i18n.t("busy_modal.taking_control") : i18n.t("busy_modal.take_control")}
             </button>
           </div>
         </div>

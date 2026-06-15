@@ -166,10 +166,45 @@ If the feature introduces new block types that contain URLs or user-visible text
 
 ## Phase 7 — i18n
 
-**M. i18n is not yet wired**
-`i18n-js` is installed but translation is not implemented. Use plain string literals for now.
-When i18n is wired up in a future session, all user-visible labels will need keys — use
-descriptive variable names for labels so they are easy to find and extract later.
+**M. Use `i18n.t()` for every user-visible string**
+`i18n-js` is wired up in `src/i18n/i18n.ts` with English (`en`) and Dutch (`nl`) dictionaries.
+Never hard-code a user-visible string in JSX or in logic — always go through `i18n.t()`.
+
+**Step 1 — Check for an existing key**
+Before adding a new key, search `src/i18n/i18n.ts` for the string or a close equivalent.
+Reuse an existing key if the meaning is the same (e.g. `navbar.appversion.cancel` for "Cancel").
+
+**Step 2 — Add missing keys to both languages**
+If no existing key fits, add it to *both* `en` and `nl` blocks in `src/i18n/i18n.ts`.
+Place the key in the most appropriate namespace (e.g. `navbar.appversion.*` for version modal
+strings, `busy_modal.*` for a modal, `alert.*` for notification titles).
+
+```ts
+// in i18n.ts — add to both en and nl
+your_namespace: {
+  your_key: "English text",   // en
+  your_key: "Dutch text",     // nl
+}
+```
+
+**Step 3 — Use in components**
+```tsx
+import { i18n } from "../../i18n/i18n";
+
+// static label
+<span>{i18n.t("your_namespace.your_key")}</span>
+
+// with interpolation
+<span>{i18n.t("your_namespace.greeting", { name: user.name })}</span>
+
+// in logic (error messages, aria-labels, etc.)
+setError(i18n.t("your_namespace.validation_message"));
+```
+
+**Rules:**
+- Import path depends on depth: `"../i18n/i18n"` from `components/`, `"../../i18n/i18n"` from `components/subfolder/`
+- For strings computed at render time (e.g. a record keyed by a union type), build the record *inside* the component function so the active locale is respected
+- Never use `i18nModule` (the legacy instance) — always use the named export `i18n`
 
 ---
 
