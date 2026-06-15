@@ -53,7 +53,9 @@ export function CreateAppVersionModal({
   const defaultLanguage: string = dataStore.get("Current_Language") ?? "";
   // Match by value (code) first, then by label — ensures we always store a code, not a display name.
   const defaultLanguageCode: string =
-    languages.find((l) => l.value === defaultLanguage || l.label === defaultLanguage)?.value ??
+    languages.find(
+      (l) => l.value === defaultLanguage || l.label === defaultLanguage,
+    )?.value ??
     languages[0]?.value ??
     "";
 
@@ -96,6 +98,7 @@ export function CreateAppVersionModal({
     const templateMoodId = template?.MoodId ?? "";
     const moodExists = moods.some((m) => m.MoodId === templateMoodId);
     setSelectedId(id);
+    console.log("Selected template:", template);
     setSelectedMoodId(moodExists ? templateMoodId : (moods[0]?.MoodId ?? null));
     setError(null);
     if (id === BLANK_ID) {
@@ -107,7 +110,9 @@ export function CreateAppVersionModal({
 
   function handleNextToDetails() {
     setVersionName(selectedTemplate?.AppVersionName ?? "");
-    setVersionLanguage(selectedTemplate?.AppVersionLanguage ?? defaultLanguageCode);
+    setVersionLanguage(
+      selectedTemplate?.AppVersionLanguage ?? defaultLanguageCode,
+    );
     setError(null);
     setStep(3);
   }
@@ -144,9 +149,9 @@ export function CreateAppVersionModal({
         selectedMoodId &&
         selectedMoodId !== selectedTemplate.MoodId
       ) {
-        const originalMood = moods.find(
-          (m) => m.MoodId === selectedTemplate.MoodId,
-        );
+        const originalMood =
+          moods.find((m) => m.MoodId === selectedTemplate.MoodId) ??
+          moods[0];
         const selectedMood = moods.find((m) => m.MoodId === selectedMoodId);
         let originalNames: string[] = [];
         let selectedNames: string[] = [];
@@ -169,7 +174,9 @@ export function CreateAppVersionModal({
       const result = await createAppVersion({
         AppVersionName: name,
         AppVersionLanguage: versionLanguage,
-        TranslateLanguages: translateLanguages.filter((l) => l !== versionLanguage),
+        TranslateLanguages: translateLanguages.filter(
+          (l) => l !== versionLanguage,
+        ),
         MoodId: isBlank
           ? noMood
             ? undefined
@@ -397,7 +404,7 @@ export function CreateAppVersionModal({
                 onClick={() => setStep(2)}
                 disabled={loading}
               >
-                ← Back
+                Back
               </button>
               <button
                 className="cav-btn-primary"
@@ -474,7 +481,7 @@ export function CreateAppVersionModal({
                 onClick={() => setStep(2)}
                 disabled={loading}
               >
-                ← Back
+                Back
               </button>
               <button
                 className="cav-btn-primary"

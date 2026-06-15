@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { dataStore } from "../../data/datastore";
 import comfortaLogo from "../../assets/ComfortaLogo1.png";
-import { i18n } from '../../i18n/i18n';
+import { i18n } from "../../i18n/i18n";
 
 function ProfileIcon() {
   return (
@@ -153,7 +153,7 @@ export function PhoneLinkedHeader({
           className="phone-linked-page-name-input"
           value={draft}
           placeholder={isNew ? i18n.t("page.name_placeholder") : undefined}
-          onChange={e => setDraft(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {
             if (isNew) {
               if (draft.trim()) commit();

@@ -408,7 +408,7 @@ export function DraggableScreen({
           if (count > dragRef.current.split.maxCount) dragRef.current.split.maxCount = count;
           setSplitPreview(prev => prev ? { ...prev, count } : null);
         }
-        onEditTileRef.current?.(dragTileId!, { Height: Math.round(raw) });
+        onEditTileRef.current?.(dragTileId!, { Height: Math.round(raw), Size: Math.round(raw) });
       } else if (dragRef.current.freeResize) {
         const raw = Math.min(SPLIT_SNAPS[SPLIT_SNAPS.length - 1], Math.max(TILE_H, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
@@ -420,18 +420,18 @@ export function DraggableScreen({
           const extraSkeletonCount = Math.max(0, zoneCount - initialCount);
           setFreeResizePreview(prev => prev ? { ...prev, activeCount, extraSkeletonCount } : null);
         }
-        onEditTileRef.current?.(dragTileId!, { Height: dragRef.current.currentHeight });
+        onEditTileRef.current?.(dragTileId!, { Height: dragRef.current.currentHeight, Size: dragRef.current.currentHeight });
       } else {
         const raw = Math.min(SNAP_POINTS[SNAP_POINTS.length - 1], Math.max(80, dragRef.current.startHeight + (e.clientY - dragRef.current.startY)));
         dragRef.current.currentHeight = Math.round(raw);
-        onEditTileRef.current?.(dragTileId!, { Height: softSnapHeight(raw) });
+        onEditTileRef.current?.(dragTileId!, { Height: softSnapHeight(raw), Size: softSnapHeight(raw) });
       }
     }
 
     function onMouseUp() {
       if (dragRef.current?.split) {
         const { gridId, oppositeColId, currentCount, maxCount } = dragRef.current.split;
-        onEditTileRef.current?.(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1] });
+        onEditTileRef.current?.(dragTileId!, { Height: SPLIT_SNAPS[currentCount - 1], Size: SPLIT_SNAPS[currentCount - 1] });
         if (currentCount > 1) onAddTilesToColumnRef.current?.(gridId, oppositeColId, currentCount - 1);
         const passed = maxCount - currentCount;
         for (let i = 0; i < passed; i++) onAddStandaloneTileRef.current?.();
@@ -440,7 +440,7 @@ export function DraggableScreen({
         const snapH = SPLIT_SNAPS[currentZoneCount - 1];
         onFreeResizeReleaseRef.current?.(gridId, dragTileId!, snapH, currentZoneCount, initialCount, oppColId, oppColTiles);
       } else if (dragRef.current) {
-        onEditTileRef.current?.(dragTileId!, { Height: snapHeight(dragRef.current.currentHeight) });
+        onEditTileRef.current?.(dragTileId!, { Height: snapHeight(dragRef.current.currentHeight), Size: snapHeight(dragRef.current.currentHeight) });
       }
       setDragTileId(null);
       setSplitPreview(null);

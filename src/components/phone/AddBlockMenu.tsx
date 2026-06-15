@@ -75,8 +75,9 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
         >
           <button
             className={`add-block-menu__item${item.sub && ctaHovered ? ' add-block-menu__item--expanded' : ''}`}
-            onMouseDown={e => e.stopPropagation()}
+            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
             onClick={e => {
+              e.preventDefault();
               e.stopPropagation();
               if (!item.sub) onSelect(item.type);
             }}
@@ -93,8 +94,8 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
                 <button
                   key={sub.type}
                   className="add-block-menu__sub-item"
-                  onMouseDown={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); onSelect(sub.type); }}
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); onSelect(sub.type); }}
                 >
                   {sub.label}
                 </button>
@@ -108,8 +109,8 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
         <div className="add-block-menu__item-wrap">
           <button
             className="add-block-menu__item"
-            onMouseDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onPaste?.(); onClose(); }}
+            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onPaste?.(); onClose(); }}
           >
             <span>{i18n.t("sidebar.action_list.paste")}</span>
           </button>
