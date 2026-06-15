@@ -593,7 +593,7 @@ function App() {
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, saveError, savedAt, runSave, flushSave } = useAutoSave(
+  const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } = useAutoSave(
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
@@ -2250,7 +2250,7 @@ function App() {
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
         isTreeOpen={treeOpen}
-        isSaving={isSaving}
+        isSaving={isDirty}
         saveError={saveError}
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}

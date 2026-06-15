@@ -584,9 +584,9 @@ export function NavBar({
             <button
               className="navbar-icon-btn"
               type="button"
-              title={i18n.t("translate")}
+              title={isSaving ? i18n.t("navbar.autoSave.saving") : i18n.t("translate")}
               onClick={onTranslationToggle}
-              disabled={locked && !isTranslationOpen}
+              disabled={(locked && !isTranslationOpen) || isSaving}
             >
               <GlobeIcon active={isTranslationOpen} />
             </button>
@@ -630,7 +630,7 @@ export function NavBar({
               type="button"
               onClick={onUnpublishTemplate}
               title={i18n.t("navbar.publish.un_publish")}
-              disabled={locked}
+              disabled={locked || isSaving || isAnalyzing}
             >
               <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
                 <UploadIcon />
@@ -639,7 +639,7 @@ export function NavBar({
             </button>
           ) : (
             <button
-              disabled={locked}
+              disabled={locked || isSaving || isAnalyzing}
               className="navbar-publish"
               type="button"
               onClick={onPublishAsTemplate}
@@ -650,7 +650,7 @@ export function NavBar({
           )
         ) : (
           <button
-            disabled={locked}
+            disabled={locked || isSaving || isAnalyzing}
             className="navbar-publish"
             type="button"
             onClick={onPublish}
