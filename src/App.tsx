@@ -414,6 +414,7 @@ function App() {
     pushSnapshot,
     isResizingRef,
     onNewTileCreated: () => setNavStack([]),
+    onNewBlockAdded: scrollToNewBlock,
   });
 
   // ── Version switching ────────────────────────────────────────────────────
@@ -966,6 +967,27 @@ function App() {
     });
   }
 
+  function scrollToNewBlock(infoId: string) {
+    requestAnimationFrame(() => {
+      let el: HTMLElement | null = null;
+      if (infoId.startsWith('grid-')) {
+        const tileTs = infoId.slice(5);
+        el = document.querySelector(`[data-tile-id="tile-${tileTs}"]`) as HTMLElement | null;
+      } else {
+        el = document.querySelector(`[data-block-id="${infoId}"]`) as HTMLElement | null;
+      }
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      }
+    });
+  }
+
   function handleAnalysisPrev() {
     if (analysisIssues.length === 0) return;
     goToAnalysisIssue(
@@ -1263,6 +1285,7 @@ function App() {
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId, ts, finalAttrs),
       );
+      scrollToNewBlock(`cta-${ts}`);
     } else {
       setNavContents((prev) => ({
         ...prev,

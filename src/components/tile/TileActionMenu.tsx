@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { dataStore } from "../../data/datastore";
 import { AddCtaModal } from "../phone/AddCtaModal";
@@ -24,7 +24,7 @@ export type TileMenuAction =
 
 interface TileActionMenuProps {
   tileId: string;
-  pos: { x: number; y: number };
+  pos: { x: number; y: number; containerBottom?: number };
   onAction: (tileId: string, action: TileMenuAction) => void;
   onClose: () => void;
 }
@@ -131,6 +131,20 @@ export function TileActionMenu({
   const directLinkTypeRef = useRef<string | null>(null);
   directLinkTypeRef.current = directLinkType;
 
+  const [computedPos, setComputedPos] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const menuH = ref.current.offsetHeight;
+    const menuW = ref.current.offsetWidth;
+    const boundary = pos.containerBottom ?? window.innerHeight;
+    const top = pos.y + menuH > boundary - 8
+      ? Math.max(8, pos.y - menuH - 28)
+      : pos.y;
+    const left = Math.min(pos.x, window.innerWidth - menuW - 8);
+    setComputedPos({ left, top });
+  }, [pos.x, pos.y, pos.containerBottom]);
+
   const cv = dataStore.get("Current_Version");
   const pages: any[] = cv?.Pages ?? [];
   const allPagesWithContent: any[] = cv?.Page ?? [];
@@ -208,7 +222,14 @@ export function TileActionMenu({
 
   return ReactDOM.createPortal(
     <>
-      <div ref={ref} className="tam" style={{ left: pos.x, top: pos.y }}>
+      <div
+        ref={ref}
+        className="tam"
+        style={computedPos
+          ? { left: computedPos.left, top: computedPos.top }
+          : { left: pos.x, top: pos.y, visibility: 'hidden' }
+        }
+      >
         {menuItems.map((item) => (
           <div
             key={item.id}

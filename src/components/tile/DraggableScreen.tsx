@@ -208,8 +208,8 @@ export function DraggableScreen({
 
   const screenRef = useRef<HTMLDivElement>(null);
 
-  const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number } } | null>(null);
-  const [tileMenu, setTileMenu] = useState<{ tileId: string; pos: { x: number; y: number } } | null>(null);
+  const [addMenu, setAddMenu] = useState<{ insertBeforeInfoId: string | null; pos: { x: number; y: number; containerBottom: number } } | null>(null);
+  const [tileMenu, setTileMenu] = useState<{ tileId: string; pos: { x: number; y: number; containerBottom: number } } | null>(null);
   const [blockDragId, setBlockDragId] = useState<string | null>(null);
   const [blockGhostPos, setBlockGhostPos] = useState<{ x: number; y: number } | null>(null);
   const [blockDropPreview, setBlockDropPreview] = useState<{ insertBeforeInfoId: string | null } | null>(null);
@@ -228,7 +228,8 @@ export function DraggableScreen({
   function openAddMenu(e: React.MouseEvent<HTMLButtonElement>, insertBeforeInfoId: string | null) {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
-    setAddMenu({ insertBeforeInfoId, pos: { x: rect.left, y: rect.bottom + 4 } });
+    const containerBottom = screenRef.current?.getBoundingClientRect().bottom ?? window.innerHeight;
+    setAddMenu({ insertBeforeInfoId, pos: { x: rect.left, y: rect.bottom + 4, containerBottom } });
   }
 
   function handleMenuSelect(blockType: string) {
@@ -1033,9 +1034,10 @@ export function DraggableScreen({
                   activeNavTileIds={activeNavTileIds}
                   onAddBtnClick={isPreviewMode ? undefined : openAddMenu}
                   onTileDoubleClick={isPreviewMode ? undefined : onTileDoubleClick}
-                  onTileOptionsClick={isPreviewMode ? undefined : (tileId, rect) =>
-                    setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4 } })
-                  }
+                  onTileOptionsClick={isPreviewMode ? undefined : (tileId, rect) => {
+                    const containerBottom = screenRef.current?.getBoundingClientRect().bottom ?? window.innerHeight;
+                    setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4, containerBottom } });
+                  }}
                   liveTileText={liveTileText}
                   analysisHighlightTileId={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.tileId : undefined}
                   analysisHighlightMessage={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.message : undefined}
