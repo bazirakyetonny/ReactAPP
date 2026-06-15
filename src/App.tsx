@@ -920,7 +920,17 @@ function App() {
       requestAnimationFrame(() => {
         for (const tileId of Object.values(sourceTiles)) {
           const el = document.querySelector(`[data-tile-id="${tileId}"]`);
-          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          if (!el) continue;
+          const container = el.closest('.phone-screen') as HTMLElement | null;
+          if (container) {
+            const elRect = el.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
+            const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+            const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+            container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+          } else {
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
         }
       });
     }
@@ -942,7 +952,17 @@ function App() {
         ? `[data-tile-id="${issue.subItemId}"]`
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
-      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
     });
   }
 

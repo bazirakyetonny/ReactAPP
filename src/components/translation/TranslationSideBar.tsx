@@ -136,8 +136,14 @@ export function TranslationSideBar({
       const selector = highlightTileId
         ? `[data-tile-id="${highlightTileId}"]`
         : `[data-block-id="${highlightBlockId}"]`;
-      const el = scrollRef.current?.querySelector(selector);
-      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const el = scrollRef.current?.querySelector(selector) as HTMLElement | null;
+      if (!el || !scrollRef.current) return;
+      const container = scrollRef.current;
+      const elRect = el.getBoundingClientRect();
+      const cRect = container.getBoundingClientRect();
+      const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+      const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+      container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
     });
   }, [highlightBlockId, highlightTileId, sdtPage]);
 
