@@ -49,7 +49,10 @@ function pageObjectUrl(p: any): string {
   return "";
 }
 
-function findTilePageId(tileId: string, allPagesWithContent: any[]): string | null {
+function findTilePageId(
+  tileId: string,
+  allPagesWithContent: any[],
+): string | null {
   for (const page of allPagesWithContent) {
     let content: any[] = [];
     try {
@@ -60,7 +63,8 @@ function findTilePageId(tileId: string, allPagesWithContent: any[]): string | nu
     for (const block of content) {
       if (block.InfoType !== "TileGrid") continue;
       for (const col of block.Columns ?? []) {
-        if ((col.Tiles ?? []).some((t: any) => t.Id === tileId)) return page.PageId;
+        if ((col.Tiles ?? []).some((t: any) => t.Id === tileId))
+          return page.PageId;
       }
     }
   }
@@ -145,28 +149,34 @@ export function TileActionMenu({
   const forms: any[] = dataStore.get("SDT_DynamicFormsCollection") ?? [];
 
   const menuItems = [
-    { id: "new-page",       label: i18n.t("tile.information_page"), hasSub: false },
-    { id: "existing-pages", label: i18n.t("tile.existing_pages"),   hasSub: true  },
-    { id: "direct-link",    label: i18n.t("tile.call_to_action"),   hasSub: true  },
-    { id: "forms",          label: i18n.t("tile.forms"),            hasSub: true  },
-    { id: "modules",        label: i18n.t("tile.modules"),          hasSub: true  },
-    { id: "copy-tile",      label: i18n.t("tile.copy_tile"),        hasSub: false },
+    { id: "new-page", label: i18n.t("tile.information_page"), hasSub: false },
+    {
+      id: "existing-pages",
+      label: i18n.t("tile.existing_pages"),
+      hasSub: true,
+    },
+    { id: "direct-link", label: i18n.t("tile.call_to_action"), hasSub: true },
+    { id: "forms", label: i18n.t("tile.forms"), hasSub: true },
+    { id: "modules", label: i18n.t("tile.modules"), hasSub: true },
+    // { id: "copy-tile", label: i18n.t("tile.copy_tile"), hasSub: false },
   ];
 
   const directLinkTypes = [
-    { id: "Email",   label: i18n.t("tile.email") },
-    { id: "Phone",   label: i18n.t("tile.phone") },
+    { id: "Email", label: i18n.t("tile.email") },
+    { id: "Phone", label: i18n.t("tile.phone") },
     { id: "Weblink", label: i18n.t("sidebar.action_list.dropdown.weblink") },
   ];
 
   const moduleLabels: Record<string, string> = {
     BulletinBoard: i18n.t("default.bulletinboard"),
-    Calendar:      i18n.t("default.calendar"),
-    MyActivity:    i18n.t("default.myactivity"),
-    Map:           i18n.t("default.map"),
+    Calendar: i18n.t("default.calendar"),
+    MyActivity: i18n.t("default.myactivity"),
+    Map: i18n.t("default.map"),
   };
 
-  useEffect(() => { setSubSearch(""); }, [activeItem]);
+  useEffect(() => {
+    setSubSearch("");
+  }, [activeItem]);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -198,7 +208,9 @@ export function TileActionMenu({
     (f.PageName ?? f.FormName ?? "").toLowerCase().includes(searchLower),
   );
   const filteredModulePages = modulePages.filter((p: any) =>
-    (moduleLabels[p.PageType] ?? p.PageName ?? "").toLowerCase().includes(searchLower),
+    (moduleLabels[p.PageType] ?? p.PageName ?? "")
+      .toLowerCase()
+      .includes(searchLower),
   );
 
   function act(action: TileMenuAction) {
@@ -218,7 +230,12 @@ export function TileActionMenu({
           >
             <button
               className={`tam__item${activeItem === item.id && item.hasSub ? " tam__item--expanded" : ""}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onMouseDown={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 if (item.id === "new-page") act({ type: "new-page" });
                 if (item.id === "copy-tile") act({ type: "copy-tile" });
@@ -234,8 +251,19 @@ export function TileActionMenu({
                 <div className="tam__sub">
                   <div className="tam__sub-search">
                     <span className="tam__sub-search-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </span>
                     <input
@@ -244,11 +272,16 @@ export function TileActionMenu({
                       placeholder={i18n.t("messages.menu.search")}
                       value={subSearch}
                       onChange={(e) => setSubSearch(e.target.value)}
-                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     />
                   </div>
                   {filteredInfoPages.length === 0 ? (
-                    <div className="tam__sub-empty">{i18n.t("messages.menu.no_pages_available")}</div>
+                    <div className="tam__sub-empty">
+                      {i18n.t("messages.menu.no_pages_available")}
+                    </div>
                   ) : (
                     filteredInfoPages.map((p: any) => {
                       const connected = isPageConnected(
@@ -260,6 +293,7 @@ export function TileActionMenu({
                           key={p.PageId}
                           className="tam__sub-item"
                           onMouseDown={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             act({
                               type: "existing-page",
@@ -269,7 +303,9 @@ export function TileActionMenu({
                             });
                           }}
                         >
-                          <span style={{ textTransform: "capitalize" }}>{p.PageName}</span>
+                          <span style={{ textTransform: "capitalize" }}>
+                            {p.PageName}
+                          </span>
                           {!connected && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -302,6 +338,7 @@ export function TileActionMenu({
                     key={lt.id}
                     className="tam__sub-item"
                     onMouseDown={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setDirectLinkType(lt.id);
                     }}
@@ -317,8 +354,19 @@ export function TileActionMenu({
               <div className="tam__sub">
                 <div className="tam__sub-search">
                   <span className="tam__sub-search-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                   </span>
                   <input
@@ -327,17 +375,23 @@ export function TileActionMenu({
                     placeholder={i18n.t("messages.menu.search")}
                     value={subSearch}
                     onChange={(e) => setSubSearch(e.target.value)}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   />
                 </div>
                 {filteredForms.length === 0 ? (
-                  <div className="tam__sub-empty">{i18n.t("messages.menu.no_forms_available")}</div>
+                  <div className="tam__sub-empty">
+                    {i18n.t("messages.menu.no_forms_available")}
+                  </div>
                 ) : (
                   filteredForms.map((f: any) => (
                     <button
                       key={f.FormId}
                       className="tam__sub-item"
                       onMouseDown={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         act({
                           type: "form",
@@ -359,8 +413,19 @@ export function TileActionMenu({
               <div className="tam__sub">
                 <div className="tam__sub-search">
                   <span className="tam__sub-search-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                   </span>
                   <input
@@ -369,17 +434,23 @@ export function TileActionMenu({
                     placeholder={i18n.t("messages.menu.search")}
                     value={subSearch}
                     onChange={(e) => setSubSearch(e.target.value)}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   />
                 </div>
                 {filteredModulePages.length === 0 ? (
-                  <div className="tam__sub-empty">{i18n.t("messages.menu.no_modules_available")}</div>
+                  <div className="tam__sub-empty">
+                    {i18n.t("messages.menu.no_modules_available")}
+                  </div>
                 ) : (
                   filteredModulePages.map((p: any) => (
                     <button
                       key={p.PageId}
                       className="tam__sub-item"
                       onMouseDown={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         act({
                           type: "existing-page",

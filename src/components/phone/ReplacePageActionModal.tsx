@@ -1,4 +1,5 @@
 import ReactDOM from "react-dom";
+import { i18n } from "../../i18n/i18n";
 import "./ReplacePageActionModal.css";
 
 interface ReplacePageActionModalProps {
@@ -11,20 +12,20 @@ export function ReplacePageActionModal({ onConfirm, onClose }: ReplacePageAction
     <div className="rpa-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="rpa-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="rpa-header">
-          <span className="rpa-title">Confirmation</span>
+          <span className="rpa-title">{i18n.t("sidebar.confirmation_title")}</span>
           <button className="rpa-close" type="button" onClick={onClose}>✕</button>
         </div>
         <div className="rpa-body">
           <p className="rpa-message">
-            This tile is already linked to a page. Do you want to replace it?
+            {i18n.t("messages.confirm.replace_page_link")}
           </p>
         </div>
         <div className="rpa-footer">
           <button className="rpa-btn rpa-btn--primary" type="button" onClick={onConfirm}>
-            Confirm
+            {i18n.t("sidebar.confirmation_accept")}
           </button>
           <button className="rpa-btn rpa-btn--secondary" type="button" onClick={onClose}>
-            Cancel
+            {i18n.t("sidebar.confirmation_cancel")}
           </button>
         </div>
       </div>
