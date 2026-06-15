@@ -18,6 +18,7 @@ import {
 } from "../../services/appVersionsApi";
 import { applyMoodColorRemapToPages } from "../../utils/contentTransforms";
 import { AppVersionPreviewCard } from "./AppVersionPreviewCard";
+import { i18n } from "../../i18n/i18n";
 
 interface CreateAppVersionModalProps {
   templatesCollection: CategoryTemplates[];
@@ -113,11 +114,11 @@ export function CreateAppVersionModal({
 
   function handleBlankNext() {
     if (!versionName.trim()) {
-      setError("Version name is required.");
+      setError(i18n.t("navbar.appversion.version_name_required"));
       return;
     }
     if (!versionLanguage) {
-      setError("Please select a base language.");
+      setError(i18n.t("navbar.appversion.base_language_required"));
       return;
     }
     setError(null);
@@ -127,7 +128,7 @@ export function CreateAppVersionModal({
   async function handleCreate() {
     const name = versionName.trim();
     if (!name) {
-      setError("Version name is required.");
+      setError(i18n.t("navbar.appversion.version_name_required"));
       return;
     }
     setLoading(true);
@@ -180,7 +181,7 @@ export function CreateAppVersionModal({
       });
       onCreated(result);
     } catch {
-      setError("Failed to create version. Please try again.");
+      setError(i18n.t("navbar.appversion.create_failed"));
     } finally {
       setLoading(false);
     }
@@ -194,7 +195,7 @@ export function CreateAppVersionModal({
       >
         {/* Header */}
         <div className="cav-header">
-          <span className="cav-title">New Version</span>
+          <span className="cav-title">{i18n.t("navbar.appversion.create_new")}</span>
           <button
             className="cav-close"
             type="button"
@@ -236,8 +237,8 @@ export function CreateAppVersionModal({
                 version={null}
                 isSelected={selectedId === BLANK_ID}
                 onClick={() => handleNext(BLANK_ID)}
-                name="Blank Version"
-                description="Start from a clean canvas with no pre-existing content."
+                name={i18n.t("navbar.appversion.blank_version")}
+                description={i18n.t("navbar.appversion.blank_version_description")}
                 themeColors={themeColors}
                 themeIcons={themeIcons}
               />
@@ -263,7 +264,7 @@ export function CreateAppVersionModal({
                 type="button"
                 onClick={onClose}
               >
-                Cancel
+                {i18n.t("navbar.appversion.cancel")}
               </button>
               <button
                 className="cav-btn-primary"
@@ -271,7 +272,7 @@ export function CreateAppVersionModal({
                 disabled={!selectedId}
                 onClick={() => handleNext(selectedId!)}
               >
-                Next
+                {i18n.t("navbar.next")}
               </button>
             </div>
           </>
@@ -282,14 +283,14 @@ export function CreateAppVersionModal({
               <div className="cav-body">
                 <div className="cav-field">
                   <label className="cav-label" htmlFor="cav-name">
-                    Version name <span className="cav-required">*</span>
+                    {i18n.t("navbar.appversion.version_name")} <span className="cav-required">*</span>
                   </label>
                   <input
                     id="cav-name"
                     className="cav-input"
                     type="text"
                     maxLength={100}
-                    placeholder="e.g. Summer Campaign"
+                    placeholder={i18n.t("navbar.appversion.version_name")}
                     value={versionName}
                     onChange={(e) => setVersionName(e.target.value)}
                     autoFocus
@@ -297,10 +298,10 @@ export function CreateAppVersionModal({
                 </div>
                 <div className="cav-field">
                   <label className="cav-label" htmlFor="cav-lang">
-                    Base language <span className="cav-required">*</span>
+                    {i18n.t("navbar.appversion.base_language")} <span className="cav-required">*</span>
                   </label>
                   <p className="cav-field-hint">
-                    Select the base language for the app's translations.
+                    {i18n.t("navbar.appversion.base_language_hint")}
                   </p>
                   <select
                     id="cav-lang"
@@ -309,7 +310,7 @@ export function CreateAppVersionModal({
                     onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     {languages?.length === 0 && (
-                      <option value="">No languages available</option>
+                      <option value="">{i18n.t("navbar.appversion.no_languages")}</option>
                     )}
                     {languages?.map((lang) => (
                       <option key={lang.value} value={lang.value}>
@@ -320,11 +321,11 @@ export function CreateAppVersionModal({
                 </div>
                 <div className="cav-field">
                   <label className="cav-label" htmlFor="cav-translate">
-                    Translation languages{" "}
-                    <span className="cav-optional">(optional)</span>
+                    {i18n.t("navbar.appversion.translation_languages_label")}{" "}
+                    <span className="cav-optional">({i18n.t("optional")})</span>
                   </label>
                   <p className="cav-field-hint">
-                    Select additional languages for translation.
+                    {i18n.t("navbar.appversion.translation_languages_hint")}
                   </p>
                   <MultiSelect
                     options={translateOptions}
@@ -340,7 +341,7 @@ export function CreateAppVersionModal({
                   type="button"
                   onClick={() => setStep(1)}
                 >
-                  ← Back
+                  ← {i18n.t("navbar.appversion.back")}
                 </button>
                 <button
                   className="cav-btn-primary"
@@ -348,7 +349,7 @@ export function CreateAppVersionModal({
                   disabled={!versionName.trim() || !versionLanguage}
                   onClick={handleBlankNext}
                 >
-                  Next →
+                  {i18n.t("navbar.next")} →
                 </button>
               </div>
             </>
@@ -368,14 +369,14 @@ export function CreateAppVersionModal({
                   type="button"
                   onClick={() => setStep(1)}
                 >
-                  ← Back
+                  ← {i18n.t("navbar.appversion.back")}
                 </button>
                 <button
                   className="cav-btn-primary"
                   type="button"
                   onClick={handleNextToDetails}
                 >
-                  Next →
+                  {i18n.t("navbar.next")} →
                 </button>
               </div>
             </>
@@ -404,7 +405,7 @@ export function CreateAppVersionModal({
                 disabled={loading}
                 onClick={handleCreate}
               >
-                {loading ? "Creating…" : "Create"}
+                {loading ? i18n.t("navbar.appversion.creating") : i18n.t("navbar.appversion.create")}
               </button>
             </div>
           </>
@@ -481,7 +482,7 @@ export function CreateAppVersionModal({
                 disabled={loading || !versionName.trim() || !versionLanguage}
                 onClick={handleCreate}
               >
-                {loading ? "Creating…" : "Create"}
+                {loading ? i18n.t("navbar.appversion.creating") : i18n.t("navbar.appversion.create")}
               </button>
             </div>
           </>
