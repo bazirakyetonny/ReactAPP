@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./MultiSelect.css";
 import { CheckboxSpan } from './CheckboxSpan';
+import { i18n } from "../../i18n/i18n";
 
 export interface MultiSelectOption {
   value: string;
@@ -19,9 +20,11 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = "Select…",
-  searchPlaceholder = "Search",
+  placeholder,
+  searchPlaceholder,
 }: MultiSelectProps) {
+  const resolvedPlaceholder = placeholder ?? i18n.t("select");
+  const resolvedSearchPlaceholder = searchPlaceholder ?? i18n.t("search");
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,7 +103,7 @@ export function MultiSelect({
       >
         <div className="ms-chips">
           {value.length === 0 ? (
-            <span className="ms-trigger-placeholder">{placeholder}</span>
+            <span className="ms-trigger-placeholder">{resolvedPlaceholder}</span>
           ) : (
             value.map((v) => {
               const label = options.find((o) => o.value === v)?.label ?? v;
@@ -150,7 +153,7 @@ export function MultiSelect({
             <input
               className="ms-search"
               type="text"
-              placeholder={searchPlaceholder}
+              placeholder={resolvedSearchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
@@ -158,8 +161,8 @@ export function MultiSelect({
           </div>
 
           <div className="ms-item ms-item--all" onClick={toggleSelectAll}>
-            <CheckboxSpan checked={allFilteredSelected} onChange={toggleSelectAll} ariaLabel="Select All" />
-            <span className="ms-item-label">Select All</span>
+            <CheckboxSpan checked={allFilteredSelected} onChange={toggleSelectAll} ariaLabel={i18n.t("sidebar.select_all")} />
+            <span className="ms-item-label">{i18n.t("sidebar.select_all")}</span>
           </div>
 
           <div className="ms-divider" />
