@@ -42,7 +42,7 @@ interface EditorModalsProps {
 
   showCreateTemplateModal: boolean;
   onCloseCreateTemplate: () => void;
-  onTemplateCreated: () => void;
+  onTemplateCreated: (version: SDTAppVersion) => void;
 
   renameVersion: SDTAppVersion | null;
   onCloseRename: () => void;

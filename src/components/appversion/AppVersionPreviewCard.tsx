@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./css/AppVersionPreviewCard.css";
 import type { AppVersion, ThemeColors, ThemeIcon } from "../../types";
+import { dataStore } from "../../data/datastore";
 import { PhoneStatusBar } from "../phone/StatusBar";
 import { PhoneAppHeader } from "../phone/PhoneHeaders";
 import { TileGrids } from "../tile/TileGrids";
@@ -45,6 +46,12 @@ export function AppVersionPreviewCard({
 
   const infoContent = useMemo(() => parseHomeContent(version), [version]);
 
+  const resolvedThemeColors = useMemo(() => {
+    const themes = dataStore.get("themes") ?? [];
+    const versionTheme = themes.find((t: any) => t.ThemeId === version?.ThemeId);
+    return (versionTheme?.ThemeColors as ThemeColors | undefined) ?? themeColors;
+  }, [version, themeColors]);
+
   useLayoutEffect(() => {
     const ro = new ResizeObserver(() => {
       const clipW = clipRef.current?.offsetWidth ?? 0;
@@ -79,7 +86,7 @@ export function AppVersionPreviewCard({
                     <TileGrids
                       key={block.InfoId}
                       tileGrids={[block]}
-                      themeColors={themeColors}
+                      themeColors={resolvedThemeColors}
                       themeIcons={themeIcons ?? []}
                       interactive={false}
                     />

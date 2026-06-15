@@ -358,7 +358,8 @@ export function TileGrids({
                         1,
                         Math.floor(availableForText / (15 * 1.3)),
                       );
-                      const canEdit = isSelected && !isDraggingThis && !!onEditTile;
+                      const canEdit =
+                        isSelected && !isDraggingThis && !!onEditTile;
                       const showDelIcon = canEdit && hasIcon && hasText;
                       const showDelText = canEdit && hasIcon && hasText;
 

@@ -40,6 +40,7 @@ import { getTrash, restoreTrash } from "./services/trashApi";
 import { translateAppVersion } from "./services/translationApi";
 import { NEW_PAGE_SENTINEL } from "./utils/linkedFrames";
 import type { TileMenuAction } from "./components/tile/TileActionMenu";
+import { ReplacePageActionModal } from "./components/phone/ReplacePageActionModal";
 import { buildLinkedFrames } from "./utils/linkedFrames";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useNavigation } from "./hooks/useNavigation";
@@ -1293,6 +1294,11 @@ function App() {
     runSave(() => updatePageTitle(cv.AppVersionId, pageId, newName));
   }
 
+  // ── Replace-page confirmation ─────────────────────────────────────────────
+
+  const [pendingTileMenuAction, setPendingTileMenuAction] = useState<{ tileId: string; action: TileMenuAction } | null>(null);
+  const skipReplaceCheckRef = useRef(false);
+
   // ── New page frame helpers ────────────────────────────────────────────────
 
   const pendingNewPageTileRef = useRef<string | null>(null);
@@ -1359,6 +1365,7 @@ function App() {
       const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
       dataStore.set("Current_Version", full);
       setCurrentVersion(full);
+      setSelectedThemeId(full.ThemeId ?? themes[0]?.ThemeId ?? "");
       setInfoContent(parseInfoContent());
       setNavStack([]);
       setNavContents({});
@@ -1370,8 +1377,21 @@ function App() {
       .catch(() => {});
   }
 
-  function handleTemplateCreated() {
+  async function handleTemplateCreated(version: any) {
     setShowCreateTemplateModal(false);
+    try {
+      await activateAppVersion(version.AppVersionId);
+      const fetched = (await getActiveAppVersion()) as any;
+      const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+      dataStore.set("Current_Version", full);
+      setCurrentVersion(full);
+      setSelectedThemeId(full.ThemeId ?? themes[0]?.ThemeId ?? "");
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      clearHistory();
+      setSelectedTileId(null);
+    } catch {}
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});
@@ -1622,6 +1642,22 @@ function App() {
       });
       return;
     }
+
+    if (!skipReplaceCheckRef.current) {
+      const existingPageIds = new Set((cv.Pages ?? []).map((p: any) => p.Id));
+      const allTileBlocks: any[] = [
+        ...infoContentRef.current,
+        ...(Object.values(navContentsRef.current) as any[][]).flat(),
+      ];
+      for (const b of allTileBlocks) {
+        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
+        if (tile?.Action?.ObjectId && existingPageIds.has(tile.Action.ObjectId)) {
+          setPendingTileMenuAction({ tileId, action });
+          return;
+        }
+      }
+    }
+    skipReplaceCheckRef.current = false;
 
     if (action.type === "existing-page") {
       const searchInBlocks = (blocks: any[]) =>
@@ -2543,6 +2579,17 @@ function App() {
       </div>
       {isBusy && !reviewOnly && (
         <BusyModal onReviewOnly={() => setReviewOnly(true)} />
+      )}
+      {pendingTileMenuAction && (
+        <ReplacePageActionModal
+          onConfirm={() => {
+            const { tileId, action } = pendingTileMenuAction;
+            setPendingTileMenuAction(null);
+            skipReplaceCheckRef.current = true;
+            handleTileMenuAction(tileId, action);
+          }}
+          onClose={() => setPendingTileMenuAction(null)}
+        />
       )}
       <AlertMessage
         message={alertInfo?.message ?? ""}
