@@ -1630,13 +1630,14 @@ function App() {
     }
 
     if (!skipReplaceCheckRef.current) {
+      const existingPageIds = new Set((cv.Pages ?? []).map((p: any) => p.Id));
       const allTileBlocks: any[] = [
         ...infoContentRef.current,
         ...(Object.values(navContentsRef.current) as any[][]).flat(),
       ];
       for (const b of allTileBlocks) {
         const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
-        if (tile?.Action?.ObjectId) {
+        if (tile?.Action?.ObjectId && existingPageIds.has(tile.Action.ObjectId)) {
           setPendingTileMenuAction({ tileId, action });
           return;
         }

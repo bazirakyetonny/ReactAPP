@@ -44,10 +44,10 @@ export function AppVersionMoodSelection1({
     | undefined;
 
   const previewColors = useMemo((): ThemeColors | undefined => {
-    const base = templateTheme?.ThemeColors ?? baseThemeColors;
+    const base = templateTheme?.ThemeColors;
     if (!base) return undefined;
 
-    const originalMood = moods.find((m) => m.MoodId === template?.MoodId);
+    const originalMood = moods.find((m) => m.MoodId === template?.MoodId) ?? moods[0];
     let originalNames: string[] = [];
     try { originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]"); } catch { /* */ }
 
@@ -55,19 +55,22 @@ export function AppVersionMoodSelection1({
     let selectedNames: string[] = [];
     try { selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]"); } catch { /* */ }
 
+    // Use the selected mood's own theme so the preview shows that mood's actual colors.
+    const selectedMoodTheme = themes.find((t) => t.ThemeId === selectedMood?.ThemeId);
+    const moodColors = (selectedMoodTheme?.ThemeColors ?? base) as unknown as Record<string, string>;
+
     const result = { ...(base as unknown as Record<string, string>) };
-    const templateRecord = templateTheme?.ThemeColors as unknown as Record<string, string> | undefined;
 
     for (let i = 0; i < originalNames.length; i++) {
       const oldKey = originalNames[i];
       const newKey = selectedNames[i];
-      if (oldKey && newKey && templateRecord) {
-        result[oldKey] = templateRecord[newKey] ?? result[oldKey];
+      if (oldKey && newKey) {
+        result[oldKey] = moodColors[newKey] ?? result[oldKey];
       }
     }
 
     return result as unknown as ThemeColors;
-  }, [selectedMoodId, moods, template, baseThemeColors, templateTheme]);
+  }, [selectedMoodId, moods, themes, template, templateTheme]);
 
   return (
     <div className="acs-container">
@@ -88,7 +91,6 @@ export function AppVersionMoodSelection1({
             disabled={currentPageIndex === 0}
             onClick={() => setCurrentPageIndex((i) => i - 1)}
           >
-            ←
           </button>
           <span className="acs-page-indicator">
             {currentPageIndex + 1} / {pages.length || 1}
@@ -99,7 +101,6 @@ export function AppVersionMoodSelection1({
             disabled={currentPageIndex >= pages.length - 1}
             onClick={() => setCurrentPageIndex((i) => i + 1)}
           >
-            →
           </button>
         </div>
         <div className="acs-template-name">
