@@ -184,6 +184,7 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
           placeholder="Label"
           value={ctaLabel}
           onChange={e => { setCtaLabel(e.target.value); onLiveCtaLabel?.(ctaId, e.target.value); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
           onBlur={() => { onEndLiveCtaLabel?.(); if (ctaLabel !== (attrs.CtaLabel ?? '')) { onBeforeCtaEdit?.(); patch({ CtaLabel: ctaLabel }); } }}
         />
       </div>
@@ -217,6 +218,7 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
             value={ctaAction}
             onFocus={() => onBeforeCtaEdit?.()}
             onChange={e => setCtaAction(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             onBlur={() => {
               if (ctaAction !== (attrs.CtaAction ?? '')) {
                 if (attrs.CtaType === 'Weblink') {
