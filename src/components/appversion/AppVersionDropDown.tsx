@@ -165,6 +165,8 @@ export function AppVersionDropDown({
     userRoles.includes("Receptionist") ||
     userRoles.includes("Organisation Manager");
   const canCreateTemplate = userRoles.includes("Comforta Admin");
+  const activeVersionId: string | undefined =
+    selectedVersionId ?? (dataStore.get("Current_Version") as any)?.AppVersionId;
   const templatesCollection: CategoryTemplates[] =
     dataStore.get("TemplatesCollection") ?? [];
 
@@ -405,17 +407,19 @@ export function AppVersionDropDown({
                         {i18n.t("navbar.appversion.update_translations")}
                       </button>
                     )}
-                    <button
-                      className="vd-sub-item vd-sub-item--danger"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveToTrash?.(v.AppVersionId);
-                        setOpen(false);
-                      }}
-                    >
-                      {i18n.t("navbar.appversion.dropdow.move_to_trash")}
-                    </button>
+                    {v.AppVersionId !== activeVersionId && (
+                      <button
+                        className="vd-sub-item vd-sub-item--danger"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveToTrash?.(v.AppVersionId);
+                          setOpen(false);
+                        }}
+                      >
+                        {i18n.t("navbar.appversion.dropdow.move_to_trash")}
+                      </button>
+                    )}
                     {canCreateTemplate && (
                       <button
                         className="vd-sub-item vd-sub-item--has-sub"

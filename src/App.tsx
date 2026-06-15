@@ -1365,6 +1365,7 @@ function App() {
       const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
       dataStore.set("Current_Version", full);
       setCurrentVersion(full);
+      setSelectedThemeId(full.ThemeId ?? themes[0]?.ThemeId ?? "");
       setInfoContent(parseInfoContent());
       setNavStack([]);
       setNavContents({});
@@ -1376,8 +1377,21 @@ function App() {
       .catch(() => {});
   }
 
-  function handleTemplateCreated() {
+  async function handleTemplateCreated(version: any) {
     setShowCreateTemplateModal(false);
+    try {
+      await activateAppVersion(version.AppVersionId);
+      const fetched = (await getActiveAppVersion()) as any;
+      const full = { ...fetched, Page: fetched.Page ?? fetched.Pages ?? [] };
+      dataStore.set("Current_Version", full);
+      setCurrentVersion(full);
+      setSelectedThemeId(full.ThemeId ?? themes[0]?.ThemeId ?? "");
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      clearHistory();
+      setSelectedTileId(null);
+    } catch {}
     getAppVersions()
       .then(setAppVersions)
       .catch(() => {});

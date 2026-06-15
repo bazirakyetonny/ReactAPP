@@ -149,9 +149,9 @@ export function CreateAppVersionModal({
         selectedMoodId &&
         selectedMoodId !== selectedTemplate.MoodId
       ) {
-        const originalMood = moods.find(
-          (m) => m.MoodId === selectedTemplate.MoodId,
-        );
+        const originalMood =
+          moods.find((m) => m.MoodId === selectedTemplate.MoodId) ??
+          moods[0];
         const selectedMood = moods.find((m) => m.MoodId === selectedMoodId);
         let originalNames: string[] = [];
         let selectedNames: string[] = [];

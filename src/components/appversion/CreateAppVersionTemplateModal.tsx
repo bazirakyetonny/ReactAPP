@@ -8,6 +8,7 @@ import {
   createAppVersion,
   type SDTAppVersion,
 } from "../../services/appVersionsApi";
+import { i18n } from "../../i18n/i18n";
 
 interface CreateAppVersionTemplateModalProps {
   onClose: () => void;
@@ -34,14 +35,23 @@ export function CreateAppVersionTemplateModal({
   const [error, setError] = useState<string | null>(null);
 
   function handleNextToMood() {
-    if (!templateName.trim()) { setError("Template name is required."); return; }
-    if (!selectedCategoryId) { setError("Please select a category."); return; }
+    if (!templateName.trim()) {
+      setError(i18n.t("navbar.appversion.template_name_required"));
+      return;
+    }
+    if (!selectedCategoryId) {
+      setError(i18n.t("navbar.appversion.category_required"));
+      return;
+    }
     setError(null);
     setStep(2);
   }
 
   async function handleCreate() {
-    if (!selectedMoodId) { setError("Please select a color mood."); return; }
+    if (!selectedMoodId) {
+      setError(i18n.t("navbar.appversion.mood_required"));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -54,7 +64,7 @@ export function CreateAppVersionTemplateModal({
       });
       onCreated(result);
     } catch {
-      setError("Failed to create template. Please try again.");
+      setError(i18n.t("navbar.appversion.create_template_failed"));
     } finally {
       setLoading(false);
     }
@@ -63,13 +73,14 @@ export function CreateAppVersionTemplateModal({
   const modal = (
     <div className="catm-overlay" onMouseDown={onClose}>
       <div className="catm-modal" onMouseDown={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="catm-header">
-          <span className="catm-title">New Template</span>
+          <span className="catm-title">
+            {i18n.t("navbar.appversion.new_template")}
+          </span>
           <button
             className="catm-close"
             type="button"
-            aria-label="Close"
+            aria-label={i18n.t("navbar.share.close")}
             onClick={onClose}
           >
             ✕
@@ -79,21 +90,26 @@ export function CreateAppVersionTemplateModal({
         {step === 1 ? (
           <>
             <div className="catm-body">
-              <p className="catm-step-heading">Template name and description</p>
+              <p className="catm-step-heading">
+                {i18n.t("navbar.appversion.template_name_and_description")}
+              </p>
               <p className="catm-step-subheading">
-                Enter template name and description
+                {i18n.t(
+                  "navbar.appversion.enter_template_name_and_description",
+                )}
               </p>
 
               <div className="catm-field">
                 <label className="catm-label" htmlFor="catm-name">
-                  Template name <span className="catm-required">*</span>
+                  {i18n.t("navbar.appversion.template_name")}{" "}
+                  <span className="catm-required">*</span>
                 </label>
                 <input
                   id="catm-name"
                   className="catm-input"
                   type="text"
                   maxLength={100}
-                  placeholder="Enter template name"
+                  placeholder={i18n.t("navbar.appversion.enter_template_name")}
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   autoFocus
@@ -102,14 +118,18 @@ export function CreateAppVersionTemplateModal({
 
               <div className="catm-field">
                 <label className="catm-label" htmlFor="catm-desc">
-                  Template description{" "}
-                  <span className="catm-optional">(optional)</span>
+                  {i18n.t("navbar.appversion.template_description")}{" "}
+                  <span className="catm-optional">
+                    {i18n.t("optional_hint")}
+                  </span>
                 </label>
                 <textarea
                   id="catm-desc"
                   className="catm-textarea"
                   maxLength={200}
-                  placeholder="Enter template description (optional)"
+                  placeholder={i18n.t(
+                    "navbar.appversion.enter_template_description",
+                  )}
                   value={templateDescription}
                   onChange={(e) => setTemplateDescription(e.target.value)}
                 />
@@ -120,7 +140,8 @@ export function CreateAppVersionTemplateModal({
 
               <div className="catm-field">
                 <label className="catm-label" htmlFor="catm-category">
-                  Category <span className="catm-required">*</span>
+                  {i18n.t("category")}{" "}
+                  <span className="catm-required">*</span>
                 </label>
                 <select
                   id="catm-category"
@@ -128,7 +149,7 @@ export function CreateAppVersionTemplateModal({
                   value={selectedCategoryId}
                   onChange={(e) => setSelectedCategoryId(e.target.value)}
                 >
-                  <option value="">Select A category</option>
+                  <option value="">{i18n.t("select_category")}</option>
                   {templatesCollection.map((cat) => (
                     <option
                       key={cat.TemplateCategoryId}
@@ -149,7 +170,7 @@ export function CreateAppVersionTemplateModal({
                 type="button"
                 onClick={onClose}
               >
-                Cancel
+                {i18n.t("navbar.publish.modal_cancel")}
               </button>
               <button
                 className="catm-btn-primary"
@@ -157,7 +178,7 @@ export function CreateAppVersionTemplateModal({
                 disabled={!templateName.trim() || !selectedCategoryId}
                 onClick={handleNextToMood}
               >
-                Next →
+                {i18n.t("navbar.next")}
               </button>
             </div>
           </>
@@ -171,7 +192,13 @@ export function CreateAppVersionTemplateModal({
               hideNoMood
             />
             {error && (
-              <div style={{ padding: "0 28px 8px", fontSize: 12, color: "#dc2626" }}>
+              <div
+                style={{
+                  padding: "0 28px 8px",
+                  fontSize: 12,
+                  color: "#dc2626",
+                }}
+              >
                 {error}
               </div>
             )}
@@ -179,10 +206,13 @@ export function CreateAppVersionTemplateModal({
               <button
                 className="catm-btn-secondary"
                 type="button"
-                onClick={() => { setError(null); setStep(1); }}
+                onClick={() => {
+                  setError(null);
+                  setStep(1);
+                }}
                 disabled={loading}
               >
-                ← Back
+                {i18n.t("navbar.appversion.back")}
               </button>
               <button
                 className="catm-btn-primary"
@@ -190,7 +220,9 @@ export function CreateAppVersionTemplateModal({
                 disabled={loading || !selectedMoodId}
                 onClick={handleCreate}
               >
-                {loading ? "Creating…" : "Create"}
+                {loading
+                  ? i18n.t("navbar.appversion.creating")
+                  : i18n.t("navbar.appversion.create")}
               </button>
             </div>
           </>
@@ -199,5 +231,8 @@ export function CreateAppVersionTemplateModal({
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
+  return ReactDOM.createPortal(
+    modal,
+    document.getElementById("root") ?? document.body,
+  );
 }

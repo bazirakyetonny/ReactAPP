@@ -32,7 +32,9 @@ export function AppVersionMoodSelection1({
   const [moodSelectOpen, setMoodSelectOpen] = useState(false);
 
   const pages = useMemo(() => {
-    const raw = (template?.Pages ?? []).filter((p) => p.PageType === "Information");
+    const raw = (template?.Pages ?? []).filter(
+      (p) => p.PageType === "Information",
+    );
     const homeIdx = raw.findIndex((p) => p.PageName?.toLowerCase() === "home");
     if (homeIdx <= 0) return raw;
     return [raw[homeIdx], ...raw.filter((_, i) => i !== homeIdx)];
@@ -47,17 +49,29 @@ export function AppVersionMoodSelection1({
     const base = templateTheme?.ThemeColors;
     if (!base) return undefined;
 
-    const originalMood = moods.find((m) => m.MoodId === template?.MoodId) ?? moods[0];
+    const originalMood =
+      moods.find((m) => m.MoodId === template?.MoodId) ?? moods[0];
     let originalNames: string[] = [];
-    try { originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]"); } catch { /* */ }
+    try {
+      originalNames = JSON.parse(originalMood?.MoodColorNames ?? "[]");
+    } catch {
+      /* */
+    }
 
     const selectedMood = moods.find((m) => m.MoodId === selectedMoodId);
     let selectedNames: string[] = [];
-    try { selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]"); } catch { /* */ }
+    try {
+      selectedNames = JSON.parse(selectedMood?.MoodColorNames ?? "[]");
+    } catch {
+      /* */
+    }
 
     // Use the selected mood's own theme so the preview shows that mood's actual colors.
-    const selectedMoodTheme = themes.find((t) => t.ThemeId === selectedMood?.ThemeId);
-    const moodColors = (selectedMoodTheme?.ThemeColors ?? base) as unknown as Record<string, string>;
+    const selectedMoodTheme = themes.find(
+      (t) => t.ThemeId === selectedMood?.ThemeId,
+    );
+    const moodColors = (selectedMoodTheme?.ThemeColors ??
+      base) as unknown as Record<string, string>;
 
     const result = { ...(base as unknown as Record<string, string>) };
 
@@ -91,6 +105,7 @@ export function AppVersionMoodSelection1({
             disabled={currentPageIndex === 0}
             onClick={() => setCurrentPageIndex((i) => i - 1)}
           >
+            ←
           </button>
           <span className="acs-page-indicator">
             {currentPageIndex + 1} / {pages.length || 1}
@@ -101,6 +116,7 @@ export function AppVersionMoodSelection1({
             disabled={currentPageIndex >= pages.length - 1}
             onClick={() => setCurrentPageIndex((i) => i + 1)}
           >
+            →
           </button>
         </div>
         <div className="acs-template-name">
