@@ -311,7 +311,7 @@
   overflow-y: auto;
   scrollbar-width: none;
   padding-top: 12px;
-  padding-bottom: 12px;
+  padding-bottom: 40px;
 }
 
 .phone-screen::-webkit-scrollbar {
@@ -784,6 +784,7 @@
 .phone-add-row--visible {
   height: 28px;
 }
+
 
 .phone-add-row--visible::before {
   opacity: 1;

@@ -415,6 +415,7 @@ function App() {
     pushSnapshot,
     isResizingRef,
     onNewTileCreated: () => setNavStack([]),
+    onNewBlockAdded: scrollToNewBlock,
   });
 
   // ── Version switching ────────────────────────────────────────────────────
@@ -594,7 +595,7 @@ function App() {
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, saveError, savedAt, runSave, flushSave } = useAutoSave(
+  const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } = useAutoSave(
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
@@ -921,7 +922,17 @@ function App() {
       requestAnimationFrame(() => {
         for (const tileId of Object.values(sourceTiles)) {
           const el = document.querySelector(`[data-tile-id="${tileId}"]`);
-          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          if (!el) continue;
+          const container = el.closest('.phone-screen') as HTMLElement | null;
+          if (container) {
+            const elRect = el.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
+            const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+            const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+            container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+          } else {
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
         }
       });
     }
@@ -943,7 +954,38 @@ function App() {
         ? `[data-tile-id="${issue.subItemId}"]`
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
-      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+  }
+
+  function scrollToNewBlock(infoId: string) {
+    requestAnimationFrame(() => {
+      let el: HTMLElement | null = null;
+      if (infoId.startsWith('grid-')) {
+        const tileTs = infoId.slice(5);
+        el = document.querySelector(`[data-tile-id="tile-${tileTs}"]`) as HTMLElement | null;
+      } else {
+        el = document.querySelector(`[data-block-id="${infoId}"]`) as HTMLElement | null;
+      }
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      }
     });
   }
 
@@ -1244,6 +1286,7 @@ function App() {
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId, ts, finalAttrs),
       );
+      scrollToNewBlock(`cta-${ts}`);
     } else {
       setNavContents((prev) => ({
         ...prev,
@@ -2286,7 +2329,7 @@ function App() {
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
         isTreeOpen={treeOpen}
-        isSaving={isSaving}
+        isSaving={isDirty}
         saveError={saveError}
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}

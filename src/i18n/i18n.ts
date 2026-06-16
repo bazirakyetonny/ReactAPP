@@ -168,8 +168,10 @@ export const i18n = new I18n({
         no_deleted_pages: "No deleted pages",
         no_deleted_versions: "No deleted versions",
         confirm_restore: "Restore %{count} item(s)?",
-        confirm_delete: "Permanently delete %{count} item(s)? This cannot be undone.",
-        confirm_empty: "Permanently delete all %{count} item(s) on this tab? This cannot be undone.",
+        confirm_delete:
+          "Permanently delete %{count} item(s)? This cannot be undone.",
+        confirm_empty:
+          "Permanently delete all %{count} item(s) on this tab? This cannot be undone.",
       },
       appversion: {
         select_version: "Select Version",
@@ -242,20 +244,26 @@ export const i18n = new I18n({
         moving: "Moving…",
         duplicate_error: "Failed to duplicate version. Please try again.",
         rename_error: "Failed to rename version. Please try again.",
-        move_to_trash_confirm: "Are you sure you want to move %{name} to trash? This action cannot be undone.",
-        move_to_trash_error: "Failed to move version to trash. Please try again.",
-        update_translations_error: "Failed to update translation languages. Please try again.",
+        move_to_trash_confirm:
+          "Are you sure you want to move %{name} to trash? This action cannot be undone.",
+        move_to_trash_error:
+          "Failed to move version to trash. Please try again.",
+        update_translations_error:
+          "Failed to update translation languages. Please try again.",
         no_other_languages: "No other languages available.",
-        update_description_error: "Failed to update description. Please try again.",
+        update_description_error:
+          "Failed to update description. Please try again.",
         version_name_required: "Version name is required.",
         base_language_required: "Please select a base language.",
         create_failed: "Failed to create version. Please try again.",
         blank_version: "Blank Version",
-        blank_version_description: "Start from a clean canvas with no pre-existing content.",
+        blank_version_description:
+          "Start from a clean canvas with no pre-existing content.",
         create: "Create",
         creating: "Creating…",
         base_language: "Base language",
-        base_language_hint: "Select the base language for the app's translations.",
+        base_language_hint:
+          "Select the base language for the app's translations.",
         no_languages: "No languages available",
         translation_languages_label: "Translation languages",
         template_name_required: "Template name is required.",
@@ -565,7 +573,8 @@ export const i18n = new I18n({
     },
     busy_modal: {
       title: "Access Blocked",
-      message: "Access blocked — two receptionists or managers are already using this app builder. You can review the content in read-only mode, take control by releasing the current session, or go back.",
+      message:
+        "Access blocked — two receptionists or managers are already using this app builder. You can review the content in read-only mode, take control by releasing the current session, or go back.",
       review_only: "Review only",
       take_control: "Take control",
       taking_control: "Taking control…",
@@ -788,26 +797,33 @@ export const i18n = new I18n({
         moving: "Verplaatsen…",
         duplicate_error: "Kon versie niet dupliceren. Probeer het opnieuw.",
         rename_error: "Kon versie niet hernoemen. Probeer het opnieuw.",
-        move_to_trash_confirm: "Weet je zeker dat je %{name} naar de prullenbak wilt verplaatsen? Deze actie kan niet ongedaan worden gemaakt.",
-        move_to_trash_error: "Kon versie niet naar prullenbak verplaatsen. Probeer het opnieuw.",
-        update_translations_error: "Kon vertalingstalen niet bijwerken. Probeer het opnieuw.",
+        move_to_trash_confirm:
+          "Weet je zeker dat je %{name} naar de prullenbak wilt verplaatsen? Deze actie kan niet ongedaan worden gemaakt.",
+        move_to_trash_error:
+          "Kon versie niet naar prullenbak verplaatsen. Probeer het opnieuw.",
+        update_translations_error:
+          "Kon vertalingstalen niet bijwerken. Probeer het opnieuw.",
         no_other_languages: "Geen andere talen beschikbaar.",
-        update_description_error: "Kon beschrijving niet bijwerken. Probeer het opnieuw.",
+        update_description_error:
+          "Kon beschrijving niet bijwerken. Probeer het opnieuw.",
         version_name_required: "Versienaam is vereist.",
         base_language_required: "Selecteer een basistaal.",
         create_failed: "Versie aanmaken mislukt. Probeer het opnieuw.",
         blank_version: "Lege Versie",
-        blank_version_description: "Begin met een leeg canvas zonder bestaande inhoud.",
+        blank_version_description:
+          "Begin met een leeg canvas zonder bestaande inhoud.",
         create: "Aanmaken",
         creating: "Aanmaken…",
         base_language: "Basistaal",
-        base_language_hint: "Selecteer de basistaal voor de vertalingen van de app.",
+        base_language_hint:
+          "Selecteer de basistaal voor de vertalingen van de app.",
         no_languages: "Geen talen beschikbaar",
         translation_languages_label: "Talen voor vertaling",
         template_name_required: "Sjabloonnaam is vereist.",
         category_required: "Selecteer een categorie.",
         mood_required: "Selecteer een kleurstemming.",
-        create_template_failed: "Sjabloon aanmaken mislukt. Probeer het opnieuw.",
+        create_template_failed:
+          "Sjabloon aanmaken mislukt. Probeer het opnieuw.",
         template_description: "Sjabloonbeschrijving",
       },
       copy_selection_label: "Paginaselectie kopiëren",
@@ -1068,8 +1084,7 @@ export const i18n = new I18n({
       select_form_placeholder: "Selecteer een formulier…",
       phone_error: "Voer een geldig telefoonnummer in",
       email_error_addr: "Voer een geldig e-mailadres in",
-      url_error:
-        "Voer een geldige URL in die begint met http:// of https://",
+      url_error: "Voer een geldige URL in die begint met http:// of https://",
       address_required: "Adres is verplicht",
       form_required: "Selecteer een formulier",
       label: "Label",
@@ -1120,7 +1135,8 @@ export const i18n = new I18n({
     },
     busy_modal: {
       title: "Toegang Geblokkeerd",
-      message: "Toegang geblokkeerd — twee receptionisten of managers gebruiken al deze app builder. U kunt de inhoud bekijken in de alleen-lezen modus, de controle overnemen door de huidige sessie vrij te geven, of teruggaan.",
+      message:
+        "Toegang geblokkeerd — twee receptionisten of managers gebruiken al deze app builder. U kunt de inhoud bekijken in de alleen-lezen modus, de controle overnemen door de huidige sessie vrij te geven, of teruggaan.",
       review_only: "Alleen bekijken",
       take_control: "Controle overnemen",
       taking_control: "Controle overnemen…",

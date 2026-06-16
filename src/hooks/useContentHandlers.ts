@@ -40,6 +40,7 @@ interface Props {
   pushSnapshot: () => void;
   isResizingRef: React.MutableRefObject<boolean>;
   onNewTileCreated?: () => void;
+  onNewBlockAdded?: (infoId: string) => void;
 }
 
 export function useContentHandlers({
@@ -57,6 +58,7 @@ export function useContentHandlers({
   pushSnapshot,
   isResizingRef,
   onNewTileCreated,
+  onNewBlockAdded,
 }: Props) {
   // ── Content block handlers ────────────────────────────────────────────────
 
@@ -103,6 +105,7 @@ export function useContentHandlers({
       setSelectedTileId(`tile-${ts}`);
       setSelectedCtaId(null);
       onNewTileCreated?.();
+      onNewBlockAdded?.(`grid-${ts}`);
     } else {
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId)
@@ -144,9 +147,11 @@ export function useContentHandlers({
     insertBeforeInfoId: string | null
   ) {
     pushSnapshot();
+    const ts = Date.now();
     setInfoContent((prev) =>
-      applyAddDescription(prev, html, insertBeforeInfoId)
+      applyAddDescription(prev, html, insertBeforeInfoId, ts)
     );
+    onNewBlockAdded?.(`desc-${ts}`);
   }
 
   function handleEditDescription(infoId: string, html: string) {
@@ -178,7 +183,9 @@ export function useContentHandlers({
     insertBeforeInfoId: string | null
   ) {
     pushSnapshot();
-    setInfoContent((prev) => applyAddImage(prev, images, insertBeforeInfoId));
+    const ts = Date.now();
+    setInfoContent((prev) => applyAddImage(prev, images, insertBeforeInfoId, ts));
+    onNewBlockAdded?.(`img-${ts}`);
   }
 
   function handleEditImage(

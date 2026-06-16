@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { i18n } from '../../i18n/i18n';
 
 export interface AddBlockMenuProps {
-  pos: { x: number; y: number };
+  pos: { x: number; y: number; containerBottom?: number };
   onSelect: (blockType: string) => void;
   onClose: () => void;
   hasPaste?: boolean;
@@ -13,6 +13,19 @@ export interface AddBlockMenuProps {
 export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddBlockMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [ctaHovered, setCtaHovered] = useState(false);
+  const [computedPos, setComputedPos] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const menuH = ref.current.offsetHeight;
+    const menuW = ref.current.offsetWidth;
+    const boundary = pos.containerBottom ?? window.innerHeight;
+    const top = pos.y + menuH > boundary - 8
+      ? Math.max(8, pos.y - menuH - 28)
+      : pos.y;
+    const left = Math.min(pos.x, window.innerWidth - menuW - 8);
+    setComputedPos({ left, top });
+  }, [pos.x, pos.y, pos.containerBottom]);
 
   const ctaSubItems = [
     { label: i18n.t("sidebar.action_list.dropdown.address"), type: 'Cta_Address' },
@@ -45,7 +58,14 @@ export function AddBlockMenu({ pos, onSelect, onClose, hasPaste, onPaste }: AddB
   }, [onClose]);
 
   return ReactDOM.createPortal(
-    <div ref={ref} className="add-block-menu" style={{ left: pos.x, top: pos.y }}>
+    <div
+      ref={ref}
+      className="add-block-menu"
+      style={computedPos
+        ? { left: computedPos.left, top: computedPos.top }
+        : { left: pos.x, top: pos.y, visibility: 'hidden' }
+      }
+    >
       {addBlockItems.map(item => (
         <div
           key={item.type}

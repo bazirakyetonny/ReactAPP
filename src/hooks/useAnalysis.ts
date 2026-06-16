@@ -33,7 +33,7 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
   const [syncIssues, setSyncIssues] = useState<AnalysisIssue[]>([]);
   const [urlIssues, setUrlIssues] = useState<AnalysisIssue[]>([]);
   const [translatedTextIssues, setTranslatedTextIssues] = useState<AnalysisIssue[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
 
   const fastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,11 +232,12 @@ export function useAnalysis({ infoContent, navContents, pages, versionId, disabl
 
   // On version switch, clear stale issues and cache so the new version is fully re-scanned.
   useEffect(() => {
-    if (disabled) return;
+    if (disabled) { setIsAnalyzing(false); return; }
     urlCacheRef.current.clear();
     firstUrlDoneRef.current = false;
     setUrlIssues([]);
     setTranslatedTextIssues([]);
+    setIsAnalyzing(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versionId, disabled]);
 

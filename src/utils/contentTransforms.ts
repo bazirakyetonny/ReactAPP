@@ -307,7 +307,12 @@ export function applyTileDropAsNewBlock(
     const withoutSource = prev.filter((b: any) => b.InfoId !== fromGridId);
     if (insertBeforeInfoId === null) return [...withoutSource, sourceBlock];
     const insertIdx = withoutSource.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
-    if (insertIdx === -1) return [...withoutSource, sourceBlock];
+    if (insertIdx === -1) {
+      // insertBeforeInfoId is the source block itself — restore to its original position
+      const srcPos = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+      if (srcPos !== -1) return [...withoutSource.slice(0, srcPos), sourceBlock, ...withoutSource.slice(srcPos)];
+      return [...withoutSource, sourceBlock];
+    }
     return [...withoutSource.slice(0, insertIdx), sourceBlock, ...withoutSource.slice(insertIdx)];
   }
   let movedTile: any = null;
@@ -357,7 +362,13 @@ export function applyTileDropAsNewBlock(
   };
   if (insertBeforeInfoId === null) return [...afterRemove, newGrid];
   const insertIdx = afterRemove.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
-  if (insertIdx === -1) return [...afterRemove, newGrid];
+  if (insertIdx === -1) {
+    // insertBeforeInfoId was the source grid itself, which dissolved into new blocks with new IDs.
+    // Insert at the original index so the tile lands before those dissolved blocks.
+    const srcPos = prev.findIndex((b: any) => b.InfoId === insertBeforeInfoId);
+    if (srcPos !== -1) return [...afterRemove.slice(0, srcPos), newGrid, ...afterRemove.slice(srcPos)];
+    return [...afterRemove, newGrid];
+  }
   return [...afterRemove.slice(0, insertIdx), newGrid, ...afterRemove.slice(insertIdx)];
 }
 

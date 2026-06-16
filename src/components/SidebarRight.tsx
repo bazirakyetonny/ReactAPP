@@ -273,6 +273,9 @@ export function SidebarRight({
   const tileTextInputRef = useRef<HTMLInputElement>(null);
   const autoFocusedRef = useRef(false);
   const snapshotDeferredRef = useRef(false);
+  // Always-current tile text — avoids stale closure reads in onKeyDown/onBlur
+  const tileTextRef = useRef(tileText);
+  tileTextRef.current = tileText;
 
   // Selection changed: any in-progress edit belongs to the previous tile,
   // so end the session and re-sync unconditionally
@@ -449,6 +452,20 @@ export function SidebarRight({
                 if (selectedTile)
                   onLiveTileText?.(selectedTile.Id, val);
               }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                // Save immediately using the ref so the value is never stale.
+                // Null out editingTileIdRef so the onBlur that follows doesn't double-save.
+                const editedTileId = editingTileIdRef.current;
+                isEditingTextRef.current = false;
+                editingTileIdRef.current = null;
+                autoFocusedRef.current = false;
+                snapshotDeferredRef.current = false;
+                if (selectedTile && selectedTile.Id === editedTileId && tileTextRef.current !== (selectedTile.Text ?? ""))
+                  onEditTile?.(selectedTile.Id, { Text: tileTextRef.current });
+                onEndLiveTileText?.();
+                e.currentTarget.blur();
+              }}
               onBlur={() => {
                 const editedTileId = editingTileIdRef.current;
                 isEditingTextRef.current = false;
@@ -484,6 +501,12 @@ export function SidebarRight({
                     onEditTile?.(selectedTile.Id, {
                       Action: { ...selectedTile.Action, ObjectUrl: val },
                     });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  isEditingActionRef.current = false;
+                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, actionUrl);
+                  e.currentTarget.blur();
                 }}
                 onBlur={() => {
                   isEditingActionRef.current = false;
