@@ -415,6 +415,7 @@ function App() {
     pushSnapshot,
     isResizingRef,
     onNewTileCreated: () => setNavStack([]),
+    onNewBlockAdded: scrollToNewBlock,
   });
 
   // ── Version switching ────────────────────────────────────────────────────
@@ -594,7 +595,7 @@ function App() {
 
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, saveError, savedAt, runSave, flushSave } = useAutoSave(
+  const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } = useAutoSave(
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
@@ -921,7 +922,17 @@ function App() {
       requestAnimationFrame(() => {
         for (const tileId of Object.values(sourceTiles)) {
           const el = document.querySelector(`[data-tile-id="${tileId}"]`);
-          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          if (!el) continue;
+          const container = el.closest('.phone-screen') as HTMLElement | null;
+          if (container) {
+            const elRect = el.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
+            const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+            const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+            container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+          } else {
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
         }
       });
     }
@@ -943,7 +954,38 @@ function App() {
         ? `[data-tile-id="${issue.subItemId}"]`
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
-      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+  }
+
+  function scrollToNewBlock(infoId: string) {
+    requestAnimationFrame(() => {
+      let el: HTMLElement | null = null;
+      if (infoId.startsWith('grid-')) {
+        const tileTs = infoId.slice(5);
+        el = document.querySelector(`[data-tile-id="tile-${tileTs}"]`) as HTMLElement | null;
+      } else {
+        el = document.querySelector(`[data-block-id="${infoId}"]`) as HTMLElement | null;
+      }
+      if (!el) return;
+      const container = el.closest('.phone-screen') as HTMLElement | null;
+      if (container) {
+        const elRect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
+        const target = offsetInContainer - (cRect.height - elRect.height) / 2;
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      }
     });
   }
 
@@ -1190,10 +1232,13 @@ function App() {
 
     let finalAttrs: Record<string, any> = { ...attrs };
 
-    if ((blockType === "Cta_Weblink" || blockType === "Cta_Form") && attrs.CtaAction) {
+    if ((blockType === "Cta_Weblink" || blockType === "Cta_Form" || blockType === "Cta_Address") && attrs.CtaAction) {
       const cv = dataStore.get("Current_Version");
       if (cv) {
-        const url = attrs.CtaAction;
+        const url =
+          blockType === "Cta_Address"
+            ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(attrs.CtaAction)}`
+            : attrs.CtaAction;
         const existing = (cv.Page ?? []).find(
           (p: any) =>
             p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
@@ -1244,6 +1289,7 @@ function App() {
       setInfoContent((prev) =>
         applyAddBlock(prev, blockType, insertBeforeInfoId, ts, finalAttrs),
       );
+      scrollToNewBlock(`cta-${ts}`);
     } else {
       setNavContents((prev) => ({
         ...prev,
@@ -2123,6 +2169,118 @@ function App() {
     }
   }
 
+  async function handleCtaAddressSave(ctaId: string, address: string, label: string) {
+    const cv = dataStore.get("Current_Version");
+    if (!cv) return;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+    const allFrames = [
+      { frameIndex: -1 as number, blocks: infoContentRef.current },
+      ...navStackRef.current.map((pid: string, i: number) => ({
+        frameIndex: i,
+        blocks: navContentsRef.current[pid] ?? [],
+      })),
+    ];
+    let ctaFrameIndex = -1;
+    for (const { frameIndex, blocks } of allFrames) {
+      if (blocks.some((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId)) {
+        ctaFrameIndex = frameIndex;
+        break;
+      }
+    }
+
+    const allCtaBlocks: any[] = [
+      ...infoContentRef.current,
+      ...(Object.values(navContentsRef.current) as any[][]).flat(),
+    ];
+    const ctaBlock = allCtaBlocks.find((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId);
+    const currentCtaAction = ctaBlock?.CtaAttributes?.Action;
+
+    if (currentCtaAction?.ObjectId && currentCtaAction.ObjectType === "WebLink") {
+      pushSnapshot();
+      handleEditCta(ctaId, {
+        CtaAction: address,
+        Action: { ...currentCtaAction, ObjectUrl: mapsUrl },
+      });
+      try {
+        await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentCtaAction.ObjectId, url: mapsUrl, WWPFormId: 0 });
+        const freshCv = dataStore.get("Current_Version") ?? cv;
+        const syncedCv = {
+          ...freshCv,
+          Page: (freshCv.Page ?? []).map((p: any) =>
+            p.PageId === currentCtaAction.ObjectId
+              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: mapsUrl } }
+              : p,
+          ),
+          Pages: (freshCv.Pages ?? []).map((p: any) =>
+            p.PageId === currentCtaAction.ObjectId
+              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: mapsUrl } }
+              : p,
+          ),
+        };
+        dataStore.set("Current_Version", syncedCv);
+        setCurrentVersion(syncedCv);
+        setNavUrls((prev) => ({ ...prev, [currentCtaAction.ObjectId]: mapsUrl }));
+      } catch {
+        const fallbackCv = dataStore.get("Current_Version") ?? cv;
+        try {
+          const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: label || address, url: mapsUrl, WWPFormId: 0 });
+          if (!newPage?.PageId) throw new Error("no page");
+          const pageUrl = newPage.PageLinkStructure?.Url ?? mapsUrl;
+          const updated = {
+            ...fallbackCv,
+            Page: [...(fallbackCv.Page ?? []), newPage],
+            Pages: [...(fallbackCv.Pages ?? []), newPage],
+          };
+          dataStore.set("Current_Version", updated);
+          setCurrentVersion(updated);
+          handleEditCta(ctaId, {
+            CtaAction: address,
+            Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+          });
+          handleTileNavigate(newPage.PageId, ctaFrameIndex);
+          setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
+        } catch { /* ignore */ }
+      }
+      return;
+    }
+
+    const existing = (cv.Page ?? []).find(
+      (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === mapsUrl,
+    );
+    if (existing) {
+      pushSnapshot();
+      handleEditCta(ctaId, {
+        CtaAction: address,
+        Action: { ObjectType: "WebLink", ObjectId: existing.PageId, ObjectUrl: mapsUrl },
+      });
+      handleTileNavigate(existing.PageId, ctaFrameIndex);
+      setNavUrls((prev) => ({ ...prev, [existing.PageId]: mapsUrl }));
+      return;
+    }
+    try {
+      const newPage = await createLinkPage({ appVersionId: cv.AppVersionId, pageName: label || address, url: mapsUrl, WWPFormId: 0 });
+      if (!newPage?.PageId) throw new Error("no page");
+      const pageUrl = newPage.PageLinkStructure?.Url ?? mapsUrl;
+      pushSnapshot();
+      const updated = {
+        ...cv,
+        Page: [...(cv.Page ?? []), newPage],
+        Pages: [...(cv.Pages ?? []), newPage],
+      };
+      dataStore.set("Current_Version", updated);
+      setCurrentVersion(updated);
+      handleEditCta(ctaId, {
+        CtaAction: address,
+        Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+      });
+      handleTileNavigate(newPage.PageId, ctaFrameIndex);
+      setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
+    } catch {
+      handleEditCta(ctaId, { CtaAction: address });
+    }
+  }
+
   async function handleTileWeblinkSave(tileId: string, url: string) {
     const cv = dataStore.get("Current_Version");
     if (!cv || !url) return;
@@ -2286,7 +2444,7 @@ function App() {
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
         isTreeOpen={treeOpen}
-        isSaving={isSaving}
+        isSaving={isDirty}
         saveError={saveError}
         savedAt={savedAt}
         isTranslationOpen={isTranslationOpen}
@@ -2567,6 +2725,7 @@ function App() {
             onEditCta={handleEditCta}
             onBeforeCtaEdit={pushSnapshot}
             onCtaWeblinkSave={handleCtaWeblinkSave}
+            onCtaAddressSave={handleCtaAddressSave}
             onTileWeblinkSave={handleTileWeblinkSave}
             onLiveCtaLabel={(id, label) => setLiveCtaLabel({ id, label })}
             onEndLiveCtaLabel={() => setLiveCtaLabel(null)}

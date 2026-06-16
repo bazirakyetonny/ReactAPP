@@ -8,6 +8,7 @@ export function useAutoSave(
   versionId: string | undefined
 ) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
@@ -29,11 +30,12 @@ export function useAutoSave(
     if (skipNextHomeRef.current) { skipNextHomeRef.current = false; return; }
 
     if (homeTimerRef.current) clearTimeout(homeTimerRef.current);
+    setIsDirty(true);
     homeTimerRef.current = setTimeout(async () => {
       homeTimerRef.current = null;
       const cv = dataStore.get('Current_Version');
       const homePage = (cv?.Page ?? []).find((p: any) => p.PageName?.toLowerCase() === 'home');
-      if (!cv || !homePage) return;
+      if (!cv || !homePage) { setIsDirty(false); return; }
       setIsSaving(true); setSaveError(false);
       try {
         await savePage({
@@ -48,6 +50,7 @@ export function useAutoSave(
         setSaveError(true);
       } finally {
         setIsSaving(false);
+        setIsDirty(false);
       }
     }, 1500);
     return () => { if (homeTimerRef.current) clearTimeout(homeTimerRef.current); };
@@ -69,12 +72,13 @@ export function useAutoSave(
     dirtyNavIdsRef.current = [...new Set([...dirtyNavIdsRef.current, ...dirtyIds])];
 
     if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    setIsDirty(true);
     navTimerRef.current = setTimeout(async () => {
       navTimerRef.current = null;
       const idsToSave = [...dirtyNavIdsRef.current];
       dirtyNavIdsRef.current = [];
       const cv = dataStore.get('Current_Version');
-      if (!cv) return;
+      if (!cv) { setIsDirty(false); return; }
       setIsSaving(true); setSaveError(false);
       try {
         await Promise.all(idsToSave.map(pageId => {
@@ -93,6 +97,7 @@ export function useAutoSave(
         setSaveError(true);
       } finally {
         setIsSaving(false);
+        setIsDirty(false);
       }
     }, 1500);
     return () => { if (navTimerRef.current) clearTimeout(navTimerRef.current); };
@@ -100,7 +105,7 @@ export function useAutoSave(
   }, [navContents]);
 
   async function runSave(fn: () => Promise<void>) {
-    setIsSaving(true); setSaveError(false);
+    setIsSaving(true); setIsDirty(true); setSaveError(false);
     try {
       await fn();
       setSavedAt(Date.now());
@@ -108,6 +113,7 @@ export function useAutoSave(
       setSaveError(true);
     } finally {
       setIsSaving(false);
+      setIsDirty(false);
     }
   }
 
@@ -158,5 +164,5 @@ export function useAutoSave(
     }
   }
 
-  return { isSaving, saveError, savedAt, runSave, flushSave };
+  return { isSaving, isDirty, saveError, savedAt, runSave, flushSave };
 }
