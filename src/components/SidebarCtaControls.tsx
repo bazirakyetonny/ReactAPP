@@ -112,11 +112,22 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
   const ctaId = selectedCta?.InfoId;
   const patch = (p: Record<string, any>) => onEditCta?.(ctaId, p);
 
+  const MAPS_PREFIX = 'https://www.google.com/maps/search/?api=1&query=';
+  function decodeAddressFromCtaAction(raw: string): string {
+    if (raw.startsWith(MAPS_PREFIX)) {
+      return decodeURIComponent(raw.slice(MAPS_PREFIX.length));
+    }
+    return raw;
+  }
+  const displayAction = attrs.CtaType === 'Address'
+    ? decodeAddressFromCtaAction(attrs.CtaAction ?? '')
+    : (attrs.CtaAction ?? '');
+
   const [ctaLabel, setCtaLabel] = useState(attrs.CtaLabel ?? '');
-  const [ctaAction, setCtaAction] = useState(attrs.CtaAction ?? '');
+  const [ctaAction, setCtaAction] = useState(displayAction);
 
   useEffect(() => { setCtaLabel(attrs.CtaLabel ?? ''); }, [ctaId, attrs.CtaLabel]);
-  useEffect(() => { setCtaAction(attrs.CtaAction ?? ''); }, [ctaId]);
+  useEffect(() => { setCtaAction(decodeAddressFromCtaAction(attrs.CtaAction ?? '')); }, [ctaId]);
 
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
