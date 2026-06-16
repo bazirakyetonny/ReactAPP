@@ -1243,9 +1243,11 @@ function App() {
           (p: any) =>
             p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
         );
+        const ctaActionOverride = blockType === "Cta_Address" ? { CtaAction: url } : {};
         if (existing) {
           finalAttrs = {
             ...attrs,
+            ...ctaActionOverride,
             Action: {
               ObjectType: "WebLink",
               ObjectId: existing.PageId,
@@ -1270,6 +1272,7 @@ function App() {
               setCurrentVersion(updated);
               finalAttrs = {
                 ...attrs,
+                ...ctaActionOverride,
                 Action: {
                   ObjectType: "WebLink",
                   ObjectId: newPage.PageId,
@@ -2199,7 +2202,7 @@ function App() {
     if (currentCtaAction?.ObjectId && currentCtaAction.ObjectType === "WebLink") {
       pushSnapshot();
       handleEditCta(ctaId, {
-        CtaAction: address,
+        CtaAction: mapsUrl,
         Action: { ...currentCtaAction, ObjectUrl: mapsUrl },
       });
       try {
@@ -2235,7 +2238,7 @@ function App() {
           dataStore.set("Current_Version", updated);
           setCurrentVersion(updated);
           handleEditCta(ctaId, {
-            CtaAction: address,
+            CtaAction: mapsUrl,
             Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
           });
           handleTileNavigate(newPage.PageId, ctaFrameIndex);
@@ -2251,7 +2254,7 @@ function App() {
     if (existing) {
       pushSnapshot();
       handleEditCta(ctaId, {
-        CtaAction: address,
+        CtaAction: mapsUrl,
         Action: { ObjectType: "WebLink", ObjectId: existing.PageId, ObjectUrl: mapsUrl },
       });
       handleTileNavigate(existing.PageId, ctaFrameIndex);
@@ -2271,13 +2274,13 @@ function App() {
       dataStore.set("Current_Version", updated);
       setCurrentVersion(updated);
       handleEditCta(ctaId, {
-        CtaAction: address,
+        CtaAction: mapsUrl,
         Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
       });
       handleTileNavigate(newPage.PageId, ctaFrameIndex);
       setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
     } catch {
-      handleEditCta(ctaId, { CtaAction: address });
+      handleEditCta(ctaId, { CtaAction: mapsUrl });
     }
   }
 
