@@ -202,7 +202,9 @@ export function CreateAppVersionModal({
       >
         {/* Header */}
         <div className="cav-header">
-          <span className="cav-title">{i18n.t("navbar.appversion.create_new")}</span>
+          <span className="cav-title">
+            {i18n.t("navbar.appversion.create_new")}
+          </span>
           <button
             className="cav-close"
             type="button"
@@ -245,7 +247,9 @@ export function CreateAppVersionModal({
                 isSelected={selectedId === BLANK_ID}
                 onClick={() => handleNext(BLANK_ID)}
                 name={i18n.t("navbar.appversion.blank_version")}
-                description={i18n.t("navbar.appversion.blank_version_description")}
+                description={i18n.t(
+                  "navbar.appversion.blank_version_description",
+                )}
                 themeColors={themeColors}
                 themeIcons={themeIcons}
               />
@@ -290,7 +294,8 @@ export function CreateAppVersionModal({
               <div className="cav-body">
                 <div className="cav-field">
                   <label className="cav-label" htmlFor="cav-name">
-                    {i18n.t("navbar.appversion.version_name")} <span className="cav-required">*</span>
+                    {i18n.t("navbar.appversion.version_name")}{" "}
+                    <span className="cav-required">*</span>
                   </label>
                   <input
                     id="cav-name"
@@ -305,7 +310,8 @@ export function CreateAppVersionModal({
                 </div>
                 <div className="cav-field">
                   <label className="cav-label" htmlFor="cav-lang">
-                    {i18n.t("navbar.appversion.base_language")} <span className="cav-required">*</span>
+                    {i18n.t("navbar.appversion.base_language")}{" "}
+                    <span className="cav-required">*</span>
                   </label>
                   <p className="cav-field-hint">
                     {i18n.t("navbar.appversion.base_language_hint")}
@@ -317,7 +323,9 @@ export function CreateAppVersionModal({
                     onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     {languages?.length === 0 && (
-                      <option value="">{i18n.t("navbar.appversion.no_languages")}</option>
+                      <option value="">
+                        {i18n.t("navbar.appversion.no_languages")}
+                      </option>
                     )}
                     {languages?.map((lang) => (
                       <option key={lang.value} value={lang.value}>
@@ -348,7 +356,7 @@ export function CreateAppVersionModal({
                   type="button"
                   onClick={() => setStep(1)}
                 >
-                  ← {i18n.t("navbar.appversion.back")}
+                  {i18n.t("navbar.appversion.back")}
                 </button>
                 <button
                   className="cav-btn-primary"
@@ -356,7 +364,7 @@ export function CreateAppVersionModal({
                   disabled={!versionName.trim() || !versionLanguage}
                   onClick={handleBlankNext}
                 >
-                  {i18n.t("navbar.next")} →
+                  {i18n.t("navbar.next")}
                 </button>
               </div>
             </>
@@ -376,14 +384,14 @@ export function CreateAppVersionModal({
                   type="button"
                   onClick={() => setStep(1)}
                 >
-                  ← {i18n.t("navbar.appversion.back")}
+                  {i18n.t("navbar.appversion.back")}
                 </button>
                 <button
                   className="cav-btn-primary"
                   type="button"
                   onClick={handleNextToDetails}
                 >
-                  {i18n.t("navbar.next")} →
+                  {i18n.t("navbar.next")}
                 </button>
               </div>
             </>
@@ -412,7 +420,9 @@ export function CreateAppVersionModal({
                 disabled={loading}
                 onClick={handleCreate}
               >
-                {loading ? i18n.t("navbar.appversion.creating") : i18n.t("navbar.appversion.create")}
+                {loading
+                  ? i18n.t("navbar.appversion.creating")
+                  : i18n.t("navbar.appversion.create")}
               </button>
             </div>
           </>
@@ -489,7 +499,9 @@ export function CreateAppVersionModal({
                 disabled={loading || !versionName.trim() || !versionLanguage}
                 onClick={handleCreate}
               >
-                {loading ? i18n.t("navbar.appversion.creating") : i18n.t("navbar.appversion.create")}
+                {loading
+                  ? i18n.t("navbar.appversion.creating")
+                  : i18n.t("navbar.appversion.create")}
               </button>
             </div>
           </>
