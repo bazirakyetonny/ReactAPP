@@ -74,6 +74,7 @@ export function TranslationSideBar({
   const isMounted = useRef(true);
   const isFirstRender = useRef(true);
   const prevVersionIdRef = useRef(appVersionId);
+  const prevActivePageIdRef = useRef(activePageId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayContent: any[] = sdtPage?.PageStructure?.InfoContent ?? [];
@@ -165,12 +166,24 @@ export function TranslationSideBar({
     }
 
     if (!activePageId || !selectedLang) return;
+    const pageChanged = activePageId !== prevActivePageIdRef.current;
+    prevActivePageIdRef.current = activePageId;
     let cancelled = false;
     setIsLoading(true);
-    getTranslatedPage(activePageId, selectedLang)
+    (pageChanged
+      ? translateAppVersion({
+          appVersionId,
+          languageFrom: appVersionLanguage,
+          languageToCollection: appVersionMultiLanguages,
+          activePageId,
+        }).catch(() => {})
+      : Promise.resolve()
+    )
+      .then(() => getTranslatedPage(activePageId, selectedLang))
       .then((result) => {
         if (!cancelled) applyResult(result);
       })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
