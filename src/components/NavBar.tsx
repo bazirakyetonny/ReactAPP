@@ -586,7 +586,7 @@ export function NavBar({
               type="button"
               title={i18n.t("translate")}
               onClick={onTranslationToggle}
-              disabled={locked && !isTranslationOpen}
+              disabled={(locked && !isTranslationOpen) || isSaving}
             >
               <GlobeIcon active={isTranslationOpen} />
             </button>
