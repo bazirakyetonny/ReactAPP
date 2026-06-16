@@ -225,6 +225,7 @@ export function SidebarRight({
   onEditCta,
   onBeforeCtaEdit,
   onCtaWeblinkSave,
+  onCtaAddressSave,
   onTileWeblinkSave,
   onLiveCtaLabel,
   onEndLiveCtaLabel,
@@ -251,6 +252,7 @@ export function SidebarRight({
   onEditCta?: (ctaId: string, patch: Record<string, any>) => void;
   onBeforeCtaEdit?: () => void;
   onCtaWeblinkSave?: (ctaId: string, url: string, label: string) => void;
+  onCtaAddressSave?: (ctaId: string, address: string, label: string) => void;
   onTileWeblinkSave?: (tileId: string, url: string) => void;
   onLiveCtaLabel?: (id: string, label: string) => void;
   onEndLiveCtaLabel?: () => void;
@@ -344,6 +346,9 @@ export function SidebarRight({
           onBeforeCtaEdit={onBeforeCtaEdit}
           onWeblinkSave={(url, label) =>
             onCtaWeblinkSave?.(selectedCta?.InfoId, url, label)
+          }
+          onAddressSave={(address, label) =>
+            onCtaAddressSave?.(selectedCta?.InfoId, address, label)
           }
           onLiveCtaLabel={onLiveCtaLabel}
           onEndLiveCtaLabel={onEndLiveCtaLabel}
