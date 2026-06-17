@@ -1042,6 +1042,7 @@ export function DraggableScreen({
                     const containerBottom = screenRef.current?.getBoundingClientRect().bottom ?? window.innerHeight;
                     setTileMenu({ tileId, pos: { x: rect.left, y: rect.bottom + 4, containerBottom } });
                   }}
+                  menuOpenTileId={tileMenu?.tileId}
                   liveTileText={liveTileText}
                   analysisHighlightTileId={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.tileId : undefined}
                   analysisHighlightMessage={analysisHighlight?.blockId === block.InfoId ? analysisHighlight?.message : undefined}

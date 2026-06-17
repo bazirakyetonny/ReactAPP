@@ -2055,7 +2055,10 @@ function App() {
       (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
     );
     const action = block?.CtaAttributes?.Action;
-    if (!action?.ObjectId) return;
+    if (!action?.ObjectId) {
+      handleCollapseDescendants(parentIndex);
+      return;
+    }
 
     if (
       action.ObjectType === "Information" ||
