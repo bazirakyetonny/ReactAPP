@@ -2,6 +2,7 @@ import "./css/AppVersionMoodSelection2.css";
 import type { Mood, Theme } from "../../types";
 import { CheckboxSpan } from '../widgets/CheckboxSpan';
 import { dataStore } from "../../data/datastore";
+import { i18n } from "../../i18n/i18n";
 
 interface AppVersionMoodSelection2Props {
   selectedMoodId: string | null;
@@ -24,10 +25,10 @@ export function AppVersionMoodSelection2({
   return (
     <div className="ms2-wrap">
       <p className="ms2-heading">
-        Choose Color Mood{" "}
-        {!hideNoMood && <span style={{ fontWeight: 400, fontSize: 14 }}>(OPTIONAL)</span>}
+        {i18n.t('mood_heading')}{" "}
+        {!hideNoMood && <span style={{ fontWeight: 400, fontSize: 14 }}>{i18n.t('optional_hint')}</span>}
       </p>
-      <p className="ms2-subheading">Select a color mood that fits your app vision</p>
+      <p className="ms2-subheading">{i18n.t('mood_subheading')}</p>
 
       <div className={`ms2-grid${noMood ? " ms2-grid--disabled" : ""}`}>
         {moods.map((mood) => {
@@ -70,8 +71,8 @@ export function AppVersionMoodSelection2({
 
       {!hideNoMood && (
         <div className="ms2-no-mood" onClick={() => onNoMoodChange(!noMood)}>
-          <CheckboxSpan checked={noMood} onChange={() => onNoMoodChange(!noMood)} ariaLabel="Do not use color moods" />
-          Do not use color moods
+          <CheckboxSpan checked={noMood} onChange={() => onNoMoodChange(!noMood)} ariaLabel={i18n.t('no_color_moods')} />
+          {i18n.t('no_color_moods')}
         </div>
       )}
     </div>

@@ -288,6 +288,8 @@ export const i18n = new I18n({
     previous: "Previous",
     select_color_moods: "Select Color Moods",
     no_color_moods: "Do not use color moods",
+    mood_heading: "Choose Color Mood",
+    mood_subheading: "Select a color mood that fits your app vision",
     generate: "Generate",
     finish: "Finish",
 
@@ -844,6 +846,8 @@ export const i18n = new I18n({
     previous: "Vorige",
     select_color_moods: "Selecteer Kleursferen",
     no_color_moods: "Gebruik geen kleursferen",
+    mood_heading: "Kies Kleurstemming",
+    mood_subheading: "Selecteer een kleurstemming die past bij jouw app-visie",
     generate: "Genereer",
     finish: "Voltooi",
     translate: "Vertaal de applicatie naar andere talen",
