@@ -617,7 +617,7 @@ function App() {
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
     disabled: isPreviewMode,
-    translationLanguages,
+    translationLanguages: canTranslate ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
     isTranslationOpen,
@@ -2046,6 +2046,43 @@ function App() {
     }
   }
 
+  function handleCtaNavigation(ctaId: string, parentIndex: number) {
+    const allBlocks = [
+      ...infoContentRef.current,
+      ...(Object.values(navContentsRef.current).flat() as any[]),
+    ];
+    const block = allBlocks.find(
+      (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
+    );
+    const action = block?.CtaAttributes?.Action;
+    if (!action?.ObjectId) {
+      handleCollapseDescendants(parentIndex);
+      return;
+    }
+
+    if (
+      action.ObjectType === "Information" ||
+      action.ObjectType === "BulletinBoard" ||
+      action.ObjectType === "Calendar" ||
+      action.ObjectType === "MyActivity" ||
+      action.ObjectType === "Map"
+    ) {
+      handleTileNavigate(action.ObjectId, parentIndex);
+    } else if (
+      action.ObjectType === "WebLink" ||
+      action.ObjectType === "DynamicForm"
+    ) {
+      const page = pagesRef.current.find(
+        (p: any) => p.PageId === action.ObjectId,
+      );
+      const url = page?.PageLinkStructure?.Url ?? action.ObjectUrl;
+      if (url) {
+        handleTileNavigate(action.ObjectId, parentIndex);
+        setNavUrls((prev) => ({ ...prev, [action.ObjectId]: url }));
+      }
+    }
+  }
+
   async function handleCtaWeblinkSave(
     ctaId: string,
     url: string,
@@ -2629,6 +2666,7 @@ function App() {
           onCrossFrameTileDropAsNewBlock={handleCrossFrameTileDropAsNewBlock}
           linkedFrames={linkedFrames}
           onTileNavigate={handleTileNavigate}
+          onCtaNavigate={handleCtaNavigation}
           onCollapseDescendants={handleCollapseDescendants}
           activeNavTileIds={activeNavTileIds}
           onAddDescription={handleAddDescription}
