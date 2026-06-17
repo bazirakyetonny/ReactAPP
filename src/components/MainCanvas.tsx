@@ -237,6 +237,7 @@ interface MainCanvasProps {
   ) => void;
   linkedFrames?: LinkedFrame[];
   onTileNavigate?: (pageId: string, parentIndex: number) => void;
+  onCtaNavigate?: (ctaId: string, parentIndex: number) => void;
   onCollapseDescendants?: (parentIndex: number) => void;
   activeNavTileIds?: Set<string>;
   onAddDescription?: (html: string, insertBeforeInfoId: string | null) => void;
@@ -316,6 +317,7 @@ export function MainCanvas({
   onCrossFrameTileDropAsNewBlock,
   linkedFrames,
   onTileNavigate,
+  onCtaNavigate,
   onCollapseDescendants,
   activeNavTileIds,
   onAddDescription,
@@ -738,6 +740,11 @@ export function MainCanvas({
                   ? (pageId) => onTileNavigate(pageId, -1)
                   : undefined
               }
+              onCtaNavigate={
+                onCtaNavigate
+                  ? (ctaId) => onCtaNavigate(ctaId, -1)
+                  : undefined
+              }
               onCollapseFromParent={
                 onCollapseDescendants
                   ? () => onCollapseDescendants(-1)
@@ -929,6 +936,11 @@ export function MainCanvas({
                     onTileNavigate={
                       onTileNavigate
                         ? (pageId) => onTileNavigate(pageId, i)
+                        : undefined
+                    }
+                    onCtaNavigate={
+                      onCtaNavigate
+                        ? (ctaId) => onCtaNavigate(ctaId, i)
                         : undefined
                     }
                     onCollapseFromParent={

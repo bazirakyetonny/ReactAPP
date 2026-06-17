@@ -72,6 +72,7 @@ interface TileGridsProps {
   analysisHighlightTileId?: string;
   analysisHighlightMessage?: string;
   multiSelectedTileIds?: Set<string>;
+  menuOpenTileId?: string | null;
 }
 
 function getColsForRender(
@@ -169,6 +170,7 @@ export function TileGrids({
   analysisHighlightTileId,
   analysisHighlightMessage,
   multiSelectedTileIds,
+  menuOpenTileId,
 }: TileGridsProps) {
   return (
     <>
@@ -425,6 +427,9 @@ export function TileGrids({
                             isGhost ? "phone-tile-wrap--ghost" : "",
                             isTileDragging
                               ? "phone-tile-wrap--tile-drag-source"
+                              : "",
+                            menuOpenTileId === tile.Id
+                              ? "phone-tile-wrap--menu-open"
                               : "",
                           ]
                             .filter(Boolean)

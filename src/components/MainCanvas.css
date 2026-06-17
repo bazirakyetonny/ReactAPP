@@ -681,7 +681,8 @@
 
 /* Options + delete visible only when hovering the selected tile */
 .phone-tile-wrap.selected:hover .phone-tile-options-btn,
-.phone-tile-wrap.selected:hover .phone-tile-delete-btn {
+.phone-tile-wrap.selected:hover .phone-tile-delete-btn,
+.phone-tile-wrap--menu-open .phone-tile-options-btn {
   opacity: 1;
   pointer-events: auto;
 }
