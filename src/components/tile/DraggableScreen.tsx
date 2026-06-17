@@ -99,6 +99,7 @@ export interface DraggableScreenProps {
   onTileDrop?: (fromGridId: string, fromColId: string, tileId: string, preview: TileDropPreview) => void;
   onTileDropAsNewBlock?: (fromGridId: string, fromColId: string, tileId: string, insertBeforeInfoId: string | null) => void;
   onTileNavigate?: (pageId: string) => void;
+  onCtaNavigate?: (ctaId: string) => void;
   onCollapseFromParent?: () => void;
   activeNavTileIds?: Set<string>;
   sourceFrameIndex?: number;
@@ -161,6 +162,7 @@ export function DraggableScreen({
   onTileDrop,
   onTileDropAsNewBlock,
   onTileNavigate,
+  onCtaNavigate,
   onCollapseFromParent,
   activeNavTileIds,
   sourceFrameIndex = -1,
@@ -949,13 +951,15 @@ export function DraggableScreen({
                     <div key={block.InfoId} style={{ position: 'relative' }} ref={(el) => {
                       if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                       else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
-                    }}>
+                    }}
+                      onClick={isPreviewMode && onCtaNavigate ? () => { onCtaNavigate(block.InfoId); onSelectCta?.(block.InfoId); } : undefined}
+                    >
                       <CtaBlock
                         block={block}
                         ctaColors={themeCtaColors}
                         interactive={!isPreviewMode}
                         isDragging={blockDragId === block.InfoId}
-                        isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                        isSelected={selectedCtaId === block.InfoId}
                         isMultiSelected={multiSelectedCtaIds?.has(block.InfoId)}
                         onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                         onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
@@ -1134,13 +1138,15 @@ export function DraggableScreen({
                 <div data-block-id={block.InfoId} style={{ position: 'relative' }} ref={(el) => {
                   if (el) { blockWrapperElsRef.current.set(block.InfoId, el); onBlockWrapperRef?.(block.InfoId, el); }
                   else { blockWrapperElsRef.current.delete(block.InfoId); onBlockWrapperRef?.(block.InfoId, null); }
-                }}>
+                }}
+                  onClick={isPreviewMode && onCtaNavigate ? () => { onCtaNavigate(block.InfoId); onSelectCta?.(block.InfoId); } : undefined}
+                >
                   <CtaBlock
                     block={block}
                     ctaColors={themeCtaColors}
                     interactive={!isPreviewMode}
                     isDragging={blockDragId === block.InfoId}
-                    isSelected={!isPreviewMode && selectedCtaId === block.InfoId}
+                    isSelected={selectedCtaId === block.InfoId}
                     isMultiSelected={multiSelectedCtaIds?.has(block.InfoId)}
                     onSelect={isPreviewMode ? undefined : (ctaId) => { onCollapseFromParent?.(); onSelectCta?.(ctaId); }}
                     onDelete={isPreviewMode ? undefined : (infoId) => onDeleteBlock?.(infoId)}
