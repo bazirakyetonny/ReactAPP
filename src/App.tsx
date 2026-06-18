@@ -5,7 +5,9 @@ import {
   getActiveAppVersion,
   activateAppVersion,
   updateAppVersionCategory,
+  restoreHistoryVersion,
   type SDTAppVersion,
+  type AppVersionHistoryEntry,
 } from "./services/appVersionsApi";
 import { getBaseUrl } from "./services/apiClient";
 import { updateAppVersionTheme } from "./services/themeApi";
@@ -134,6 +136,12 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [viewingHistoryEntry, setViewingHistoryEntry] =
+    useState<AppVersionHistoryEntry | null>(null);
+  const [originalHistoryNumber, setOriginalHistoryNumber] = useState<
+    number | null
+  >(null);
+  const isViewingHistory = viewingHistoryEntry !== null;
   const [translationRevision, setTranslationRevision] = useState(0);
   const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
@@ -443,29 +451,69 @@ function App() {
       .catch(() => {});
   }
 
+  async function reloadActiveVersion() {
+    const fetched = (await getActiveAppVersion()) as any;
+    const fullVersion = {
+      ...fetched,
+      Page: fetched.Page ?? fetched.Pages ?? [],
+    };
+    dataStore.set("Current_Version", fullVersion);
+    setCurrentVersion(fullVersion);
+    setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
+    setInfoContent(parseInfoContent());
+    setNavStack([]);
+    setNavContents({});
+    setNavSourceTiles({});
+    setNavUrls({});
+    clearHistory();
+    setSelectedTileId(null);
+  }
+
+  async function handleViewHistoryVersion(
+    entry: AppVersionHistoryEntry,
+    latestHistoryNumber: number,
+  ) {
+    const versionId = currentVersion?.AppVersionId;
+    if (!versionId) return;
+    try {
+      if (originalHistoryNumber === null) {
+        flushSaveRef.current?.(versionId);
+        setOriginalHistoryNumber(latestHistoryNumber);
+      }
+      await restoreHistoryVersion(versionId, entry.AppVersionNumber);
+      await reloadActiveVersion();
+      setViewingHistoryEntry(entry);
+    } catch {
+      // silently swallow
+    }
+  }
+
+  async function handleExitHistoryView() {
+    const versionId = currentVersion?.AppVersionId;
+    if (versionId && originalHistoryNumber !== null) {
+      try {
+        await restoreHistoryVersion(versionId, originalHistoryNumber);
+        await reloadActiveVersion();
+      } catch {
+        // silently swallow
+      }
+    }
+    setViewingHistoryEntry(null);
+    setOriginalHistoryNumber(null);
+    setIsHistoryOpen(false);
+  }
+
   async function handleVersionRestored() {
     try {
-      const fetched = (await getActiveAppVersion()) as any;
-      const fullVersion = {
-        ...fetched,
-        Page: fetched.Page ?? fetched.Pages ?? [],
-      };
-      dataStore.set("Current_Version", fullVersion);
-      setCurrentVersion(fullVersion);
-      setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
-      setInfoContent(parseInfoContent());
-      setNavStack([]);
-      setNavContents({});
-      setNavSourceTiles({});
-      setNavUrls({});
-      clearHistory();
-      setSelectedTileId(null);
+      await reloadActiveVersion();
       getAppVersions()
         .then(setAppVersions)
         .catch(() => {});
     } catch {
-      // silently swallow — sidebar will still close
+      // silently swallow
     } finally {
+      setViewingHistoryEntry(null);
+      setOriginalHistoryNumber(null);
       setIsHistoryOpen(false);
     }
   }
@@ -617,10 +665,11 @@ function App() {
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
     disabled: isPreviewMode,
-    translationLanguages: canTranslate ? translationLanguages : [],
+    translationLanguages:
+      canTranslate && !isViewingHistory ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
-    isTranslationOpen,
+    isTranslationOpen: isTranslationOpen && !isViewingHistory,
     activePageId: transPageId,
   });
 
@@ -2494,7 +2543,15 @@ function App() {
         }}
         canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
-        onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
+        isViewingHistory={isViewingHistory}
+        onHistoryToggle={() => {
+          if (!isHistoryOpen && analysisOpen) setAnalysisOpen(false);
+          if (isHistoryOpen) {
+            handleExitHistoryView();
+          } else {
+            setIsHistoryOpen(true);
+          }
+        }}
         analysisIssues={analysisIssues}
         analysisIssueCount={analysisIssues.length}
         isAnalyzing={isAnalyzing}
@@ -2646,7 +2703,7 @@ function App() {
           />
         )}
         <MainCanvas
-          isReadOnly={isTranslationOpen}
+          isReadOnly={isTranslationOpen || isViewingHistory}
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
@@ -2715,8 +2772,10 @@ function App() {
         {isHistoryOpen ? (
           <VersionHistorySidebar
             appVersionId={currentVersion?.AppVersionId}
-            onClose={() => setIsHistoryOpen(false)}
+            onClose={handleExitHistoryView}
             onRestored={handleVersionRestored}
+            onViewVersion={handleViewHistoryVersion}
+            selectedNumber={viewingHistoryEntry?.AppVersionNumber ?? null}
           />
         ) : isTranslationOpen && canTranslate ? (
           <TranslationSideBar

@@ -112,30 +112,34 @@ interface VersionHistorySidebarProps {
   appVersionId?: string;
   onClose?: () => void;
   onRestored?: () => void;
+  onViewVersion?: (
+    entry: AppVersionHistoryEntry,
+    latestHistoryNumber: number,
+  ) => void;
+  selectedNumber?: number | null;
 }
 
 export function VersionHistorySidebar({
   appVersionId,
   onClose,
   onRestored,
+  onViewVersion,
+  selectedNumber = null,
 }: VersionHistorySidebarProps) {
   const [items, setItems] = useState<AppVersionHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
 
-  async function handleCardRestore(item: AppVersionHistoryEntry, idx: number) {
-    if (!appVersionId || restoringIndex !== null) return;
-    setRestoringIndex(idx);
-    try {
-      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
-      onRestored?.();
-    } catch {
-      // silently swallow
-    } finally {
-      setRestoringIndex(null);
-    }
+  function handleCardClick(item: AppVersionHistoryEntry, idx: number) {
+    if (!appVersionId || restoringIndex !== null || loadingIndex !== null) return;
+    if (item.AppVersionNumber === selectedNumber) return;
+    setLoadingIndex(idx);
+    const latestNumber = items[0]?.AppVersionNumber ?? item.AppVersionNumber;
+    onViewVersion?.(item, latestNumber);
+    setLoadingIndex(null);
   }
 
   useEffect(() => {
@@ -187,18 +191,22 @@ export function VersionHistorySidebar({
           !error &&
           items.map((item, idx) => (
             <div
-              className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}`}
+              className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}${selectedNumber === item.AppVersionNumber ? " vhs-item--active" : ""}`}
               key={item.AppVersionNumber}
               role="button"
               tabIndex={0}
-              title={i18n.t("version_history.restoreThisVersion")}
-              onClick={() => handleCardRestore(item, idx)}
-              onKeyDown={(e) => e.key === "Enter" && handleCardRestore(item, idx)}
+              title={i18n.t("version_history.viewThisVersion")}
+              onClick={() => handleCardClick(item, idx)}
+              onKeyDown={(e) => e.key === "Enter" && handleCardClick(item, idx)}
             >
               <div className="vhs-item-row">
                 <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
                 <span className="vhs-date">
-                  {restoringIndex === idx ? i18n.t("version_history.restoring") : formatHistoryDate(item.PublishDate)}
+                  {restoringIndex === idx
+                    ? i18n.t("version_history.restoring")
+                    : loadingIndex === idx
+                      ? i18n.t("version_history.loading")
+                      : formatHistoryDate(item.PublishDate)}
                 </span>
                 <button
                   className="vhs-dots-btn"

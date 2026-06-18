@@ -48,6 +48,7 @@ interface NavBarProps {
   onAnalysisNext?: () => void;
   onAnalysisClose?: () => void;
   isHistoryOpen?: boolean;
+  isViewingHistory?: boolean;
   onHistoryToggle?: () => void;
   onShareClick?: () => void;
   onTrashClick?: () => void;
@@ -372,6 +373,7 @@ export function NavBar({
   onAnalysisNext,
   onAnalysisClose,
   isHistoryOpen = false,
+  isViewingHistory = false,
   onHistoryToggle,
   onShareClick,
   onTrashClick,
@@ -586,7 +588,7 @@ export function NavBar({
               type="button"
               title={isSaving ? i18n.t("navbar.autoSave.saving") : i18n.t("translate")}
               onClick={onTranslationToggle}
-              disabled={(locked && !isTranslationOpen) || isSaving}
+              disabled={(locked && !isTranslationOpen) || isSaving || isViewingHistory}
             >
               <GlobeIcon active={isTranslationOpen} />
             </button>
