@@ -593,6 +593,12 @@ function App() {
     selectedCtaId,
   ]);
 
+  // ── Translation save indicator ───────────────────────────────────────────
+
+  const [isTranslationSaving, setIsTranslationSaving] = useState(false);
+  const [translationSaveError, setTranslationSaveError] = useState(false);
+  const [translationSavedAt, setTranslationSavedAt] = useState<number | null>(null);
+
   // ── Auto-save ────────────────────────────────────────────────────────────
 
   const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } = useAutoSave(
@@ -2484,9 +2490,9 @@ function App() {
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
         isTreeOpen={treeOpen}
-        isSaving={isDirty}
-        saveError={saveError}
-        savedAt={savedAt}
+        isSaving={isDirty || isTranslationSaving}
+        saveError={saveError || translationSaveError}
+        savedAt={translationSavedAt ?? savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => {
           if (!isTranslationOpen && analysisOpen) setAnalysisOpen(false);
@@ -2734,7 +2740,9 @@ function App() {
             highlightTileId={translationHighlight?.tileId}
             highlightLanguage={translationHighlight?.language}
             highlightMessage={translationHighlight?.message}
-            onSaved={() => setTranslationRevision((v) => v + 1)}
+            onSaveStart={() => { setIsTranslationSaving(true); setTranslationSaveError(false); }}
+            onSaved={() => { setIsTranslationSaving(false); setTranslationSavedAt(Date.now()); setTranslationRevision((v) => v + 1); }}
+            onSaveError={() => { setIsTranslationSaving(false); setTranslationSaveError(true); }}
           />
         ) : showTemplateSidebar ? (
           <TemplateSidebar

@@ -34,6 +34,14 @@ function validateUrl(v: string): string | null {
     : i18n.t("cta_modal_forms.url_error");
 }
 
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https:\/\//i.test(trimmed)) return trimmed;
+  if (/^http:\/\//i.test(trimmed)) return "https://" + trimmed.slice(7);
+  return "https://" + trimmed;
+}
+
 function prefill(
   ctaType: string,
   supplier: any,
@@ -55,7 +63,7 @@ function prefill(
     case "Weblink":
       return {
         label: companyName || defaultLabels.Weblink,
-        action: supplier.SupplierGenWebsite ?? "",
+        action: normalizeUrl(supplier.SupplierGenWebsite ?? ""),
       };
     case "Address": {
       const parts = [

@@ -37,6 +37,8 @@ export function TranslationSideBar({
   highlightLanguage,
   highlightMessage,
   onSaved,
+  onSaveStart,
+  onSaveError,
 }: {
   pageName?: string;
   appVersionId: string;
@@ -53,6 +55,8 @@ export function TranslationSideBar({
   highlightLanguage?: string;
   highlightMessage?: string;
   onSaved?: () => void;
+  onSaveStart?: () => void;
+  onSaveError?: () => void;
 }) {
   const displayLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
@@ -195,9 +199,10 @@ export function TranslationSideBar({
   // ── Save helpers ─────────────────────────────────────────────────────────────
 
   function saveNow(next: any) {
+    onSaveStart?.();
     updateTranslatedPage(activePageId, selectedLang, next)
       .then(() => onSaved?.())
-      .catch(() => {});
+      .catch(() => onSaveError?.());
   }
 
   function handlePageNameSave(value: string) {
@@ -207,6 +212,8 @@ export function TranslationSideBar({
   }
 
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
+    setEditingKey(null);
+    if (!value.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].Columns[ci].Tiles[ti].Text = value;
     const next = {
@@ -215,10 +222,12 @@ export function TranslationSideBar({
     };
     setSdtPage(next);
     saveNow(next);
-    setEditingKey(null);
   }
 
   function handleDescriptionSave(bi: number, value: string) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = value;
+    if (!tmp.textContent?.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].InfoValue = value;
     const next = {
@@ -231,6 +240,8 @@ export function TranslationSideBar({
   }
 
   function handleCtaBlur(bi: number, value: string) {
+    setEditingKey(null);
+    if (!value.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].CtaAttributes.CtaLabel = value;
     const next = {
@@ -239,7 +250,6 @@ export function TranslationSideBar({
     };
     setSdtPage(next);
     saveNow(next);
-    setEditingKey(null);
   }
 
   // ── Module page renderer ─────────────────────────────────────────────────────
@@ -342,32 +352,34 @@ export function TranslationSideBar({
                             />
                           </div>
                         )}
-                        <div
-                          className={`phone-tile-element${tile.Align === "left" ? " phone-tile-element--left" : ""}`}
-                        >
-                          {editingKey === tileKey ? (
-                            <input
-                              className="ts-editable-input"
-                              defaultValue={decodeHtml(tile.Text ?? "")}
-                              autoFocus
-                              style={{ color: tile.Color ?? "#333" }}
-                              onBlur={(e) =>
-                                handleTileBlur(bi, ci, ti, e.target.value)
-                              }
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && e.currentTarget.blur()
-                              }
-                            />
-                          ) : (
-                            <span
-                              className="phone-tile-text ts-editable-text"
-                              title="Click to edit"
-                              onClick={() => setEditingKey(tileKey)}
-                            >
-                              {decodeHtml(tile.Text || " ")}
-                            </span>
-                          )}
-                        </div>
+                        {(editingKey === tileKey || decodeHtml(tile.Text ?? "").trim()) && (
+                          <div
+                            className={`phone-tile-element${tile.Align === "left" ? " phone-tile-element--left" : ""}`}
+                          >
+                            {editingKey === tileKey ? (
+                              <input
+                                className="ts-editable-input"
+                                defaultValue={decodeHtml(tile.Text ?? "")}
+                                autoFocus
+                                style={{ color: tile.Color ?? "#333" }}
+                                onBlur={(e) =>
+                                  handleTileBlur(bi, ci, ti, e.target.value)
+                                }
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && e.currentTarget.blur()
+                                }
+                              />
+                            ) : (
+                              <span
+                                className="phone-tile-text ts-editable-text"
+                                title="Click to edit"
+                                onClick={() => setEditingKey(tileKey)}
+                              >
+                                {decodeHtml(tile.Text ?? "")}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
