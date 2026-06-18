@@ -201,6 +201,7 @@ export const i18n = new I18n({
           "Are you sure you want to delete the version <strong>%{versionName}</strong>?",
         new_template: "New Template",
         dropdow: {
+          save: "Save",
           duplicate: "Duplicate",
           rename: "Rename",
           move_to_trash: "Move To Trash",
@@ -412,6 +413,21 @@ export const i18n = new I18n({
       load_failed: "Failed to load version history.",
       viewThisVersion: "View this version",
       loading: "Loading…",
+      restore_modal: {
+        title: "Restore Version",
+        version_details: "Version Details",
+        date: "Date",
+        publisher: "Publisher",
+        version: "Version",
+        important: "Important",
+        restore_version: "Restore Version",
+      },
+      copy_modal: {
+        title: "Make a Copy",
+        enter_version_name: "Enter Version Name",
+        save: "Save",
+        name_required: "Version name is required",
+      },
     },
     default: {
       reception: "Reception",
@@ -973,6 +989,21 @@ export const i18n = new I18n({
       load_failed: "Kon versiegeschiedenis niet laden.",
       viewThisVersion: "Bekijk deze versie",
       loading: "Laden…",
+      restore_modal: {
+        title: "Versie herstellen",
+        version_details: "Versiegegevens",
+        date: "Datum",
+        publisher: "Uitgever",
+        version: "Versie",
+        important: "Belangrijk",
+        restore_version: "Versie herstellen",
+      },
+      copy_modal: {
+        title: "Maak een kopie",
+        enter_version_name: "Voer versienaam in",
+        save: "Opslaan",
+        name_required: "Versienaam is verplicht",
+      },
     },
     default: {
       reception: "Receptie",

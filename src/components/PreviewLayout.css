@@ -23,3 +23,27 @@
 .preview-layout .phone-frame {
   flex-shrink: 0;
 }
+
+@media (max-width: 600px) {
+  .preview-layout {
+    background: #fafafa;
+  }
+
+  .preview-layout .app-canvas {
+    background: transparent;
+    padding: 0;
+    gap: 0;
+  }
+
+  .preview-layout .canvas-stage {
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preview-layout .phone-frame {
+    width: min(100vw, calc(100vh * 9 / 19.5)) !important;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+}

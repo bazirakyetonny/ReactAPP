@@ -1,5 +1,5 @@
 /* ── Overlay ─────────────────────────────────────────────────── */
-.dv-overlay {
+.rvm-overlay {
   position: fixed;
   inset: 0;
   z-index: 10002;
@@ -10,11 +10,11 @@
 }
 
 /* ── Modal shell ─────────────────────────────────────────────── */
-.dv-modal {
+.rvm-modal {
   background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  width: 440px;
+  width: 800px;
   max-width: 96vw;
   display: flex;
   flex-direction: column;
@@ -22,7 +22,7 @@
 }
 
 /* ── Header ──────────────────────────────────────────────────── */
-.dv-header {
+.rvm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -31,13 +31,13 @@
   flex-shrink: 0;
 }
 
-.dv-title {
+.rvm-title {
   font-size: 15px;
   font-weight: 600;
   color: #111827;
 }
 
-.dv-close {
+.rvm-close {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,45 +52,85 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.dv-close:hover {
+.rvm-close:hover {
   background: #f3f4f6;
   color: #374151;
 }
 
 /* ── Body ────────────────────────────────────────────────────── */
-.dv-body {
+.rvm-body {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.dv-input {
-  font-family: inherit;
-  font-size: 13px;
-  color: #111827;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+/* Warning banner */
+.rvm-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef9e7;
+  border: 1px solid #f5d060;
   border-radius: 6px;
-  padding: 8px 10px;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  font-size: 13px;
+  font-weight: 500;
+  color: #92400e;
 }
 
-.dv-input:focus {
-  outline: none;
-  border-color: #1a3a6e;
-  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
+.rvm-warning-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
-.dv-error {
-  font-size: 12px;
-  color: #dc2626;
+/* Version details card */
+.rvm-details {
+  padding: 14px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.rvm-details-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.rvm-detail-row {
+  font-size: 13px;
+  color: #374151;
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.rvm-detail-row strong {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Disclaimer */
+.rvm-disclaimer {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.rvm-disclaimer-label {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px;
+}
+
+.rvm-disclaimer-text {
+  margin: 0;
+  color: #6b7280;
 }
 
 /* ── Footer ──────────────────────────────────────────────────── */
-.dv-footer {
+.rvm-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -99,51 +139,51 @@
   flex-shrink: 0;
 }
 
-.dv-btn-primary {
+.rvm-btn-secondary {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 16px;
+  height: 34px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rvm-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.rvm-btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rvm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 20px;
   font-size: 13px;
   font-family: inherit;
   font-weight: 500;
   color: #ffffff;
   background: #1a3a6e;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.dv-btn-primary:hover:not(:disabled) {
-  background: #142d56;
+.rvm-btn-primary:hover:not(:disabled) {
+  background: #162f5c;
 }
 
-.dv-btn-primary:disabled {
+.rvm-btn-primary:disabled {
   opacity: 0.45;
-  cursor: default;
-}
-
-.dv-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #374151;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.dv-btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-}
-
-.dv-btn-secondary:disabled {
-  opacity: 0.4;
   cursor: default;
 }

@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppVersionHistoryEntry } from "../../services/appVersionsApi";
-import {
-  copyHistoryVersion,
-  getVersionHistory,
-  restoreHistoryVersion,
-} from "../../services/appVersionsApi";
+import { getVersionHistory } from "../../services/appVersionsApi";
+import { RestoreVersionModal } from "./RestoreVersionModal";
+import { CopyHistoryVersionModal } from "./CopyHistoryVersionModal";
 import "./css/VersionHistorySidebar.css";
 import { i18n } from "../../i18n/i18n";
 
@@ -39,70 +37,70 @@ function EntryMenu({
   onRestored,
   onClose,
 }: EntryMenuProps) {
-  const [restoring, setRestoring] = useState(false);
-  const [copying, setCopying] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const modalOpen = showRestoreModal || showCopyModal;
 
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
+        if (!modalOpen) onClose();
       }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  async function handleRestore() {
-    setRestoring(true);
-    try {
-      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
-      onRestored?.();
-    } catch {
-      // silently swallow
-    } finally {
-      setRestoring(false);
-      onClose();
-    }
-  }
-
-  async function handleCopy() {
-    setCopying(true);
-    try {
-      await copyHistoryVersion(
-        appVersionId,
-        item.AppVersionNumber,
-        item.AppVersionName,
-      );
-    } catch {
-      // silently swallow
-    } finally {
-      setCopying(false);
-      onClose();
-    }
-  }
+  }, [onClose, modalOpen]);
 
   return (
-    <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
-      <button
-        className="vhs-dropdown-item"
-        type="button"
-        role="menuitem"
-        disabled={restoring}
-        onClick={handleRestore}
-      >
-        {restoring ? i18n.t("version_history.restoring") : i18n.t("version_history.restoreThisVersion")}
-      </button>
-      <button
-        className="vhs-dropdown-item"
-        type="button"
-        role="menuitem"
-        disabled={copying}
-        onClick={handleCopy}
-      >
-        {copying ? i18n.t("version_history.copying") : i18n.t("version_history.copy_as_new_version")}
-      </button>
-    </div>
+    <>
+      <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="vhs-dropdown-item"
+          type="button"
+          role="menuitem"
+          onClick={() => setShowRestoreModal(true)}
+        >
+          {i18n.t("version_history.restoreThisVersion")}
+        </button>
+        <button
+          className="vhs-dropdown-item"
+          type="button"
+          role="menuitem"
+          onClick={() => setShowCopyModal(true)}
+        >
+          {i18n.t("version_history.makeACopy")}
+        </button>
+      </div>
+      {showRestoreModal && (
+        <RestoreVersionModal
+          appVersionId={appVersionId}
+          entry={item}
+          onClose={() => {
+            setShowRestoreModal(false);
+            onClose();
+          }}
+          onRestored={() => {
+            setShowRestoreModal(false);
+            onRestored?.();
+          }}
+        />
+      )}
+      {showCopyModal && (
+        <CopyHistoryVersionModal
+          appVersionId={appVersionId}
+          entry={item}
+          onClose={() => {
+            setShowCopyModal(false);
+            onClose();
+          }}
+          onCopied={() => {
+            setShowCopyModal(false);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 }
 

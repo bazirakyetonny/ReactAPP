@@ -142,6 +142,11 @@ function App() {
     number | null
   >(null);
   const isViewingHistory = viewingHistoryEntry !== null;
+  const preHistorySnapshotRef = useRef<{
+    version: any;
+    infoContent: any[];
+    themeId: string;
+  } | null>(null);
   const [translationRevision, setTranslationRevision] = useState(0);
   const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
@@ -477,7 +482,11 @@ function App() {
     if (!versionId) return;
     try {
       if (originalHistoryNumber === null) {
-        flushSaveRef.current?.(versionId);
+        preHistorySnapshotRef.current = {
+          version: currentVersion,
+          infoContent: infoContentRef.current,
+          themeId: selectedThemeId,
+        };
         setOriginalHistoryNumber(latestHistoryNumber);
       }
       await restoreHistoryVersion(versionId, entry.AppVersionNumber);
@@ -490,20 +499,37 @@ function App() {
 
   async function handleExitHistoryView() {
     const versionId = currentVersion?.AppVersionId;
+    const snapshot = preHistorySnapshotRef.current;
+
     if (versionId && originalHistoryNumber !== null) {
       try {
         await restoreHistoryVersion(versionId, originalHistoryNumber);
-        await reloadActiveVersion();
       } catch {
         // silently swallow
       }
     }
+
+    preHistorySnapshotRef.current = null;
     setViewingHistoryEntry(null);
     setOriginalHistoryNumber(null);
     setIsHistoryOpen(false);
+
+    if (snapshot) {
+      dataStore.set("Current_Version", snapshot.version);
+      setCurrentVersion(snapshot.version);
+      setSelectedThemeId(snapshot.themeId);
+      setInfoContent(snapshot.infoContent);
+      setNavStack([]);
+      setNavContents({});
+      setNavSourceTiles({});
+      setNavUrls({});
+      clearHistory();
+      setSelectedTileId(null);
+    }
   }
 
   async function handleVersionRestored() {
+    preHistorySnapshotRef.current = null;
     try {
       await reloadActiveVersion();
       getAppVersions()
@@ -664,12 +690,11 @@ function App() {
     navContents,
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
-    disabled: isPreviewMode,
-    translationLanguages:
-      canTranslate && !isViewingHistory ? translationLanguages : [],
+    disabled: isPreviewMode || isViewingHistory,
+    translationLanguages: canTranslate ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
-    isTranslationOpen: isTranslationOpen && !isViewingHistory,
+    isTranslationOpen,
     activePageId: transPageId,
   });
 
@@ -2128,7 +2153,11 @@ function App() {
       if (url) {
         handleTileNavigate(action.ObjectId, parentIndex);
         setNavUrls((prev) => ({ ...prev, [action.ObjectId]: url }));
+      } else {
+        handleCollapseDescendants(parentIndex);
       }
+    } else {
+      handleCollapseDescendants(parentIndex);
     }
   }
 

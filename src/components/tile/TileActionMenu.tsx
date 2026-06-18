@@ -293,10 +293,7 @@ export function TileActionMenu({
                       placeholder={i18n.t("messages.menu.search")}
                       value={subSearch}
                       onChange={(e) => setSubSearch(e.target.value)}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
                     />
                   </div>
                   {filteredInfoPages.length === 0 ? (
@@ -396,10 +393,7 @@ export function TileActionMenu({
                     placeholder={i18n.t("messages.menu.search")}
                     value={subSearch}
                     onChange={(e) => setSubSearch(e.target.value)}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
                   />
                 </div>
                 {filteredForms.length === 0 ? (
@@ -455,10 +449,7 @@ export function TileActionMenu({
                     placeholder={i18n.t("messages.menu.search")}
                     value={subSearch}
                     onChange={(e) => setSubSearch(e.target.value)}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
                   />
                 </div>
                 {filteredModulePages.length === 0 ? (

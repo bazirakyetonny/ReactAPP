@@ -5,7 +5,8 @@ import { savePage } from '../services/pagesApi';
 export function useAutoSave(
   infoContent: any[],
   navContents: Record<string, any[]>,
-  versionId: string | undefined
+  versionId: string | undefined,
+  disabled = false,
 ) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -28,6 +29,7 @@ export function useAutoSave(
   useEffect(() => {
     if (!isMountedRef.current) { isMountedRef.current = true; return; }
     if (skipNextHomeRef.current) { skipNextHomeRef.current = false; return; }
+    if (disabled) return;
 
     if (homeTimerRef.current) clearTimeout(homeTimerRef.current);
     setIsDirty(true);
@@ -68,6 +70,7 @@ export function useAutoSave(
     const dirtyIds = Object.keys(navContents).filter(id => prev[id] !== undefined && navContents[id] !== prev[id]);
     prevNavContentsRef.current = navContents;
     if (dirtyIds.length === 0) return;
+    if (disabled) return;
 
     dirtyNavIdsRef.current = [...new Set([...dirtyNavIdsRef.current, ...dirtyIds])];
 
