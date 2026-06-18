@@ -854,7 +854,7 @@ function App() {
     !!appliedTemplate &&
     appliedTemplate.pageId === activeFramePageId &&
     JSON.stringify(activeFrameContent) === appliedTemplate.json;
-  const showTemplateSidebar =
+  const showTemplateSidebarForLinkedPage =
     !!activeFramePageId &&
     !selectedTileId &&
     !selectedCtaId &&
@@ -863,12 +863,34 @@ function App() {
     activeFramePage?.PageType === "Information" &&
     (activeFrameContent.length === 0 || holdsUnmodifiedTemplate);
 
+  const homePageContent = infoContent;
+  const homeHoldsUnmodifiedTemplate =
+    !!appliedTemplate &&
+    appliedTemplate.pageId === homePageId &&
+    JSON.stringify(homePageContent) === appliedTemplate.json;
+  const showTemplateSidebarForHome =
+    activeFramePageId === null &&
+    navStack.length === 0 &&
+    !selectedTileId &&
+    !selectedCtaId &&
+    homePage?.PageType === "Information" &&
+    (homePageContent.length === 0 || homeHoldsUnmodifiedTemplate);
+
+  const showTemplateSidebar =
+    showTemplateSidebarForLinkedPage || showTemplateSidebarForHome;
+
   function handleApplyTemplate(content: any[], templateId: string) {
-    if (!activeFramePageId) return;
+    const targetPageId =
+      activeFramePageId ?? (showTemplateSidebarForHome ? homePageId : null);
+    if (!targetPageId) return;
     pushSnapshot();
-    setNavContents((prev) => ({ ...prev, [activeFramePageId]: content }));
+    if (targetPageId === homePageId) {
+      setInfoContent(content);
+    } else {
+      setNavContents((prev) => ({ ...prev, [targetPageId]: content }));
+    }
     setAppliedTemplate({
-      pageId: activeFramePageId,
+      pageId: targetPageId,
       templateId,
       json: JSON.stringify(content),
     });
@@ -1423,6 +1445,9 @@ function App() {
         return next;
       });
       setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+      setSelectedTileId(null);
+      setSelectedCtaId(null);
+      setActiveFramePageId(newPage.PageId);
       handleEditTile(tileId, {
         Action: {
           ObjectType: newPage.PageType,
@@ -2910,6 +2935,7 @@ function App() {
           liveCtaLabel={liveCtaLabel}
           analysisHighlight={analysisHighlight}
           onActiveFrameChange={handleActiveFrameChange}
+          requestActivePageId={activeFramePageId}
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
           onBeforeDeletePage={pushSnapshot}

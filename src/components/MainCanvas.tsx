@@ -294,6 +294,8 @@ interface MainCanvasProps {
   hasClipboard?: boolean;
   onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
   showNavPaths?: boolean;
+  /** When set to a pageId, programmatically activates that linked frame. */
+  requestActivePageId?: string | null;
 }
 
 export function MainCanvas({
@@ -356,6 +358,7 @@ export function MainCanvas({
   hasClipboard,
   onPasteBlocks,
   showNavPaths = false,
+  requestActivePageId,
 }: MainCanvasProps) {
   const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
   const [marquee, setMarquee] = useState<{
@@ -623,6 +626,14 @@ export function MainCanvas({
       if (frame) onActiveFrameChange(frame.pageId);
     }
   }, [activeFrameIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Programmatic activation: when requestActivePageId is set, find the matching
+  // linked frame and make it visually active.
+  useEffect(() => {
+    if (!requestActivePageId || !linkedFrames) return;
+    const idx = linkedFrames.findIndex((f) => f.pageId === requestActivePageId);
+    if (idx >= 0) setManualActiveIndex(idx);
+  }, [requestActivePageId, linkedFrames]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Thumbnail scale sync ───────────────────────────────────────────────────
   const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
