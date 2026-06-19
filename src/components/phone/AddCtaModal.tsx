@@ -37,6 +37,14 @@ function normalizeUrl(url: string): string {
   return "https://" + trimmed;
 }
 
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https:\/\//i.test(trimmed)) return trimmed;
+  if (/^http:\/\//i.test(trimmed)) return "https://" + trimmed.slice(7);
+  return "https://" + trimmed;
+}
+
 function prefill(
   ctaType: string,
   supplier: any,
