@@ -6,6 +6,7 @@ import {
   restoreHistoryVersion,
 } from "../../services/appVersionsApi";
 import { RestoreVersionModal } from "./RestoreVersionModal";
+import { CopyVersionModal } from "./CopyVersionModal";
 import "./css/VersionHistorySidebar.css";
 import { i18n } from "../../i18n/i18n";
 
@@ -40,8 +41,8 @@ function EntryMenu({
   onRestored,
   onClose,
 }: EntryMenuProps) {
-  const [copying, setCopying] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,22 +60,6 @@ function EntryMenu({
     onRestored?.();
   }
 
-  async function handleCopy() {
-    setCopying(true);
-    try {
-      await copyHistoryVersion(
-        appVersionId,
-        item.AppVersionNumber,
-        item.AppVersionName,
-      );
-    } catch {
-      // silently swallow
-    } finally {
-      setCopying(false);
-      onClose();
-    }
-  }
-
   return (
     <>
       <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
@@ -90,10 +75,9 @@ function EntryMenu({
           className="vhs-dropdown-item"
           type="button"
           role="menuitem"
-          disabled={copying}
-          onClick={handleCopy}
+          onClick={() => setShowCopyModal(true)}
         >
-          {copying ? i18n.t("version_history.copying") : i18n.t("version_history.copy_as_new_version")}
+          {i18n.t("version_history.makeACopy")}
         </button>
       </div>
       {showRestoreModal && (
@@ -103,6 +87,14 @@ function EntryMenu({
           versionName={item.AppVersionName}
           onClose={() => { setShowRestoreModal(false); onClose(); }}
           onConfirm={handleConfirmRestore}
+        />
+      )}
+      {showCopyModal && (
+        <CopyVersionModal
+          appVersionId={appVersionId}
+          historyNumber={item.AppVersionNumber}
+          defaultName={`${item.AppVersionName} Copy`}
+          onClose={() => { setShowCopyModal(false); onClose(); }}
         />
       )}
     </>
