@@ -136,8 +136,17 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isHistoryPreview, setIsHistoryPreview] = useState(false);
   const [previewingNumber, setPreviewingNumber] = useState<number | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const historyStashRef = useRef<{
+    infoContent: any[];
+    navContents: Record<string, any[]>;
+    navStack: string[];
+    navSourceTiles: Record<string, string>;
+    navUrls: Record<string, string>;
+    currentVersion: any;
+    themeId: string;
+  } | null>(null);
   const [translationRevision, setTranslationRevision] = useState(0);
   const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
@@ -449,6 +458,19 @@ function App() {
 
   async function handleHistoryPreview(item: AppVersionHistoryEntry) {
     if (!currentVersion?.AppVersionId) return;
+    if (!historyStashRef.current) {
+      historyStashRef.current = {
+        infoContent: infoContentRef.current,
+        navContents: navContentsRef.current,
+        navStack: navStackRef.current,
+        navSourceTiles: { ...navSourceTiles },
+        navUrls: { ...navUrls },
+        currentVersion: dataStore.get("Current_Version"),
+        themeId: selectedThemeId,
+      };
+    }
+    setPreviewingNumber(item.AppVersionNumber);
+    setLoadingPreview(true);
     try {
       await restoreHistoryVersion(currentVersion.AppVersionId, item.AppVersionNumber);
       const fetched = (await getActiveAppVersion()) as any;
@@ -466,14 +488,39 @@ function App() {
       setNavUrls({});
       clearHistory();
       setSelectedTileId(null);
-      setIsHistoryPreview(true);
-      setPreviewingNumber(item.AppVersionNumber);
     } catch {
       // silently swallow
+    } finally {
+      setLoadingPreview(false);
     }
   }
 
+  function handleHistoryClose() {
+    const stash = historyStashRef.current;
+    if (stash) {
+      dataStore.set("Current_Version", stash.currentVersion);
+      setCurrentVersion(stash.currentVersion);
+      setSelectedThemeId(stash.themeId);
+      setInfoContent(stash.infoContent);
+      setNavStack(stash.navStack);
+      setNavContents(stash.navContents);
+      setNavSourceTiles(stash.navSourceTiles);
+      setNavUrls(stash.navUrls);
+      clearHistory();
+      setSelectedTileId(null);
+      const versionId = stash.currentVersion?.AppVersionId;
+      if (versionId && stash.themeId) {
+        updateAppVersionTheme(versionId, stash.themeId).catch(() => {});
+      }
+      historyStashRef.current = null;
+    }
+    setPreviewingNumber(null);
+    setLoadingPreview(false);
+    setIsHistoryOpen(false);
+  }
+
   async function handleVersionRestored() {
+    historyStashRef.current = null;
     try {
       const fetched = (await getActiveAppVersion()) as any;
       const fullVersion = {
@@ -496,9 +543,8 @@ function App() {
     } catch {
       // silently swallow — sidebar will still close
     } finally {
-      setIsHistoryOpen(false);
-      setIsHistoryPreview(false);
       setPreviewingNumber(null);
+      setIsHistoryOpen(false);
     }
   }
 
@@ -631,7 +677,7 @@ function App() {
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
-    isHistoryPreview,
+    isHistoryOpen,
   );
   runSaveRef.current = runSave;
 
@@ -649,7 +695,7 @@ function App() {
     navContents,
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
-    disabled: isPreviewMode || isHistoryPreview,
+    disabled: isPreviewMode || isHistoryOpen,
     translationLanguages: canTranslate ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
@@ -2528,9 +2574,11 @@ function App() {
         canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
         onHistoryToggle={() => {
-          setIsHistoryOpen((v) => !v);
-          setIsHistoryPreview(false);
-          setPreviewingNumber(null);
+          if (isHistoryOpen) {
+            handleHistoryClose();
+          } else {
+            setIsHistoryOpen(true);
+          }
         }}
         analysisIssues={analysisIssues}
         analysisIssueCount={analysisIssues.length}
@@ -2683,7 +2731,7 @@ function App() {
           />
         )}
         <MainCanvas
-          isReadOnly={isTranslationOpen || isHistoryPreview}
+          isReadOnly={isTranslationOpen || isHistoryOpen}
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
@@ -2752,14 +2800,11 @@ function App() {
         {isHistoryOpen ? (
           <VersionHistorySidebar
             appVersionId={currentVersion?.AppVersionId}
-            onClose={() => {
-              setIsHistoryOpen(false);
-              setIsHistoryPreview(false);
-              setPreviewingNumber(null);
-            }}
+            onClose={handleHistoryClose}
             onRestored={handleVersionRestored}
             onPreviewVersion={handleHistoryPreview}
             previewingNumber={previewingNumber}
+            loadingPreview={loadingPreview}
           />
         ) : isTranslationOpen && canTranslate ? (
           <TranslationSideBar

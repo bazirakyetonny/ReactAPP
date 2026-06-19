@@ -411,6 +411,8 @@ export const i18n = new I18n({
       options: "Options",
       load_failed: "Failed to load version history.",
       preview_version: "Preview this version",
+      important: "Important:",
+      loading_version: "Loading version…",
     },
     default: {
       reception: "Reception",
@@ -971,6 +973,8 @@ export const i18n = new I18n({
       options: "Opties",
       load_failed: "Kon versiegeschiedenis niet laden.",
       preview_version: "Voorbeeld van deze versie",
+      important: "Belangrijk:",
+      loading_version: "Versie laden…",
     },
     default: {
       reception: "Receptie",

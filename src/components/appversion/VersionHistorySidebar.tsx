@@ -5,6 +5,7 @@ import {
   getVersionHistory,
   restoreHistoryVersion,
 } from "../../services/appVersionsApi";
+import { RestoreVersionModal } from "./RestoreVersionModal";
 import "./css/VersionHistorySidebar.css";
 import { i18n } from "../../i18n/i18n";
 
@@ -39,8 +40,8 @@ function EntryMenu({
   onRestored,
   onClose,
 }: EntryMenuProps) {
-  const [restoring, setRestoring] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,17 +54,9 @@ function EntryMenu({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
-  async function handleRestore() {
-    setRestoring(true);
-    try {
-      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
-      onRestored?.();
-    } catch {
-      // silently swallow
-    } finally {
-      setRestoring(false);
-      onClose();
-    }
+  async function handleConfirmRestore() {
+    await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
+    onRestored?.();
   }
 
   async function handleCopy() {
@@ -83,26 +76,36 @@ function EntryMenu({
   }
 
   return (
-    <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
-      <button
-        className="vhs-dropdown-item"
-        type="button"
-        role="menuitem"
-        disabled={restoring}
-        onClick={handleRestore}
-      >
-        {restoring ? i18n.t("version_history.restoring") : i18n.t("version_history.restoreThisVersion")}
-      </button>
-      <button
-        className="vhs-dropdown-item"
-        type="button"
-        role="menuitem"
-        disabled={copying}
-        onClick={handleCopy}
-      >
-        {copying ? i18n.t("version_history.copying") : i18n.t("version_history.copy_as_new_version")}
-      </button>
-    </div>
+    <>
+      <div className="vhs-dropdown" ref={ref} role="menu" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="vhs-dropdown-item"
+          type="button"
+          role="menuitem"
+          onClick={() => setShowRestoreModal(true)}
+        >
+          {i18n.t("version_history.restoreThisVersion")}
+        </button>
+        <button
+          className="vhs-dropdown-item"
+          type="button"
+          role="menuitem"
+          disabled={copying}
+          onClick={handleCopy}
+        >
+          {copying ? i18n.t("version_history.copying") : i18n.t("version_history.copy_as_new_version")}
+        </button>
+      </div>
+      {showRestoreModal && (
+        <RestoreVersionModal
+          date={item.PublishDate}
+          publisher={item.PublishedBy}
+          versionName={item.AppVersionName}
+          onClose={() => { setShowRestoreModal(false); onClose(); }}
+          onConfirm={handleConfirmRestore}
+        />
+      )}
+    </>
   );
 }
 
@@ -114,6 +117,7 @@ interface VersionHistorySidebarProps {
   onRestored?: () => void;
   onPreviewVersion?: (item: AppVersionHistoryEntry) => void;
   previewingNumber?: number | null;
+  loadingPreview?: boolean;
 }
 
 export function VersionHistorySidebar({
@@ -122,6 +126,7 @@ export function VersionHistorySidebar({
   onRestored,
   onPreviewVersion,
   previewingNumber,
+  loadingPreview,
 }: VersionHistorySidebarProps) {
   const [items, setItems] = useState<AppVersionHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,7 +135,7 @@ export function VersionHistorySidebar({
   const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
 
   function handleCardClick(item: AppVersionHistoryEntry) {
-    if (restoringIndex !== null) return;
+    if (restoringIndex !== null || loadingPreview) return;
     if (item.AppVersionNumber === previewingNumber) return;
     onPreviewVersion?.(item);
   }
@@ -166,19 +171,6 @@ export function VersionHistorySidebar({
       </div>
       <hr className="vhs-divider" />
 
-      {previewingNumber != null && (
-        <div className="vhs-restore-bar">
-          <button
-            className="vhs-restore-btn"
-            type="button"
-            disabled={restoringIndex !== null}
-            onClick={() => onRestored?.()}
-          >
-            {i18n.t("version_history.restoreThisVersion")}
-          </button>
-        </div>
-      )}
-
       <div className="vhs-list">
         {loading && (
           <div className="vhs-state">
@@ -196,10 +188,11 @@ export function VersionHistorySidebar({
         {!loading &&
           !error &&
           items.map((item, idx) => {
-            const isPreviewing = item.AppVersionNumber === previewingNumber;
+            const isSelected = item.AppVersionNumber === previewingNumber;
+            const isLoadingThis = isSelected && loadingPreview;
             return (
               <div
-                className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}${isPreviewing ? " vhs-item--previewing" : ""}`}
+                className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}${isSelected ? " vhs-item--selected" : ""}${isLoadingThis ? " vhs-item--loading" : ""}`}
                 key={item.AppVersionNumber}
                 role="button"
                 tabIndex={0}
@@ -208,9 +201,11 @@ export function VersionHistorySidebar({
                 onKeyDown={(e) => e.key === "Enter" && handleCardClick(item)}
               >
                 <div className="vhs-item-row">
-                  <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
+                  {isLoadingThis
+                    ? <div className="vhs-spinner vhs-spinner--inline" aria-hidden="true" />
+                    : <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />}
                   <span className="vhs-date">
-                    {restoringIndex === idx ? i18n.t("version_history.restoring") : formatHistoryDate(item.PublishDate)}
+                    {isLoadingThis ? i18n.t("version_history.loading_version") : formatHistoryDate(item.PublishDate)}
                   </span>
                   <button
                     className="vhs-dots-btn"

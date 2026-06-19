@@ -119,46 +119,28 @@
   pointer-events: none;
 }
 
-.vhs-item--previewing {
+.vhs-item--selected {
   border-color: #3b82f6;
   background: #eff6ff;
   box-shadow: 0 0 0 1px #3b82f6;
 }
 
-.vhs-item--previewing:hover {
+.vhs-item--selected:hover {
   background: #eff6ff;
   border-color: #3b82f6;
 }
 
-/* ── Restore bar ─────────────────────────────────────────────────────────── */
+.vhs-item--loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
 
-.vhs-restore-bar {
-  padding: 8px 10px;
+.vhs-spinner--inline {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
-.vhs-restore-btn {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  background: #3b82f6;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.vhs-restore-btn:hover {
-  background: #2563eb;
-}
-
-.vhs-restore-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 
 .vhs-item-row {
   display: flex;
