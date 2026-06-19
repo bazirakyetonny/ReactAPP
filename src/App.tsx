@@ -728,6 +728,7 @@ function App() {
   }, [isMultiSelectMode, exitMultiSelectMode]);
 
   function handleBulkEditTiles(patch: Record<string, any>) {
+    pushSnapshot();
     setInfoContent((prev: any[]) => {
       let content = prev;
       selectedTileIds.forEach((tileId) => {
@@ -749,6 +750,7 @@ function App() {
   }
 
   function handleBulkEditCtas(patch: Record<string, any>) {
+    pushSnapshot();
     const applyCtaPatch = (blocks: any[]) =>
       blocks.map((block: any) =>
         block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId)
@@ -830,6 +832,7 @@ function App() {
   function handleCutSelected(sourceBlocks: any[]) {
     const items = collectClipboardItems(sourceBlocks);
     if (items.length > 0) setClipboard(items);
+    pushSnapshot();
 
     const applyTileDelete = (blocks: any[]) => {
       let content = blocks;
