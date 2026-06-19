@@ -112,12 +112,16 @@ interface VersionHistorySidebarProps {
   appVersionId?: string;
   onClose?: () => void;
   onRestored?: () => void;
+  onPreviewVersion?: (item: AppVersionHistoryEntry) => void;
+  previewingNumber?: number | null;
 }
 
 export function VersionHistorySidebar({
   appVersionId,
   onClose,
   onRestored,
+  onPreviewVersion,
+  previewingNumber,
 }: VersionHistorySidebarProps) {
   const [items, setItems] = useState<AppVersionHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -125,17 +129,10 @@ export function VersionHistorySidebar({
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
 
-  async function handleCardRestore(item: AppVersionHistoryEntry, idx: number) {
-    if (!appVersionId || restoringIndex !== null) return;
-    setRestoringIndex(idx);
-    try {
-      await restoreHistoryVersion(appVersionId, item.AppVersionNumber);
-      onRestored?.();
-    } catch {
-      // silently swallow
-    } finally {
-      setRestoringIndex(null);
-    }
+  function handleCardClick(item: AppVersionHistoryEntry) {
+    if (restoringIndex !== null) return;
+    if (item.AppVersionNumber === previewingNumber) return;
+    onPreviewVersion?.(item);
   }
 
   useEffect(() => {
@@ -169,6 +166,19 @@ export function VersionHistorySidebar({
       </div>
       <hr className="vhs-divider" />
 
+      {previewingNumber != null && (
+        <div className="vhs-restore-bar">
+          <button
+            className="vhs-restore-btn"
+            type="button"
+            disabled={restoringIndex !== null}
+            onClick={() => onRestored?.()}
+          >
+            {i18n.t("version_history.restoreThisVersion")}
+          </button>
+        </div>
+      )}
+
       <div className="vhs-list">
         {loading && (
           <div className="vhs-state">
@@ -185,52 +195,55 @@ export function VersionHistorySidebar({
 
         {!loading &&
           !error &&
-          items.map((item, idx) => (
-            <div
-              className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}`}
-              key={item.AppVersionNumber}
-              role="button"
-              tabIndex={0}
-              title={i18n.t("version_history.restoreThisVersion")}
-              onClick={() => handleCardRestore(item, idx)}
-              onKeyDown={(e) => e.key === "Enter" && handleCardRestore(item, idx)}
-            >
-              <div className="vhs-item-row">
-                <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
-                <span className="vhs-date">
-                  {restoringIndex === idx ? i18n.t("version_history.restoring") : formatHistoryDate(item.PublishDate)}
-                </span>
-                <button
-                  className="vhs-dots-btn"
-                  type="button"
-                  title={i18n.t("version_history.options")}
-                  aria-label={i18n.t("version_history.options")}
-                  aria-haspopup="menu"
-                  aria-expanded={openMenuIndex === idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenMenuIndex((prev) => (prev === idx ? null : idx));
-                  }}
-                >
-                  ⋮
-                </button>
-              </div>
+          items.map((item, idx) => {
+            const isPreviewing = item.AppVersionNumber === previewingNumber;
+            return (
+              <div
+                className={`vhs-item${restoringIndex === idx ? " vhs-item--restoring" : ""}${isPreviewing ? " vhs-item--previewing" : ""}`}
+                key={item.AppVersionNumber}
+                role="button"
+                tabIndex={0}
+                title={i18n.t("version_history.preview_version")}
+                onClick={() => handleCardClick(item)}
+                onKeyDown={(e) => e.key === "Enter" && handleCardClick(item)}
+              >
+                <div className="vhs-item-row">
+                  <i className="fa fa-angle-right vhs-chevron" aria-hidden="true" />
+                  <span className="vhs-date">
+                    {restoringIndex === idx ? i18n.t("version_history.restoring") : formatHistoryDate(item.PublishDate)}
+                  </span>
+                  <button
+                    className="vhs-dots-btn"
+                    type="button"
+                    title={i18n.t("version_history.options")}
+                    aria-label={i18n.t("version_history.options")}
+                    aria-haspopup="menu"
+                    aria-expanded={openMenuIndex === idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuIndex((prev) => (prev === idx ? null : idx));
+                    }}
+                  >
+                    ⋮
+                  </button>
+                </div>
 
-              <div className="vhs-publisher">
-                <span className="vhs-publisher-dot" aria-hidden="true" />
-                <span>{item.PublishedBy}</span>
-              </div>
+                <div className="vhs-publisher">
+                  <span className="vhs-publisher-dot" aria-hidden="true" />
+                  <span>{item.PublishedBy}</span>
+                </div>
 
-              {openMenuIndex === idx && appVersionId && (
-                <EntryMenu
-                  item={item}
-                  appVersionId={appVersionId}
-                  onRestored={onRestored}
-                  onClose={() => setOpenMenuIndex(null)}
-                />
-              )}
-            </div>
-          ))}
+                {openMenuIndex === idx && appVersionId && (
+                  <EntryMenu
+                    item={item}
+                    appVersionId={appVersionId}
+                    onRestored={onRestored}
+                    onClose={() => setOpenMenuIndex(null)}
+                  />
+                )}
+              </div>
+            );
+          })}
       </div>
     </aside>
   );

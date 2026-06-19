@@ -410,6 +410,7 @@ export const i18n = new I18n({
       copy_as_new_version: "Copy as new version",
       options: "Options",
       load_failed: "Failed to load version history.",
+      preview_version: "Preview this version",
     },
     default: {
       reception: "Reception",
@@ -969,6 +970,7 @@ export const i18n = new I18n({
       copy_as_new_version: "Kopieer als nieuwe versie",
       options: "Opties",
       load_failed: "Kon versiegeschiedenis niet laden.",
+      preview_version: "Voorbeeld van deze versie",
     },
     default: {
       reception: "Receptie",

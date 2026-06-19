@@ -5,7 +5,9 @@ import {
   getActiveAppVersion,
   activateAppVersion,
   updateAppVersionCategory,
+  restoreHistoryVersion,
   type SDTAppVersion,
+  type AppVersionHistoryEntry,
 } from "./services/appVersionsApi";
 import { getBaseUrl } from "./services/apiClient";
 import { updateAppVersionTheme } from "./services/themeApi";
@@ -134,6 +136,8 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHistoryPreview, setIsHistoryPreview] = useState(false);
+  const [previewingNumber, setPreviewingNumber] = useState<number | null>(null);
   const [translationRevision, setTranslationRevision] = useState(0);
   const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
@@ -443,6 +447,32 @@ function App() {
       .catch(() => {});
   }
 
+  async function handleHistoryPreview(item: AppVersionHistoryEntry) {
+    if (!currentVersion?.AppVersionId) return;
+    try {
+      await restoreHistoryVersion(currentVersion.AppVersionId, item.AppVersionNumber);
+      const fetched = (await getActiveAppVersion()) as any;
+      const fullVersion = {
+        ...fetched,
+        Page: fetched.Page ?? fetched.Pages ?? [],
+      };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+      setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      setNavSourceTiles({});
+      setNavUrls({});
+      clearHistory();
+      setSelectedTileId(null);
+      setIsHistoryPreview(true);
+      setPreviewingNumber(item.AppVersionNumber);
+    } catch {
+      // silently swallow
+    }
+  }
+
   async function handleVersionRestored() {
     try {
       const fetched = (await getActiveAppVersion()) as any;
@@ -467,6 +497,8 @@ function App() {
       // silently swallow — sidebar will still close
     } finally {
       setIsHistoryOpen(false);
+      setIsHistoryPreview(false);
+      setPreviewingNumber(null);
     }
   }
 
@@ -599,6 +631,7 @@ function App() {
     infoContent,
     navContents,
     currentVersion?.AppVersionId,
+    isHistoryPreview,
   );
   runSaveRef.current = runSave;
 
@@ -616,7 +649,7 @@ function App() {
     navContents,
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
-    disabled: isPreviewMode,
+    disabled: isPreviewMode || isHistoryPreview,
     translationLanguages: canTranslate ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
@@ -2494,7 +2527,11 @@ function App() {
         }}
         canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
-        onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
+        onHistoryToggle={() => {
+          setIsHistoryOpen((v) => !v);
+          setIsHistoryPreview(false);
+          setPreviewingNumber(null);
+        }}
         analysisIssues={analysisIssues}
         analysisIssueCount={analysisIssues.length}
         isAnalyzing={isAnalyzing}
@@ -2646,7 +2683,7 @@ function App() {
           />
         )}
         <MainCanvas
-          isReadOnly={isTranslationOpen}
+          isReadOnly={isTranslationOpen || isHistoryPreview}
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
@@ -2715,8 +2752,14 @@ function App() {
         {isHistoryOpen ? (
           <VersionHistorySidebar
             appVersionId={currentVersion?.AppVersionId}
-            onClose={() => setIsHistoryOpen(false)}
+            onClose={() => {
+              setIsHistoryOpen(false);
+              setIsHistoryPreview(false);
+              setPreviewingNumber(null);
+            }}
             onRestored={handleVersionRestored}
+            onPreviewVersion={handleHistoryPreview}
+            previewingNumber={previewingNumber}
           />
         ) : isTranslationOpen && canTranslate ? (
           <TranslationSideBar
