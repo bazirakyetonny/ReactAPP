@@ -37,6 +37,7 @@ import {
   createLinkPage,
   updateLinkPage,
   deletePage,
+  savePage,
 } from "./services/pagesApi";
 import { getTrash, restoreTrash } from "./services/trashApi";
 import { translateAppVersion } from "./services/translationApi";
@@ -488,6 +489,40 @@ function App() {
       setNavUrls({});
       clearHistory();
       setSelectedTileId(null);
+
+      // Save original data back to DB so a browser refresh keeps the original
+      const stash = historyStashRef.current;
+      if (stash) {
+        const cv = stash.currentVersion;
+        const vId = cv?.AppVersionId;
+        if (vId) {
+          const homePage = (cv.Page ?? []).find(
+            (p: any) => p.PageName?.toLowerCase() === "home",
+          );
+          if (homePage) {
+            savePage({
+              AppVersionId: vId,
+              PageId: homePage.PageId,
+              PageName: homePage.PageName,
+              PageType: homePage.PageType,
+              PageStructure: JSON.stringify({ InfoContent: stash.infoContent }),
+            }).catch(() => {});
+          }
+          for (const [pageId, content] of Object.entries(stash.navContents)) {
+            const page = (cv.Page ?? []).find((p: any) => p.PageId === pageId);
+            if (page) {
+              savePage({
+                AppVersionId: vId,
+                PageId: page.PageId,
+                PageName: page.PageName,
+                PageType: page.PageType,
+                PageStructure: JSON.stringify({ InfoContent: content }),
+              }).catch(() => {});
+            }
+          }
+          updateAppVersionTheme(vId, stash.themeId).catch(() => {});
+        }
+      }
     } catch {
       // silently swallow
     } finally {
@@ -508,10 +543,6 @@ function App() {
       setNavUrls(stash.navUrls);
       clearHistory();
       setSelectedTileId(null);
-      const versionId = stash.currentVersion?.AppVersionId;
-      if (versionId && stash.themeId) {
-        updateAppVersionTheme(versionId, stash.themeId).catch(() => {});
-      }
       historyStashRef.current = null;
     }
     setPreviewingNumber(null);
