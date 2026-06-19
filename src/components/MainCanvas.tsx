@@ -28,6 +28,7 @@ import { DeletePageButton, DeletePageModal } from "./phone/DeletePageButton";
 import { WeblinkFrame } from "./phone/WeblinkFrame";
 import { NavPathsOverlay } from "./NavPathsOverlay";
 import { MODULE_PAGE_TYPES } from "../constants";
+import { dataStore } from "../data/datastore";
 
 function renderModulePage(pageType: string, themeColors?: ThemeColors) {
   switch (pageType) {
@@ -293,6 +294,8 @@ interface MainCanvasProps {
   hasClipboard?: boolean;
   onPasteBlocks?: (insertBeforeInfoId: string | null) => void;
   showNavPaths?: boolean;
+  /** When set to a pageId, programmatically activates that linked frame. */
+  requestActivePageId?: string | null;
 }
 
 export function MainCanvas({
@@ -355,9 +358,9 @@ export function MainCanvas({
   hasClipboard,
   onPasteBlocks,
   showNavPaths = false,
+  requestActivePageId,
 }: MainCanvasProps) {
   const interactionsLocked = isPreviewMode || isReadOnly || isMultiSelectMode;
-
   const [marquee, setMarquee] = useState<{
     x1: number;
     y1: number;
@@ -624,6 +627,14 @@ export function MainCanvas({
     }
   }, [activeFrameIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Programmatic activation: when requestActivePageId is set, find the matching
+  // linked frame and make it visually active.
+  useEffect(() => {
+    if (!requestActivePageId || !linkedFrames) return;
+    const idx = linkedFrames.findIndex((f) => f.pageId === requestActivePageId);
+    if (idx >= 0) setManualActiveIndex(idx);
+  }, [requestActivePageId, linkedFrames]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Thumbnail scale sync ───────────────────────────────────────────────────
   const mainPhoneFrameRef = useRef<HTMLDivElement>(null);
   const [thumbFrameW, setThumbFrameW] = useState(240);
@@ -694,6 +705,8 @@ export function MainCanvas({
       }
     : null;
 
+  const currentVersion = dataStore.get('Current_Version');
+
   return (
     <main
       className="app-canvas"
@@ -708,7 +721,9 @@ export function MainCanvas({
           style={{ position: "absolute", ...marqueeStyle }}
         />
       )}
+
       <div className="canvas-stage" ref={canvasStageRef}>
+        {currentVersion?.AppVersionName && (<>
         {/* Home frame */}
         {showHomeFrame && (
           <div
@@ -741,9 +756,7 @@ export function MainCanvas({
                   : undefined
               }
               onCtaNavigate={
-                onCtaNavigate
-                  ? (ctaId) => onCtaNavigate(ctaId, -1)
-                  : undefined
+                onCtaNavigate ? (ctaId) => onCtaNavigate(ctaId, -1) : undefined
               }
               onCollapseFromParent={
                 onCollapseDescendants
@@ -924,15 +937,33 @@ export function MainCanvas({
                     themeIcons={themeIcons}
                     selectedTileId={selectedTileId}
                     onSelectTile={onSelectTile}
-                    onAddColumn={isInformationPage ? frame.onAddColumn : undefined}
-                    onDeleteTile={isInformationPage ? frame.onDeleteTile : undefined}
-                    onEditTile={isInformationPage ? frame.onEditTile : undefined}
-                    onAddTilesToColumn={isInformationPage ? frame.onAddTilesToColumn : undefined}
-                    onAddStandaloneTile={isInformationPage ? frame.onAddStandaloneTile : undefined}
-                    onAddBlock={isInformationPage ? frame.onAddBlock : undefined}
-                    onFreeResizeRelease={isInformationPage ? frame.onFreeResizeRelease : undefined}
-                    onTileDrop={isInformationPage ? frame.onTileDrop : undefined}
-                    onTileDropAsNewBlock={isInformationPage ? frame.onTileDropAsNewBlock : undefined}
+                    onAddColumn={
+                      isInformationPage ? frame.onAddColumn : undefined
+                    }
+                    onDeleteTile={
+                      isInformationPage ? frame.onDeleteTile : undefined
+                    }
+                    onEditTile={
+                      isInformationPage ? frame.onEditTile : undefined
+                    }
+                    onAddTilesToColumn={
+                      isInformationPage ? frame.onAddTilesToColumn : undefined
+                    }
+                    onAddStandaloneTile={
+                      isInformationPage ? frame.onAddStandaloneTile : undefined
+                    }
+                    onAddBlock={
+                      isInformationPage ? frame.onAddBlock : undefined
+                    }
+                    onFreeResizeRelease={
+                      isInformationPage ? frame.onFreeResizeRelease : undefined
+                    }
+                    onTileDrop={
+                      isInformationPage ? frame.onTileDrop : undefined
+                    }
+                    onTileDropAsNewBlock={
+                      isInformationPage ? frame.onTileDropAsNewBlock : undefined
+                    }
                     onTileNavigate={
                       onTileNavigate
                         ? (pageId) => onTileNavigate(pageId, i)
@@ -1026,7 +1057,9 @@ export function MainCanvas({
                     selectedCtaId={selectedCtaId}
                     themeCtaColors={themeCtaColors}
                     onTileMenuAction={
-                      interactionsLocked || !isInformationPage ? undefined : onTileMenuAction
+                      interactionsLocked || !isInformationPage
+                        ? undefined
+                        : onTileMenuAction
                     }
                     liveTileText={liveTileText}
                     liveCtaLabel={liveCtaLabel}
@@ -1036,10 +1069,16 @@ export function MainCanvas({
                     multiSelectedCtaIds={multiSelectedCtaIds}
                     multiSelectedImageIds={multiSelectedImageIds}
                     multiSelectedDescriptionIds={multiSelectedDescriptionIds}
-                    onCopySelected={isInformationPage ? onCopySelected : undefined}
-                    onCutSelected={isInformationPage ? onCutSelected : undefined}
+                    onCopySelected={
+                      isInformationPage ? onCopySelected : undefined
+                    }
+                    onCutSelected={
+                      isInformationPage ? onCutSelected : undefined
+                    }
                     hasPaste={isInformationPage ? hasClipboard : false}
-                    onPasteBlocks={isInformationPage ? frame.onPasteBlocks : undefined}
+                    onPasteBlocks={
+                      isInformationPage ? frame.onPasteBlocks : undefined
+                    }
                   />
                 ) : null}
               </div>
@@ -1054,6 +1093,7 @@ export function MainCanvas({
             selectedCtaId={selectedCtaId}
           />
         )}
+        </>)}
       </div>
 
       {deletePageTarget && appVersionId && (
@@ -1069,8 +1109,8 @@ export function MainCanvas({
         />
       )}
 
-      {/* Page thumbnails — hidden in preview mode */}
-      {!isPreviewMode && (
+      {/* Page thumbnails — hidden in preview mode or when no version is loaded */}
+      {!isPreviewMode && currentVersion?.AppVersionName && (
         <div className="page-thumbnails">
           <div
             className={`page-thumb-clip${activeFrameIndex === -1 ? " page-thumb-clip--active" : ""}`}

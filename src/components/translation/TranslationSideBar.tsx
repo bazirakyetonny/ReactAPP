@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import "./TranslationSideBar.css";
-import type { ThemeColors, ThemeIcon, ThemeCtaColor, SupportedLanguages } from "../../types";
+import type {
+  ThemeColors,
+  ThemeIcon,
+  ThemeCtaColor,
+  SupportedLanguages,
+} from "../../types";
 import { dataStore } from "../../data/datastore";
 import { FlagSelect } from "./FlagSelect";
 import { PhoneLinkedHeader } from "../phone/PhoneHeaders";
@@ -37,6 +42,8 @@ export function TranslationSideBar({
   highlightLanguage,
   highlightMessage,
   onSaved,
+  onSaveStart,
+  onSaveError,
 }: {
   pageName?: string;
   appVersionId: string;
@@ -53,12 +60,16 @@ export function TranslationSideBar({
   highlightLanguage?: string;
   highlightMessage?: string;
   onSaved?: () => void;
+  onSaveStart?: () => void;
+  onSaveError?: () => void;
 }) {
   const displayLanguages = appVersionMultiLanguages.filter(
     (l) => l.toLowerCase() !== appVersionLanguage.toLowerCase(),
   );
   const firstLang = displayLanguages[0] ?? "";
-  const supportedLangs: SupportedLanguages[] = dataStore.get("SupportedLanguages") ?? [];
+  const supportedLangs: SupportedLanguages[] =
+    dataStore.get("SupportedLanguages") ?? [];
+
   const flagOptions = displayLanguages.map(
     (code) =>
       supportedLangs.find((l) => l.value === code) ?? {
@@ -78,7 +89,9 @@ export function TranslationSideBar({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayContent: any[] = sdtPage?.PageStructure?.InfoContent ?? [];
-  const editablePageName: string = decodeHtml(sdtPage?.PageName ?? pageName ?? "");
+  const editablePageName: string = decodeHtml(
+    sdtPage?.PageName ?? pageName ?? "",
+  );
 
   function decodeHtml(encoded: string): string {
     const el = document.createElement("textarea");
@@ -127,7 +140,7 @@ export function TranslationSideBar({
     if (highlightLanguage && displayLanguages.includes(highlightLanguage)) {
       setSelectedLang(highlightLanguage);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightLanguage]);
 
   // Scroll highlighted element into view after content loads or highlight changes
@@ -137,14 +150,16 @@ export function TranslationSideBar({
       const selector = highlightTileId
         ? `[data-tile-id="${highlightTileId}"]`
         : `[data-block-id="${highlightBlockId}"]`;
-      const el = scrollRef.current?.querySelector(selector) as HTMLElement | null;
+      const el = scrollRef.current?.querySelector(
+        selector,
+      ) as HTMLElement | null;
       if (!el || !scrollRef.current) return;
       const container = scrollRef.current;
       const elRect = el.getBoundingClientRect();
       const cRect = container.getBoundingClientRect();
       const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
       const target = offsetInContainer - (cRect.height - elRect.height) / 2;
-      container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
     });
   }, [highlightBlockId, highlightTileId, sdtPage]);
 
@@ -195,9 +210,10 @@ export function TranslationSideBar({
   // ── Save helpers ─────────────────────────────────────────────────────────────
 
   function saveNow(next: any) {
+    onSaveStart?.();
     updateTranslatedPage(activePageId, selectedLang, next)
       .then(() => onSaved?.())
-      .catch(() => {});
+      .catch(() => onSaveError?.());
   }
 
   function handlePageNameSave(value: string) {
@@ -207,6 +223,8 @@ export function TranslationSideBar({
   }
 
   function handleTileBlur(bi: number, ci: number, ti: number, value: string) {
+    setEditingKey(null);
+    if (!value.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].Columns[ci].Tiles[ti].Text = value;
     const next = {
@@ -215,10 +233,12 @@ export function TranslationSideBar({
     };
     setSdtPage(next);
     saveNow(next);
-    setEditingKey(null);
   }
 
   function handleDescriptionSave(bi: number, value: string) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = value;
+    if (!tmp.textContent?.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].InfoValue = value;
     const next = {
@@ -231,6 +251,8 @@ export function TranslationSideBar({
   }
 
   function handleCtaBlur(bi: number, value: string) {
+    setEditingKey(null);
+    if (!value.trim()) return;
     const content = structuredClone(sdtPage.PageStructure.InfoContent);
     content[bi].CtaAttributes.CtaLabel = value;
     const next = {
@@ -239,18 +261,22 @@ export function TranslationSideBar({
     };
     setSdtPage(next);
     saveNow(next);
-    setEditingKey(null);
   }
 
   // ── Module page renderer ─────────────────────────────────────────────────────
 
   function renderModulePage() {
     switch (pageType) {
-      case "BulletinBoard": return <BulletinBoardPage themeColors={themeColors} />;
-      case "Calendar":      return <CalendarPage themeColors={themeColors} />;
-      case "MyActivity":    return <MyActivityPage themeColors={themeColors} />;
-      case "Map":           return <MapPage themeColors={themeColors} />;
-      default:              return null;
+      case "BulletinBoard":
+        return <BulletinBoardPage themeColors={themeColors} />;
+      case "Calendar":
+        return <CalendarPage themeColors={themeColors} />;
+      case "MyActivity":
+        return <MyActivityPage themeColors={themeColors} />;
+      case "Map":
+        return <MapPage themeColors={themeColors} />;
+      default:
+        return null;
     }
   }
 
@@ -266,7 +292,11 @@ export function TranslationSideBar({
       if (block.InfoType === "TileGrid") {
         const cols: any[] = block.Columns ?? [];
         out.push(
-          <div key={block.InfoId} data-block-id={block.InfoId} className="phone-tilegrid">
+          <div
+            key={block.InfoId}
+            data-block-id={block.InfoId}
+            className="phone-tilegrid"
+          >
             {cols.map((col: any, ci: number) => (
               <div key={col.ColId} className="phone-column">
                 {(col.Tiles ?? []).map((tile: any, ti: number) => {
@@ -292,19 +322,22 @@ export function TranslationSideBar({
                     cols.length >= 3 ||
                     (cols.length === 2 && (col.Tiles ?? []).length > 1);
                   const isTileHighlighted =
-                    highlightBlockId === block.InfoId && highlightTileId === tile.Id;
+                    highlightBlockId === block.InfoId &&
+                    highlightTileId === tile.Id;
                   return (
                     <div
                       key={tile.Id}
                       data-tile-id={tile.Id}
-                      className={`phone-tile-wrap${isTileHighlighted ? ' phone-tile-wrap--analysis' : ''}`}
+                      className={`phone-tile-wrap${isTileHighlighted ? " phone-tile-wrap--analysis" : ""}`}
                       style={{
                         height: tileHeight,
                         maxHeight: capHeight ? `${TILE_H}px` : undefined,
                       }}
                     >
                       {isTileHighlighted && highlightMessage && (
-                        <div className="phone-tile-analysis-label">{highlightMessage}</div>
+                        <div className="phone-tile-analysis-label">
+                          {highlightMessage}
+                        </div>
                       )}
                       <div
                         className="phone-tile"
@@ -342,32 +375,35 @@ export function TranslationSideBar({
                             />
                           </div>
                         )}
-                        <div
-                          className={`phone-tile-element${tile.Align === "left" ? " phone-tile-element--left" : ""}`}
-                        >
-                          {editingKey === tileKey ? (
-                            <input
-                              className="ts-editable-input"
-                              defaultValue={decodeHtml(tile.Text ?? "")}
-                              autoFocus
-                              style={{ color: tile.Color ?? "#333" }}
-                              onBlur={(e) =>
-                                handleTileBlur(bi, ci, ti, e.target.value)
-                              }
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && e.currentTarget.blur()
-                              }
-                            />
-                          ) : (
-                            <span
-                              className="phone-tile-text ts-editable-text"
-                              title="Click to edit"
-                              onClick={() => setEditingKey(tileKey)}
-                            >
-                              {decodeHtml(tile.Text || " ")}
-                            </span>
-                          )}
-                        </div>
+                        {(editingKey === tileKey ||
+                          decodeHtml(tile.Text ?? "").trim()) && (
+                          <div
+                            className={`phone-tile-element${tile.Align === "left" ? " phone-tile-element--left" : ""}`}
+                          >
+                            {editingKey === tileKey ? (
+                              <input
+                                className="ts-editable-input"
+                                defaultValue={decodeHtml(tile.Text ?? "")}
+                                autoFocus
+                                style={{ color: tile.Color ?? "#333" }}
+                                onBlur={(e) =>
+                                  handleTileBlur(bi, ci, ti, e.target.value)
+                                }
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && e.currentTarget.blur()
+                                }
+                              />
+                            ) : (
+                              <span
+                                className="phone-tile-text ts-editable-text"
+                                title="Click to edit"
+                                onClick={() => setEditingKey(tileKey)}
+                              >
+                                {decodeHtml(tile.Text ?? "")}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -423,14 +459,21 @@ export function TranslationSideBar({
           i++;
         }
         out.push(
-          <div key={row[0].block.InfoId} data-block-id={row[0].block.InfoId} className="phone-round-cta-row">
+          <div
+            key={row[0].block.InfoId}
+            data-block-id={row[0].block.InfoId}
+            className="phone-round-cta-row"
+          >
             {row.map(({ block: rb, bi: rbi }) => {
               const ctaKey = `cta-${rbi}`;
-              const isCtaHighlighted = highlightBlockId === rb.InfoId && !highlightTileId;
+              const isCtaHighlighted =
+                highlightBlockId === rb.InfoId && !highlightTileId;
               return (
-                <div key={rb.InfoId} style={{ position: 'relative' }}>
+                <div key={rb.InfoId} style={{ position: "relative" }}>
                   {isCtaHighlighted && highlightMessage && (
-                    <div className="block-analysis-label">{highlightMessage}</div>
+                    <div className="block-analysis-label">
+                      {highlightMessage}
+                    </div>
                   )}
                   <CtaBlock
                     block={rb}
@@ -448,9 +491,14 @@ export function TranslationSideBar({
         );
       } else if (block.InfoType === "Cta") {
         const ctaKey = `cta-${bi}`;
-        const isCtaHighlighted = highlightBlockId === block.InfoId && !highlightTileId;
+        const isCtaHighlighted =
+          highlightBlockId === block.InfoId && !highlightTileId;
         out.push(
-          <div key={block.InfoId} data-block-id={block.InfoId} style={{ position: 'relative' }}>
+          <div
+            key={block.InfoId}
+            data-block-id={block.InfoId}
+            style={{ position: "relative" }}
+          >
             {isCtaHighlighted && highlightMessage && (
               <div className="block-analysis-label">{highlightMessage}</div>
             )}
@@ -516,11 +564,14 @@ export function TranslationSideBar({
             />
 
             <div className="ts-phone-scroll" ref={scrollRef}>
-              {pageType && MODULE_PAGE_TYPES.has(pageType)
-                ? renderModulePage()
-                : (pageType === "WebLink" || pageType === "DynamicForm") && pageUrl
-                  ? <WeblinkFrame src={pageUrl} title={pageName ?? pageType} />
-                  : renderEditableBlocks()}
+              {pageType && MODULE_PAGE_TYPES.has(pageType) ? (
+                renderModulePage()
+              ) : (pageType === "WebLink" || pageType === "DynamicForm") &&
+                pageUrl ? (
+                <WeblinkFrame src={pageUrl} title={pageName ?? pageType} />
+              ) : (
+                renderEditableBlocks()
+              )}
             </div>
           </div>
         )}

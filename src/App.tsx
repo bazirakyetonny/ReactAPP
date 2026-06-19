@@ -176,7 +176,10 @@ function App() {
   const [treeOpen, setTreeOpen] = useState(false);
   const [showNavPaths, setShowNavPaths] = useState(false);
   const [trashedPageIds, setTrashedPageIds] = useState<Set<string>>(new Set());
-  const [alertInfo, setAlertInfo] = useState<{ message: string; status: AlertStatus } | null>(null);
+  const [alertInfo, setAlertInfo] = useState<{
+    message: string;
+    status: AlertStatus;
+  } | null>(null);
 
   function refreshTrashedPageIds() {
     getTrash()
@@ -494,7 +497,8 @@ function App() {
     : homePage;
   const transPageId = transPage?.PageId ?? homePage?.PageId ?? "";
   const transPageName = transPage?.PageName ?? "Home";
-  const transPageType = transPage?.PageType ?? homePage?.PageType ?? "Information";
+  const transPageType =
+    transPage?.PageType ?? homePage?.PageType ?? "Information";
 
   // When a WebLink page enters the nav stack (tree, analysis, or tile navigation),
   // ensure its URL is in navUrls so the iframe renders correctly.
@@ -593,13 +597,18 @@ function App() {
     selectedCtaId,
   ]);
 
+  // ── Translation save indicator ───────────────────────────────────────────
+
+  const [isTranslationSaving, setIsTranslationSaving] = useState(false);
+  const [translationSaveError, setTranslationSaveError] = useState(false);
+  const [translationSavedAt, setTranslationSavedAt] = useState<number | null>(
+    null,
+  );
+
   // ── Auto-save ────────────────────────────────────────────────────────────
 
-  const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } = useAutoSave(
-    infoContent,
-    navContents,
-    currentVersion?.AppVersionId,
-  );
+  const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } =
+    useAutoSave(infoContent, navContents, currentVersion?.AppVersionId);
   runSaveRef.current = runSave;
 
   const flushSaveRef = useRef(flushSave);
@@ -845,7 +854,7 @@ function App() {
     !!appliedTemplate &&
     appliedTemplate.pageId === activeFramePageId &&
     JSON.stringify(activeFrameContent) === appliedTemplate.json;
-  const showTemplateSidebar =
+  const showTemplateSidebarForLinkedPage =
     !!activeFramePageId &&
     !selectedTileId &&
     !selectedCtaId &&
@@ -854,12 +863,34 @@ function App() {
     activeFramePage?.PageType === "Information" &&
     (activeFrameContent.length === 0 || holdsUnmodifiedTemplate);
 
+  const homePageContent = infoContent;
+  const homeHoldsUnmodifiedTemplate =
+    !!appliedTemplate &&
+    appliedTemplate.pageId === homePageId &&
+    JSON.stringify(homePageContent) === appliedTemplate.json;
+  const showTemplateSidebarForHome =
+    activeFramePageId === null &&
+    navStack.length === 0 &&
+    !selectedTileId &&
+    !selectedCtaId &&
+    homePage?.PageType === "Information" &&
+    (homePageContent.length === 0 || homeHoldsUnmodifiedTemplate);
+
+  const showTemplateSidebar =
+    showTemplateSidebarForLinkedPage || showTemplateSidebarForHome;
+
   function handleApplyTemplate(content: any[], templateId: string) {
-    if (!activeFramePageId) return;
+    const targetPageId =
+      activeFramePageId ?? (showTemplateSidebarForHome ? homePageId : null);
+    if (!targetPageId) return;
     pushSnapshot();
-    setNavContents((prev) => ({ ...prev, [activeFramePageId]: content }));
+    if (targetPageId === homePageId) {
+      setInfoContent(content);
+    } else {
+      setNavContents((prev) => ({ ...prev, [targetPageId]: content }));
+    }
     setAppliedTemplate({
-      pageId: activeFramePageId,
+      pageId: targetPageId,
       templateId,
       json: JSON.stringify(content),
     });
@@ -923,15 +954,20 @@ function App() {
         for (const tileId of Object.values(sourceTiles)) {
           const el = document.querySelector(`[data-tile-id="${tileId}"]`);
           if (!el) continue;
-          const container = el.closest('.phone-screen') as HTMLElement | null;
+          const container = el.closest(".phone-screen") as HTMLElement | null;
           if (container) {
             const elRect = el.getBoundingClientRect();
             const cRect = container.getBoundingClientRect();
-            const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
-            const target = offsetInContainer - (cRect.height - elRect.height) / 2;
-            container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+            const offsetInContainer =
+              elRect.top - cRect.top + container.scrollTop;
+            const target =
+              offsetInContainer - (cRect.height - elRect.height) / 2;
+            container.scrollTo({
+              top: Math.max(0, target),
+              behavior: "smooth",
+            });
           } else {
-            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            el.scrollIntoView({ block: "nearest", behavior: "smooth" });
           }
         }
       });
@@ -943,7 +979,10 @@ function App() {
         blockId: issue.blockId,
         tileId: issue.subItemId,
         language: issue.language,
-        message: issue.category === 1 ? i18n.t("navbar.analyse.invalid_url") : i18n.t("navbar.analyse.text_too_long"),
+        message:
+          issue.category === 1
+            ? i18n.t("navbar.analyse.invalid_url")
+            : i18n.t("navbar.analyse.text_too_long"),
       });
     } else {
       setIsTranslationOpen(false);
@@ -955,15 +994,15 @@ function App() {
         : `[data-block-id="${issue.blockId}"]`;
       const el = document.querySelector(selector);
       if (!el) return;
-      const container = el.closest('.phone-screen') as HTMLElement | null;
+      const container = el.closest(".phone-screen") as HTMLElement | null;
       if (container) {
         const elRect = el.getBoundingClientRect();
         const cRect = container.getBoundingClientRect();
         const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
         const target = offsetInContainer - (cRect.height - elRect.height) / 2;
-        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
       } else {
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
       }
     });
   }
@@ -971,20 +1010,24 @@ function App() {
   function scrollToNewBlock(infoId: string) {
     requestAnimationFrame(() => {
       let el: HTMLElement | null = null;
-      if (infoId.startsWith('grid-')) {
+      if (infoId.startsWith("grid-")) {
         const tileTs = infoId.slice(5);
-        el = document.querySelector(`[data-tile-id="tile-${tileTs}"]`) as HTMLElement | null;
+        el = document.querySelector(
+          `[data-tile-id="tile-${tileTs}"]`,
+        ) as HTMLElement | null;
       } else {
-        el = document.querySelector(`[data-block-id="${infoId}"]`) as HTMLElement | null;
+        el = document.querySelector(
+          `[data-block-id="${infoId}"]`,
+        ) as HTMLElement | null;
       }
       if (!el) return;
-      const container = el.closest('.phone-screen') as HTMLElement | null;
+      const container = el.closest(".phone-screen") as HTMLElement | null;
       if (container) {
         const elRect = el.getBoundingClientRect();
         const cRect = container.getBoundingClientRect();
         const offsetInContainer = elRect.top - cRect.top + container.scrollTop;
         const target = offsetInContainer - (cRect.height - elRect.height) / 2;
-        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
       }
     });
   }
@@ -1004,11 +1047,16 @@ function App() {
   function handlePublishClick() {
     const cv = dataStore.get("Current_Version");
     const pages: any[] = cv?.Page ?? [];
-    const homeId = pages.find((p: any) => p.PageName?.toLowerCase() === "home")?.PageId;
+    const homeId = pages.find(
+      (p: any) => p.PageName?.toLowerCase() === "home",
+    )?.PageId;
     const currentPageId = activeFramePageId ?? homeId;
     const langs: string[] = (() => {
-      try { return JSON.parse(cv?.AppVersionMultiLanguages ?? "[]"); }
-      catch { return []; }
+      try {
+        return JSON.parse(cv?.AppVersionMultiLanguages ?? "[]");
+      } catch {
+        return [];
+      }
     })();
     if (currentPageId && langs.length > 0) {
       translateAppVersion({
@@ -1085,7 +1133,9 @@ function App() {
 
     const cv = dataStore.get("Current_Version");
     const pages: any[] = cv?.Page ?? [];
-    const homeId = pages.find((p: any) => p.PageName?.toLowerCase() === "home")?.PageId;
+    const homeId = pages.find(
+      (p: any) => p.PageName?.toLowerCase() === "home",
+    )?.PageId;
 
     const prevId = prevRaw ?? homeId;
     const currentId = activeFramePageId ?? homeId;
@@ -1095,9 +1145,10 @@ function App() {
     if (prevId && prevId !== currentId) {
       const snap = frameSnapshotRef.current;
       if (snap && snap.pageId === prevId) {
-        const prevContent = prevId === homeId
-          ? infoContentRef.current
-          : (navContentsRef.current[prevId] ?? []);
+        const prevContent =
+          prevId === homeId
+            ? infoContentRef.current
+            : (navContentsRef.current[prevId] ?? []);
         const prevPage = pages.find((p: any) => p.PageId === prevId);
         shouldTranslate =
           JSON.stringify(prevContent) !== snap.contentJson ||
@@ -1109,9 +1160,10 @@ function App() {
 
     // Take a fresh snapshot of the page we just landed on
     if (currentId) {
-      const content = currentId === homeId
-        ? infoContentRef.current
-        : (navContentsRef.current[currentId] ?? []);
+      const content =
+        currentId === homeId
+          ? infoContentRef.current
+          : (navContentsRef.current[currentId] ?? []);
       const page = pages.find((p: any) => p.PageId === currentId);
       frameSnapshotRef.current = {
         pageId: currentId,
@@ -1127,8 +1179,11 @@ function App() {
 
       const freshCv = dataStore.get("Current_Version");
       const langs: string[] = (() => {
-        try { return JSON.parse(freshCv?.AppVersionMultiLanguages ?? "[]"); }
-        catch { return []; }
+        try {
+          return JSON.parse(freshCv?.AppVersionMultiLanguages ?? "[]");
+        } catch {
+          return [];
+        }
       })();
 
       try {
@@ -1143,7 +1198,7 @@ function App() {
     }
 
     saveAndTranslate().catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFramePageId]);
 
   useEffect(() => {
@@ -1232,7 +1287,12 @@ function App() {
 
     let finalAttrs: Record<string, any> = { ...attrs };
 
-    if ((blockType === "Cta_Weblink" || blockType === "Cta_Form" || blockType === "Cta_Address") && attrs.CtaAction) {
+    if (
+      (blockType === "Cta_Weblink" ||
+        blockType === "Cta_Form" ||
+        blockType === "Cta_Address") &&
+      attrs.CtaAction
+    ) {
       const cv = dataStore.get("Current_Version");
       if (cv) {
         const url =
@@ -1243,7 +1303,8 @@ function App() {
           (p: any) =>
             p.PageType === "WebLink" && p.PageLinkStructure?.Url === url,
         );
-        const ctaActionOverride = blockType === "Cta_Address" ? { CtaAction: url } : {};
+        const ctaActionOverride =
+          blockType === "Cta_Address" ? { CtaAction: url } : {};
         if (existing) {
           finalAttrs = {
             ...attrs,
@@ -1345,7 +1406,10 @@ function App() {
 
   // ── Replace-page confirmation ─────────────────────────────────────────────
 
-  const [pendingTileMenuAction, setPendingTileMenuAction] = useState<{ tileId: string; action: TileMenuAction } | null>(null);
+  const [pendingTileMenuAction, setPendingTileMenuAction] = useState<{
+    tileId: string;
+    action: TileMenuAction;
+  } | null>(null);
   const skipReplaceCheckRef = useRef(false);
 
   // ── New page frame helpers ────────────────────────────────────────────────
@@ -1381,6 +1445,9 @@ function App() {
         return next;
       });
       setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+      setSelectedTileId(null);
+      setSelectedCtaId(null);
+      setActiveFramePageId(newPage.PageId);
       handleEditTile(tileId, {
         Action: {
           ObjectType: newPage.PageType,
@@ -1699,8 +1766,13 @@ function App() {
         ...(Object.values(navContentsRef.current) as any[][]).flat(),
       ];
       for (const b of allTileBlocks) {
-        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
-        if (tile?.Action?.ObjectId && existingPageIds.has(tile.Action.ObjectId)) {
+        const tile = (b.Columns ?? [])
+          .flatMap((c: any) => c.Tiles ?? [])
+          .find((t: any) => t.Id === tileId);
+        if (
+          tile?.Action?.ObjectId &&
+          existingPageIds.has(tile.Action.ObjectId)
+        ) {
           setPendingTileMenuAction({ tileId, action });
           return;
         }
@@ -1770,35 +1842,70 @@ function App() {
       ];
       let currentTileAction: any = null;
       for (const b of allTileBlocks) {
-        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
-        if (tile) { currentTileAction = tile.Action; break; }
+        const tile = (b.Columns ?? [])
+          .flatMap((c: any) => c.Tiles ?? [])
+          .find((t: any) => t.Id === tileId);
+        if (tile) {
+          currentTileAction = tile.Action;
+          break;
+        }
       }
-      if (currentTileAction?.ObjectId && currentTileAction.ObjectType === "WebLink") {
+      if (
+        currentTileAction?.ObjectId &&
+        currentTileAction.ObjectType === "WebLink"
+      ) {
         pushSnapshot();
-        handleEditTile(tileId, { Action: { ...currentTileAction, ObjectUrl: url } });
+        handleEditTile(tileId, {
+          Action: { ...currentTileAction, ObjectUrl: url },
+        });
         try {
-          await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentTileAction.ObjectId, url, WWPFormId: 0 });
+          await updateLinkPage({
+            appVersionId: cv.AppVersionId,
+            pageId: currentTileAction.ObjectId,
+            url,
+            WWPFormId: 0,
+          });
           const freshCv = dataStore.get("Current_Version") ?? cv;
           const syncedCv = {
             ...freshCv,
             Page: (freshCv.Page ?? []).map((p: any) =>
               p.PageId === currentTileAction.ObjectId
-                ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-                : p
+                ? {
+                    ...p,
+                    PageLinkStructure: {
+                      ...(p.PageLinkStructure ?? {}),
+                      Url: url,
+                    },
+                  }
+                : p,
             ),
             Pages: (freshCv.Pages ?? []).map((p: any) =>
               p.PageId === currentTileAction.ObjectId
-                ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-                : p
+                ? {
+                    ...p,
+                    PageLinkStructure: {
+                      ...(p.PageLinkStructure ?? {}),
+                      Url: url,
+                    },
+                  }
+                : p,
             ),
           };
           dataStore.set("Current_Version", syncedCv);
           setCurrentVersion(syncedCv);
-          setNavUrls((prev) => ({ ...prev, [currentTileAction.ObjectId]: url }));
+          setNavUrls((prev) => ({
+            ...prev,
+            [currentTileAction.ObjectId]: url,
+          }));
         } catch {
           const fallbackCv = dataStore.get("Current_Version") ?? cv;
           try {
-            const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: action.label || url, url, WWPFormId: 0 });
+            const newPage = await createLinkPage({
+              appVersionId: fallbackCv.AppVersionId,
+              pageName: action.label || url,
+              url,
+              WWPFormId: 0,
+            });
             if (!newPage?.PageId) throw new Error("no page");
             const pageUrl = newPage.PageLinkStructure?.Url ?? url;
             const updated = {
@@ -1808,11 +1915,23 @@ function App() {
             };
             dataStore.set("Current_Version", updated);
             setCurrentVersion(updated);
-            handleEditTile(tileId, { Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl, FormId: 0 } });
+            handleEditTile(tileId, {
+              Action: {
+                ObjectType: "WebLink",
+                ObjectId: newPage.PageId,
+                ObjectUrl: pageUrl,
+                FormId: 0,
+              },
+            });
             handleTileNavigate(newPage.PageId, parentIndex);
-            setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
+            setNavSourceTiles((prev) => ({
+              ...prev,
+              [newPage.PageId]: tileId,
+            }));
             setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
         return;
       }
@@ -1915,10 +2034,18 @@ function App() {
       ];
       let currentFormAction: any = null;
       for (const b of allFormBlocks) {
-        const tile = (b.Columns ?? []).flatMap((c: any) => c.Tiles ?? []).find((t: any) => t.Id === tileId);
-        if (tile) { currentFormAction = tile.Action; break; }
+        const tile = (b.Columns ?? [])
+          .flatMap((c: any) => c.Tiles ?? [])
+          .find((t: any) => t.Id === tileId);
+        if (tile) {
+          currentFormAction = tile.Action;
+          break;
+        }
       }
-      if (currentFormAction?.ObjectId && currentFormAction.ObjectType === "DynamicForm") {
+      if (
+        currentFormAction?.ObjectId &&
+        currentFormAction.ObjectType === "DynamicForm"
+      ) {
         pushSnapshot();
         handleEditTile(tileId, {
           Action: { ...currentFormAction, FormId: Number(action.formId) },
@@ -1929,7 +2056,9 @@ function App() {
           url: "",
           WWPFormId: Number(action.formId),
           WWPFormReferenceName: action.formReferenceName,
-        }).catch(() => { /* ignore */ });
+        }).catch(() => {
+          /* ignore */
+        });
         return;
       }
       try {
@@ -2110,28 +2239,50 @@ function App() {
       ...infoContentRef.current,
       ...(Object.values(navContentsRef.current) as any[][]).flat(),
     ];
-    const ctaBlock = allCtaBlocks.find((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId);
+    const ctaBlock = allCtaBlocks.find(
+      (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
+    );
     const currentCtaAction = ctaBlock?.CtaAttributes?.Action;
-    if (currentCtaAction?.ObjectId && currentCtaAction.ObjectType === "WebLink") {
+    if (
+      currentCtaAction?.ObjectId &&
+      currentCtaAction.ObjectType === "WebLink"
+    ) {
       pushSnapshot();
       handleEditCta(ctaId, {
         CtaAction: url,
         Action: { ...currentCtaAction, ObjectUrl: url },
       });
       try {
-        await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentCtaAction.ObjectId, url, WWPFormId: 0 });
+        await updateLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageId: currentCtaAction.ObjectId,
+          url,
+          WWPFormId: 0,
+        });
         const freshCv = dataStore.get("Current_Version") ?? cv;
         const syncedCv = {
           ...freshCv,
           Page: (freshCv.Page ?? []).map((p: any) =>
             p.PageId === currentCtaAction.ObjectId
-              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-              : p
+              ? {
+                  ...p,
+                  PageLinkStructure: {
+                    ...(p.PageLinkStructure ?? {}),
+                    Url: url,
+                  },
+                }
+              : p,
           ),
           Pages: (freshCv.Pages ?? []).map((p: any) =>
             p.PageId === currentCtaAction.ObjectId
-              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-              : p
+              ? {
+                  ...p,
+                  PageLinkStructure: {
+                    ...(p.PageLinkStructure ?? {}),
+                    Url: url,
+                  },
+                }
+              : p,
           ),
         };
         dataStore.set("Current_Version", syncedCv);
@@ -2140,7 +2291,12 @@ function App() {
       } catch {
         const fallbackCv = dataStore.get("Current_Version") ?? cv;
         try {
-          const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: label || url, url, WWPFormId: 0 });
+          const newPage = await createLinkPage({
+            appVersionId: fallbackCv.AppVersionId,
+            pageName: label || url,
+            url,
+            WWPFormId: 0,
+          });
           if (!newPage?.PageId) throw new Error("no page");
           const pageUrl = newPage.PageLinkStructure?.Url ?? url;
           const updated = {
@@ -2152,11 +2308,17 @@ function App() {
           setCurrentVersion(updated);
           handleEditCta(ctaId, {
             CtaAction: url,
-            Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+            Action: {
+              ObjectType: "WebLink",
+              ObjectId: newPage.PageId,
+              ObjectUrl: pageUrl,
+            },
           });
           handleTileNavigate(newPage.PageId, ctaFrameIndex);
           setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       return;
     }
@@ -2209,7 +2371,11 @@ function App() {
     }
   }
 
-  async function handleCtaAddressSave(ctaId: string, address: string, label: string) {
+  async function handleCtaAddressSave(
+    ctaId: string,
+    address: string,
+    label: string,
+  ) {
     const cv = dataStore.get("Current_Version");
     if (!cv) return;
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -2233,38 +2399,68 @@ function App() {
       ...infoContentRef.current,
       ...(Object.values(navContentsRef.current) as any[][]).flat(),
     ];
-    const ctaBlock = allCtaBlocks.find((b: any) => b.InfoType === "Cta" && b.InfoId === ctaId);
+    const ctaBlock = allCtaBlocks.find(
+      (b: any) => b.InfoType === "Cta" && b.InfoId === ctaId,
+    );
     const currentCtaAction = ctaBlock?.CtaAttributes?.Action;
 
-    if (currentCtaAction?.ObjectId && currentCtaAction.ObjectType === "WebLink") {
+    if (
+      currentCtaAction?.ObjectId &&
+      currentCtaAction.ObjectType === "WebLink"
+    ) {
       pushSnapshot();
       handleEditCta(ctaId, {
         CtaAction: mapsUrl,
         Action: { ...currentCtaAction, ObjectUrl: mapsUrl },
       });
       try {
-        await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: currentCtaAction.ObjectId, url: mapsUrl, WWPFormId: 0 });
+        await updateLinkPage({
+          appVersionId: cv.AppVersionId,
+          pageId: currentCtaAction.ObjectId,
+          url: mapsUrl,
+          WWPFormId: 0,
+        });
         const freshCv = dataStore.get("Current_Version") ?? cv;
         const syncedCv = {
           ...freshCv,
           Page: (freshCv.Page ?? []).map((p: any) =>
             p.PageId === currentCtaAction.ObjectId
-              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: mapsUrl } }
+              ? {
+                  ...p,
+                  PageLinkStructure: {
+                    ...(p.PageLinkStructure ?? {}),
+                    Url: mapsUrl,
+                  },
+                }
               : p,
           ),
           Pages: (freshCv.Pages ?? []).map((p: any) =>
             p.PageId === currentCtaAction.ObjectId
-              ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: mapsUrl } }
+              ? {
+                  ...p,
+                  PageLinkStructure: {
+                    ...(p.PageLinkStructure ?? {}),
+                    Url: mapsUrl,
+                  },
+                }
               : p,
           ),
         };
         dataStore.set("Current_Version", syncedCv);
         setCurrentVersion(syncedCv);
-        setNavUrls((prev) => ({ ...prev, [currentCtaAction.ObjectId]: mapsUrl }));
+        setNavUrls((prev) => ({
+          ...prev,
+          [currentCtaAction.ObjectId]: mapsUrl,
+        }));
       } catch {
         const fallbackCv = dataStore.get("Current_Version") ?? cv;
         try {
-          const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: label || address, url: mapsUrl, WWPFormId: 0 });
+          const newPage = await createLinkPage({
+            appVersionId: fallbackCv.AppVersionId,
+            pageName: label || address,
+            url: mapsUrl,
+            WWPFormId: 0,
+          });
           if (!newPage?.PageId) throw new Error("no page");
           const pageUrl = newPage.PageLinkStructure?.Url ?? mapsUrl;
           const updated = {
@@ -2276,30 +2472,46 @@ function App() {
           setCurrentVersion(updated);
           handleEditCta(ctaId, {
             CtaAction: mapsUrl,
-            Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+            Action: {
+              ObjectType: "WebLink",
+              ObjectId: newPage.PageId,
+              ObjectUrl: pageUrl,
+            },
           });
           handleTileNavigate(newPage.PageId, ctaFrameIndex);
           setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       return;
     }
 
     const existing = (cv.Page ?? []).find(
-      (p: any) => p.PageType === "WebLink" && p.PageLinkStructure?.Url === mapsUrl,
+      (p: any) =>
+        p.PageType === "WebLink" && p.PageLinkStructure?.Url === mapsUrl,
     );
     if (existing) {
       pushSnapshot();
       handleEditCta(ctaId, {
         CtaAction: mapsUrl,
-        Action: { ObjectType: "WebLink", ObjectId: existing.PageId, ObjectUrl: mapsUrl },
+        Action: {
+          ObjectType: "WebLink",
+          ObjectId: existing.PageId,
+          ObjectUrl: mapsUrl,
+        },
       });
       handleTileNavigate(existing.PageId, ctaFrameIndex);
       setNavUrls((prev) => ({ ...prev, [existing.PageId]: mapsUrl }));
       return;
     }
     try {
-      const newPage = await createLinkPage({ appVersionId: cv.AppVersionId, pageName: label || address, url: mapsUrl, WWPFormId: 0 });
+      const newPage = await createLinkPage({
+        appVersionId: cv.AppVersionId,
+        pageName: label || address,
+        url: mapsUrl,
+        WWPFormId: 0,
+      });
       if (!newPage?.PageId) throw new Error("no page");
       const pageUrl = newPage.PageLinkStructure?.Url ?? mapsUrl;
       pushSnapshot();
@@ -2312,7 +2524,11 @@ function App() {
       setCurrentVersion(updated);
       handleEditCta(ctaId, {
         CtaAction: mapsUrl,
-        Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl },
+        Action: {
+          ObjectType: "WebLink",
+          ObjectId: newPage.PageId,
+          ObjectUrl: pageUrl,
+        },
       });
       handleTileNavigate(newPage.PageId, ctaFrameIndex);
       setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
@@ -2348,19 +2564,30 @@ function App() {
     }
     if (!objectId) return;
     try {
-      await updateLinkPage({ appVersionId: cv.AppVersionId, pageId: objectId, url, WWPFormId: 0 });
+      await updateLinkPage({
+        appVersionId: cv.AppVersionId,
+        pageId: objectId,
+        url,
+        WWPFormId: 0,
+      });
       const freshCv = dataStore.get("Current_Version") ?? cv;
       const syncedCv = {
         ...freshCv,
         Page: (freshCv.Page ?? []).map((p: any) =>
           p.PageId === objectId
-            ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-            : p
+            ? {
+                ...p,
+                PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url },
+              }
+            : p,
         ),
         Pages: (freshCv.Pages ?? []).map((p: any) =>
           p.PageId === objectId
-            ? { ...p, PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url } }
-            : p
+            ? {
+                ...p,
+                PageLinkStructure: { ...(p.PageLinkStructure ?? {}), Url: url },
+              }
+            : p,
         ),
       };
       dataStore.set("Current_Version", syncedCv);
@@ -2369,7 +2596,12 @@ function App() {
     } catch {
       const fallbackCv = dataStore.get("Current_Version") ?? cv;
       try {
-        const newPage = await createLinkPage({ appVersionId: fallbackCv.AppVersionId, pageName: url, url, WWPFormId: 0 });
+        const newPage = await createLinkPage({
+          appVersionId: fallbackCv.AppVersionId,
+          pageName: url,
+          url,
+          WWPFormId: 0,
+        });
         if (!newPage?.PageId) throw new Error("no page");
         const pageUrl = newPage.PageLinkStructure?.Url ?? url;
         const updated = {
@@ -2379,11 +2611,20 @@ function App() {
         };
         dataStore.set("Current_Version", updated);
         setCurrentVersion(updated);
-        handleEditTile(tileId, { Action: { ObjectType: "WebLink", ObjectId: newPage.PageId, ObjectUrl: pageUrl, FormId: 0 } });
+        handleEditTile(tileId, {
+          Action: {
+            ObjectType: "WebLink",
+            ObjectId: newPage.PageId,
+            ObjectUrl: pageUrl,
+            FormId: 0,
+          },
+        });
         handleTileNavigate(newPage.PageId, tileFrameIndex);
         setNavSourceTiles((prev) => ({ ...prev, [newPage.PageId]: tileId }));
         setNavUrls((prev) => ({ ...prev, [newPage.PageId]: pageUrl }));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -2484,9 +2725,9 @@ function App() {
         onRedo={handleRedo}
         onExpand={() => setTreeOpen((v) => !v)}
         isTreeOpen={treeOpen}
-        isSaving={isDirty}
-        saveError={saveError}
-        savedAt={savedAt}
+        isSaving={isDirty || isTranslationSaving}
+        saveError={saveError || translationSaveError}
+        savedAt={translationSavedAt ?? savedAt}
         isTranslationOpen={isTranslationOpen}
         onTranslationToggle={() => {
           if (!isTranslationOpen && analysisOpen) setAnalysisOpen(false);
@@ -2541,7 +2782,10 @@ function App() {
         analysisIssueCount={analysisIssues.length}
         onPublished={() => {
           setShowPublishModal(false);
-          setAlertInfo({ message: "App published successfully", status: "success" });
+          setAlertInfo({
+            message: "App published successfully",
+            status: "success",
+          });
         }}
         onClosePublish={() => setShowPublishModal(false)}
         onFixIssues={() => {
@@ -2691,6 +2935,7 @@ function App() {
           liveCtaLabel={liveCtaLabel}
           analysisHighlight={analysisHighlight}
           onActiveFrameChange={handleActiveFrameChange}
+          requestActivePageId={activeFramePageId}
           appVersionId={currentVersion?.AppVersionId}
           onDeletePage={handleDeletePage}
           onBeforeDeletePage={pushSnapshot}
@@ -2734,7 +2979,19 @@ function App() {
             highlightTileId={translationHighlight?.tileId}
             highlightLanguage={translationHighlight?.language}
             highlightMessage={translationHighlight?.message}
-            onSaved={() => setTranslationRevision((v) => v + 1)}
+            onSaveStart={() => {
+              setIsTranslationSaving(true);
+              setTranslationSaveError(false);
+            }}
+            onSaved={() => {
+              setIsTranslationSaving(false);
+              setTranslationSavedAt(Date.now());
+              setTranslationRevision((v) => v + 1);
+            }}
+            onSaveError={() => {
+              setIsTranslationSaving(false);
+              setTranslationSaveError(true);
+            }}
           />
         ) : showTemplateSidebar ? (
           <TemplateSidebar

@@ -50,6 +50,7 @@
   width: 100%;
   scrollbar-width: none;
   position: relative;
+  min-height: 750px;
 }
 
 .canvas-stage::-webkit-scrollbar {
@@ -785,7 +786,6 @@
 .phone-add-row--visible {
   height: 28px;
 }
-
 
 .phone-add-row--visible::before {
   opacity: 1;

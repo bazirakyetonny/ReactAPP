@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { normalizeQuillHtml } from '../../utils/contentTransforms';
 
 interface DescriptionBlockProps {
   block: { InfoId: string; InfoValue?: string };
@@ -40,6 +41,7 @@ function TrashIcon() {
 }
 
 export function DescriptionBlock({ block, interactive = false, isDragging = false, isMultiSelected = false, onEdit, onDelete, onDragStart }: DescriptionBlockProps) {
+  const html = useMemo(() => normalizeQuillHtml(block.InfoValue || ''), [block.InfoValue]);
   return (
     <div
       data-description-id={block.InfoId}
@@ -55,7 +57,7 @@ export function DescriptionBlock({ block, interactive = false, isDragging = fals
     >
       <div
         className="phone-desc-content"
-        dangerouslySetInnerHTML={{ __html: block.InfoValue || '' }}
+        dangerouslySetInnerHTML={{ __html: html }}
       />
       {interactive && (
         <>

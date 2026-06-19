@@ -9,7 +9,12 @@ interface FlagSelectProps {
   disabled?: boolean;
 }
 
-export function FlagSelect({ options, value, onChange, disabled }: FlagSelectProps) {
+export function FlagSelect({
+  options,
+  value,
+  onChange,
+  disabled,
+}: FlagSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +26,10 @@ export function FlagSelect({ options, value, onChange, disabled }: FlagSelectPro
 
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -48,11 +56,7 @@ export function FlagSelect({ options, value, onChange, disabled }: FlagSelectPro
         disabled={disabled}
       >
         {selected?.flag ? (
-          <img
-            src={selected.flag}
-            alt={selected.label}
-            className="fls-flag"
-          />
+          <img src={selected.flag} alt={selected.label} className="fls-flag" />
         ) : (
           <span className="fls-code">{selected?.value?.toUpperCase()}</span>
         )}
