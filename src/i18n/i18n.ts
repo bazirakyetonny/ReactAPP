@@ -523,6 +523,8 @@ export const i18n = new I18n({
       phone_error: "Enter a valid phone number",
       email_error_addr: "Enter a valid email address",
       url_error: "Enter a valid URL starting with http:// or https://",
+      youtube_url_error:
+        "YouTube links must use the format: https://www.youtube.com/watch?v=VIDEO_ID",
       address_required: "Address is required",
       form_required: "Please select a form",
       label: "Label",
@@ -1085,6 +1087,8 @@ export const i18n = new I18n({
       phone_error: "Voer een geldig telefoonnummer in",
       email_error_addr: "Voer een geldig e-mailadres in",
       url_error: "Voer een geldige URL in die begint met http:// of https://",
+      youtube_url_error:
+        "YouTube-links moeten het formaat gebruiken: https://www.youtube.com/watch?v=VIDEO_ID",
       address_required: "Adres is verplicht",
       form_required: "Selecteer een formulier",
       label: "Label",

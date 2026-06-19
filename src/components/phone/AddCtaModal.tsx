@@ -29,9 +29,19 @@ function validateEmail(v: string): string | null {
     : i18n.t("cta_modal_forms.email_error_addr");
 }
 function validateUrl(v: string): string | null {
-  return /^https?:\/\/.+/.test(v.trim())
-    ? null
-    : i18n.t("cta_modal_forms.url_error");
+  const trimmed = v.trim();
+  if (!/^https?:\/\/.+/.test(trimmed)) return i18n.t("cta_modal_forms.url_error");
+  if (/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/i.test(trimmed)) {
+    return /^https:\/\/(www\.)?youtube\.com\/watch\?([^#]*&)?v=[a-zA-Z0-9_-]+/.test(trimmed)
+      ? null
+      : i18n.t("cta_modal_forms.youtube_url_error");
+  }
+  return null;
+}
+
+function normalizeYoutubeUrl(url: string): string {
+  const match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+  return match ? `https://www.youtube.com/watch?v=${match[1]}` : url;
 }
 
 function prefill(
@@ -210,9 +220,13 @@ export function AddCtaModal({
       setError(err);
       return;
     }
+    const trimmed = action.trim();
     onConfirm({
       CtaLabel: label.trim(),
-      CtaAction: action.trim(),
+      CtaAction:
+        ctaType === "Weblink" && /youtube\.com/i.test(trimmed)
+          ? normalizeYoutubeUrl(trimmed)
+          : trimmed,
       CtaConnectedSupplierId: supplierId || undefined,
       CtaSupplierIsConnected: !!supplierId,
     });
