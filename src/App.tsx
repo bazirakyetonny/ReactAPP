@@ -714,14 +714,6 @@ function App() {
     null,
   );
 
-  // ── Translation save indicator ───────────────────────────────────────────
-
-  const [isTranslationSaving, setIsTranslationSaving] = useState(false);
-  const [translationSaveError, setTranslationSaveError] = useState(false);
-  const [translationSavedAt, setTranslationSavedAt] = useState<number | null>(
-    null,
-  );
-
   // ── Auto-save ────────────────────────────────────────────────────────────
 
   const { isSaving, isDirty, saveError, savedAt, runSave, flushSave } =
