@@ -119,6 +119,29 @@
   pointer-events: none;
 }
 
+.vhs-item--selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.vhs-item--selected:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.vhs-item--loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.vhs-spinner--inline {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+
 .vhs-item-row {
   display: flex;
   align-items: center;

@@ -5,7 +5,9 @@ import {
   getActiveAppVersion,
   activateAppVersion,
   updateAppVersionCategory,
+  restoreHistoryVersion,
   type SDTAppVersion,
+  type AppVersionHistoryEntry,
 } from "./services/appVersionsApi";
 import { getBaseUrl } from "./services/apiClient";
 import { updateAppVersionTheme } from "./services/themeApi";
@@ -35,6 +37,7 @@ import {
   createLinkPage,
   updateLinkPage,
   deletePage,
+  savePage,
 } from "./services/pagesApi";
 import { getTrash, restoreTrash } from "./services/trashApi";
 import { translateAppVersion } from "./services/translationApi";
@@ -134,6 +137,17 @@ function App() {
   const [infoContent, setInfoContent] = useState<any[]>(parseInfoContent);
   const [isTranslationOpen, setIsTranslationOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [previewingNumber, setPreviewingNumber] = useState<number | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const historyStashRef = useRef<{
+    infoContent: any[];
+    navContents: Record<string, any[]>;
+    navStack: string[];
+    navSourceTiles: Record<string, string>;
+    navUrls: Record<string, string>;
+    currentVersion: any;
+    themeId: string;
+  } | null>(null);
   const [translationRevision, setTranslationRevision] = useState(0);
   const [navTranslationRevision, setNavTranslationRevision] = useState(0);
   const [activeFramePageId, setActiveFramePageId] = useState<string | null>(
@@ -446,7 +460,101 @@ function App() {
       .catch(() => {});
   }
 
+  async function handleHistoryPreview(item: AppVersionHistoryEntry) {
+    if (!currentVersion?.AppVersionId) return;
+    if (!historyStashRef.current) {
+      historyStashRef.current = {
+        infoContent: infoContentRef.current,
+        navContents: navContentsRef.current,
+        navStack: navStackRef.current,
+        navSourceTiles: { ...navSourceTiles },
+        navUrls: { ...navUrls },
+        currentVersion: dataStore.get("Current_Version"),
+        themeId: selectedThemeId,
+      };
+    }
+    setPreviewingNumber(item.AppVersionNumber);
+    setLoadingPreview(true);
+    try {
+      await restoreHistoryVersion(currentVersion.AppVersionId, item.AppVersionNumber);
+      const fetched = (await getActiveAppVersion()) as any;
+      const fullVersion = {
+        ...fetched,
+        Page: fetched.Page ?? fetched.Pages ?? [],
+      };
+      dataStore.set("Current_Version", fullVersion);
+      setCurrentVersion(fullVersion);
+      setSelectedThemeId(fullVersion.ThemeId ?? themes[0]?.ThemeId ?? "");
+      setInfoContent(parseInfoContent());
+      setNavStack([]);
+      setNavContents({});
+      setNavSourceTiles({});
+      setNavUrls({});
+      clearHistory();
+      setSelectedTileId(null);
+
+      // Save original data back to DB so a browser refresh keeps the original
+      const stash = historyStashRef.current;
+      if (stash) {
+        const cv = stash.currentVersion;
+        const vId = cv?.AppVersionId;
+        if (vId) {
+          const homePage = (cv.Page ?? []).find(
+            (p: any) => p.PageName?.toLowerCase() === "home",
+          );
+          if (homePage) {
+            savePage({
+              AppVersionId: vId,
+              PageId: homePage.PageId,
+              PageName: homePage.PageName,
+              PageType: homePage.PageType,
+              PageStructure: JSON.stringify({ InfoContent: stash.infoContent }),
+            }).catch(() => {});
+          }
+          for (const [pageId, content] of Object.entries(stash.navContents)) {
+            const page = (cv.Page ?? []).find((p: any) => p.PageId === pageId);
+            if (page) {
+              savePage({
+                AppVersionId: vId,
+                PageId: page.PageId,
+                PageName: page.PageName,
+                PageType: page.PageType,
+                PageStructure: JSON.stringify({ InfoContent: content }),
+              }).catch(() => {});
+            }
+          }
+          updateAppVersionTheme(vId, stash.themeId).catch(() => {});
+        }
+      }
+    } catch {
+      // silently swallow
+    } finally {
+      setLoadingPreview(false);
+    }
+  }
+
+  function handleHistoryClose() {
+    const stash = historyStashRef.current;
+    if (stash) {
+      dataStore.set("Current_Version", stash.currentVersion);
+      setCurrentVersion(stash.currentVersion);
+      setSelectedThemeId(stash.themeId);
+      setInfoContent(stash.infoContent);
+      setNavStack(stash.navStack);
+      setNavContents(stash.navContents);
+      setNavSourceTiles(stash.navSourceTiles);
+      setNavUrls(stash.navUrls);
+      clearHistory();
+      setSelectedTileId(null);
+      historyStashRef.current = null;
+    }
+    setPreviewingNumber(null);
+    setLoadingPreview(false);
+    setIsHistoryOpen(false);
+  }
+
   async function handleVersionRestored() {
+    historyStashRef.current = null;
     try {
       const fetched = (await getActiveAppVersion()) as any;
       const fullVersion = {
@@ -469,6 +577,7 @@ function App() {
     } catch {
       // silently swallow — sidebar will still close
     } finally {
+      setPreviewingNumber(null);
       setIsHistoryOpen(false);
     }
   }
@@ -625,7 +734,7 @@ function App() {
     navContents,
     pages: currentVersion?.Pages ?? [],
     versionId: currentVersion?.AppVersionId,
-    disabled: isPreviewMode,
+    disabled: isPreviewMode || isHistoryOpen,
     translationLanguages: canTranslate ? translationLanguages : [],
     translationRevision,
     navTranslationRevision,
@@ -658,6 +767,7 @@ function App() {
   }, [isMultiSelectMode, exitMultiSelectMode]);
 
   function handleBulkEditTiles(patch: Record<string, any>) {
+    pushSnapshot();
     setInfoContent((prev: any[]) => {
       let content = prev;
       selectedTileIds.forEach((tileId) => {
@@ -679,6 +789,7 @@ function App() {
   }
 
   function handleBulkEditCtas(patch: Record<string, any>) {
+    pushSnapshot();
     const applyCtaPatch = (blocks: any[]) =>
       blocks.map((block: any) =>
         block.InfoType === "Cta" && selectedCtaIds.has(block.InfoId)
@@ -760,6 +871,7 @@ function App() {
   function handleCutSelected(sourceBlocks: any[]) {
     const items = collectClipboardItems(sourceBlocks);
     if (items.length > 0) setClipboard(items);
+    pushSnapshot();
 
     const applyTileDelete = (blocks: any[]) => {
       let content = blocks;
@@ -2735,7 +2847,13 @@ function App() {
         }}
         canTranslate={canTranslate}
         isHistoryOpen={isHistoryOpen}
-        onHistoryToggle={() => setIsHistoryOpen((v) => !v)}
+        onHistoryToggle={() => {
+          if (isHistoryOpen) {
+            handleHistoryClose();
+          } else {
+            setIsHistoryOpen(true);
+          }
+        }}
         analysisIssues={analysisIssues}
         analysisIssueCount={analysisIssues.length}
         isAnalyzing={isAnalyzing}
@@ -2890,7 +3008,7 @@ function App() {
           />
         )}
         <MainCanvas
-          isReadOnly={isTranslationOpen}
+          isReadOnly={isTranslationOpen || isHistoryOpen}
           themeColors={selectedTheme?.ThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
@@ -2960,8 +3078,11 @@ function App() {
         {isHistoryOpen ? (
           <VersionHistorySidebar
             appVersionId={currentVersion?.AppVersionId}
-            onClose={() => setIsHistoryOpen(false)}
+            onClose={handleHistoryClose}
             onRestored={handleVersionRestored}
+            onPreviewVersion={handleHistoryPreview}
+            previewingNumber={previewingNumber}
+            loadingPreview={loadingPreview}
           />
         ) : isTranslationOpen && canTranslate ? (
           <TranslationSideBar
