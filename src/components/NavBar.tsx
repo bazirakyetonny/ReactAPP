@@ -395,6 +395,8 @@ export function NavBar({
     return () => clearTimeout(t);
   }, [savedAt]);
 
+  const noVersion = !version?.AppVersionName;
+
   const locked =
     isTranslationOpen ||
     analysisOpen ||
@@ -434,7 +436,7 @@ export function NavBar({
                   : i18n.t("navbar.analyse.label")
           }
           onClick={analysisOpen ? onAnalysisClose : onAnalysisOpen}
-          disabled={locked && !analysisOpen}
+          disabled={noVersion || (locked && !analysisOpen)}
         >
           <AnalysisIcon />
           {isAnalyzing && analysisIssueCount === 0 ? (
@@ -452,7 +454,7 @@ export function NavBar({
           type="button"
           title={i18n.t("navbar.share.label")}
           onClick={onShareClick}
-          disabled={locked}
+          disabled={noVersion || locked}
         >
           <ShareIcon />
         </button>
@@ -461,7 +463,7 @@ export function NavBar({
           type="button"
           title={i18n.t("navbar.select_frame")}
           onClick={onMultiSelectToggle}
-          disabled={locked && !isMultiSelectMode}
+          disabled={noVersion || (locked && !isMultiSelectMode)}
         >
           <FrameIcon />
         </button>
@@ -546,7 +548,7 @@ export function NavBar({
           className="navbar-icon-btn"
           type="button"
           title={i18n.t("undo")}
-          disabled={!canUndo || locked}
+          disabled={noVersion || !canUndo || locked}
           onClick={onUndo}
         >
           <UndoIcon />
@@ -555,7 +557,7 @@ export function NavBar({
           className="navbar-icon-btn"
           type="button"
           title={i18n.t("redo")}
-          disabled={!canRedo || locked}
+          disabled={noVersion || !canRedo || locked}
           onClick={onRedo}
         >
           <RedoIcon />
@@ -565,7 +567,7 @@ export function NavBar({
           type="button"
           title={i18n.t("version_history.versionHistory")}
           onClick={onHistoryToggle}
-          disabled={locked && !isHistoryOpen}
+          disabled={noVersion || (locked && !isHistoryOpen)}
         >
           <HistoryIcon active={isHistoryOpen} />
         </button>
@@ -574,7 +576,7 @@ export function NavBar({
           type="button"
           title={i18n.t("navbar.trash.label")}
           onClick={onTrashClick}
-          disabled={locked}
+          disabled={noVersion || locked}
         >
           <TrashIcon />
         </button>
@@ -586,7 +588,7 @@ export function NavBar({
               type="button"
               title={isSaving ? i18n.t("navbar.autoSave.saving") : i18n.t("translate")}
               onClick={onTranslationToggle}
-              disabled={(locked && !isTranslationOpen) || isSaving}
+              disabled={noVersion || (locked && !isTranslationOpen) || isSaving}
             >
               <GlobeIcon active={isTranslationOpen} />
             </button>
@@ -597,7 +599,7 @@ export function NavBar({
           type="button"
           title={i18n.t("navbar.show_navigation")}
           onClick={onToggleNavPaths}
-          disabled={locked}
+          disabled={noVersion || locked}
         >
           <PathIcon active={showNavPaths} />
         </button>
@@ -606,7 +608,7 @@ export function NavBar({
           type="button"
           title={i18n.t("link_to_tree")}
           onClick={onExpand}
-          disabled={locked && !isTreeOpen}
+          disabled={noVersion || (locked && !isTreeOpen)}
         >
           <ExpandIcon />
         </button>
@@ -615,7 +617,7 @@ export function NavBar({
           value={selectedThemeId}
           onChange={(e) => onThemeChange?.(e.target.value)}
           aria-label="Select theme"
-          disabled={locked}
+          disabled={noVersion || locked}
         >
           {themes.map((t) => (
             <option key={t.ThemeId} value={t.ThemeId}>
@@ -630,7 +632,7 @@ export function NavBar({
               type="button"
               onClick={onUnpublishTemplate}
               title={i18n.t("navbar.publish.un_publish")}
-              disabled={locked || isSaving || isAnalyzing}
+              disabled={noVersion || locked || isSaving || isAnalyzing}
             >
               <span style={{ display: "inline-flex", transform: "scaleY(-1)" }}>
                 <UploadIcon />
@@ -639,7 +641,7 @@ export function NavBar({
             </button>
           ) : (
             <button
-              disabled={locked || isSaving || isAnalyzing}
+              disabled={noVersion || locked || isSaving || isAnalyzing}
               className="navbar-publish"
               type="button"
               onClick={onPublishAsTemplate}
@@ -650,7 +652,7 @@ export function NavBar({
           )
         ) : (
           <button
-            disabled={locked || isSaving || isAnalyzing}
+            disabled={noVersion || locked || isSaving || isAnalyzing}
             className="navbar-publish"
             type="button"
             onClick={onPublish}

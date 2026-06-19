@@ -6,6 +6,7 @@ import { ColorPalette } from "./sidebar_right/ColorPalette";
 import { TileIconSelector } from "./sidebar_right/TileIconSelector";
 import { MultiSelectPanel } from "./sidebar_right/MultiSelectPanel";
 import { i18n } from "../i18n/i18n";
+import { validateWeblinkUrl, normalizeYoutubeUrl } from "../utils/urlValidators";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -271,6 +272,7 @@ export function SidebarRight({
   const [actionUrl, setActionUrl] = useState(
     selectedTile?.Action?.ObjectUrl ?? "",
   );
+  const [urlError, setUrlError] = useState<string | null>(null);
   const isEditingActionRef = useRef(false);
   const tileTextInputRef = useRef<HTMLInputElement>(null);
   const autoFocusedRef = useRef(false);
@@ -292,8 +294,10 @@ export function SidebarRight({
   }, [selectedTile?.Text]);
 
   useEffect(() => {
-    if (!isEditingActionRef.current)
+    if (!isEditingActionRef.current) {
       setActionUrl(selectedTile?.Action?.ObjectUrl ?? "");
+      setUrlError(null);
+    }
   }, [selectedTile?.Id, selectedTile?.Action?.ObjectUrl]);
 
   useEffect(() => {
@@ -491,7 +495,7 @@ export function SidebarRight({
           {selectedTile?.Action?.ObjectType === "WebLink" && (
             <div className="sr-section">
               <input
-                className="sr-input"
+                className={`sr-input${urlError ? " sr-input--error" : ""}`}
                 type="text"
                 placeholder="https://example.com"
                 value={actionUrl}
@@ -502,22 +506,30 @@ export function SidebarRight({
                 onChange={(e) => {
                   const val = e.target.value;
                   setActionUrl(val);
+                  setUrlError(null);
                   if (selectedTile)
                     onEditTile?.(selectedTile.Id, {
                       Action: { ...selectedTile.Action, ObjectUrl: val },
                     });
                 }}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return;
+                  if (e.key !== "Enter") return;
                   isEditingActionRef.current = false;
-                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, actionUrl);
+                  const err = validateWeblinkUrl(actionUrl);
+                  if (err) { setUrlError(err); e.currentTarget.blur(); return; }
+                  const normalized = normalizeYoutubeUrl(actionUrl.trim());
+                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, normalized);
                   e.currentTarget.blur();
                 }}
                 onBlur={() => {
                   isEditingActionRef.current = false;
-                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, actionUrl);
+                  const err = validateWeblinkUrl(actionUrl);
+                  if (err) { setUrlError(err); return; }
+                  const normalized = normalizeYoutubeUrl(actionUrl.trim());
+                  if (selectedTile) onTileWeblinkSave?.(selectedTile.Id, normalized);
                 }}
               />
+              {urlError && <span className="sr-url-error">{urlError}</span>}
             </div>
           )}
           {/* 3. Format toolbar */}

@@ -133,15 +133,29 @@
   border-radius: 6px;
 }
 
-/* Shared input base — resets browser styles, underline shows edit mode */
+/* Shared input base — resets browser styles, dashed border shows edit mode */
 .ts-editable-input {
   all: unset;
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border-bottom: 1px solid currentColor;
+  border: 1px dashed currentColor;
+  border-radius: 2px;
   opacity: 0.9;
-  padding: 0 1px;
+  padding: 0 2px;
+  cursor: text;
+}
+
+/* CTA label input inside CtaBlock when in translation edit mode */
+.phone-cta-label-input {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px dashed currentColor;
+  border-radius: 2px;
+  text-align: inherit;
+  padding: 0 2px;
   cursor: text;
 }
 

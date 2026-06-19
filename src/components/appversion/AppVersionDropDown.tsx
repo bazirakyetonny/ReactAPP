@@ -269,7 +269,7 @@ export function AppVersionDropDown({
         aria-haspopup="listbox"
         disabled={disabled}
       >
-        {versionName ?? "My version"}
+        {versionName || i18n.t('navbar.appversion.select_version')}
         <span className={`vd-chevron${open ? " vd-chevron--open" : ""}`}>
           <ChevronDownIcon />
         </span>

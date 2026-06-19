@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import { normalizeQuillHtml } from "../../utils/contentTransforms";
 
 const MAX_CHARS = 1000;
 
@@ -49,7 +50,8 @@ export function QuillEditorModal({
   function handleSave() {
     const q = quillRef.current;
     if (!q) return;
-    const html = q.root.innerHTML === "<p><br></p>" ? "" : q.root.innerHTML;
+    const raw = q.root.innerHTML;
+    const html = raw === "<p><br></p>" ? "" : normalizeQuillHtml(raw);
     onSave(html);
   }
 

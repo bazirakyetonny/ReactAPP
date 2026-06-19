@@ -283,6 +283,16 @@
   box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.12);
 }
 
+.sr-input--error { border-color: #dc2626; }
+
+.sr-url-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #dc2626;
+  line-height: 1.3;
+}
+
 .sr-input::placeholder {
   color: #9ca3af;
 }

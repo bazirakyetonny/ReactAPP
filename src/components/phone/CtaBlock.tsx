@@ -87,9 +87,15 @@ interface CtaBlockProps {
   onLabelBlur?: (value: string) => void;
 }
 
+function decodeHtml(encoded: string): string {
+  const el = document.createElement("textarea");
+  el.innerHTML = encoded;
+  return el.value;
+}
+
 export function CtaBlock({ block, ctaColors, interactive = false, isDragging = false, isSelected = false, onSelect, onDelete, onDragStart, onSelectImage, liveLabel, isAnalysisHighlight = false, isMultiSelected = false, editableLabel = false, onLabelClick, onLabelBlur }: CtaBlockProps) {
   const attrs = block?.CtaAttributes ?? {};
-  const label = liveLabel !== undefined ? liveLabel : (attrs.CtaLabel || (onLabelClick ? '' : 'Button'));
+  const label = liveLabel !== undefined ? liveLabel : decodeHtml(attrs.CtaLabel || (onLabelClick ? '' : 'Button'));
   const bg = resolveCtaColor(attrs.CtaBGColor, ctaColors);
   const color = attrs.CtaColor || '#ffffff';
   const type = attrs.CtaButtonType || 'Image';
@@ -98,7 +104,7 @@ export function CtaBlock({ block, ctaColors, interactive = false, isDragging = f
   const LabelEl = editableLabel
     ? <input
         className="phone-cta-label-input"
-        defaultValue={attrs.CtaLabel ?? ''}
+        defaultValue={decodeHtml(attrs.CtaLabel ?? '')}
         autoFocus
         onBlur={(e) => onLabelBlur?.(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
