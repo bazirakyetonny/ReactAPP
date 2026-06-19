@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { dataStore } from "../../data/datastore";
 import "./AddCtaModal.css";
 import { i18n } from "../../i18n/i18n";
+import { validateWeblinkUrl, normalizeYoutubeUrl } from "../../utils/urlValidators";
 
 interface CtaConfirmAttrs {
   CtaLabel: string;
@@ -28,10 +29,12 @@ function validateEmail(v: string): string | null {
     ? null
     : i18n.t("cta_modal_forms.email_error_addr");
 }
-function validateUrl(v: string): string | null {
-  return /^https?:\/\/.+/.test(v.trim())
-    ? null
-    : i18n.t("cta_modal_forms.url_error");
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https:\/\//i.test(trimmed)) return trimmed;
+  if (/^http:\/\//i.test(trimmed)) return "https://" + trimmed.slice(7);
+  return "https://" + trimmed;
 }
 
 function prefill(
@@ -55,7 +58,7 @@ function prefill(
     case "Weblink":
       return {
         label: companyName || defaultLabels.Weblink,
-        action: supplier.SupplierGenWebsite ?? "",
+        action: normalizeUrl(supplier.SupplierGenWebsite ?? ""),
       };
     case "Address": {
       const parts = [
@@ -121,7 +124,7 @@ export function AddCtaModal({
       title: i18n.t("cta_modal_forms.web_link.modal_title"),
       actionLabel: i18n.t("cta_modal_forms.web_link.url_label"),
       actionPlaceholder: "https://example.com",
-      validate: validateUrl,
+      validate: validateWeblinkUrl,
     },
     Address: {
       title: i18n.t("cta_modal_forms.address.modal_title"),
@@ -210,9 +213,13 @@ export function AddCtaModal({
       setError(err);
       return;
     }
+    const trimmed = action.trim();
     onConfirm({
       CtaLabel: label.trim(),
-      CtaAction: action.trim(),
+      CtaAction:
+        ctaType === "Weblink" && /youtube\.com/i.test(trimmed)
+          ? normalizeYoutubeUrl(trimmed)
+          : trimmed,
       CtaConnectedSupplierId: supplierId || undefined,
       CtaSupplierIsConnected: !!supplierId,
     });

@@ -1,6 +1,26 @@
 import { TILE_H, TILE_GAP } from '../constants';
 import type { TileDropPreview } from '../types';
 import { dataStore } from '../data/datastore';
+import { i18n } from '../i18n/i18n';
+
+// Quill v2 outputs <ol> for both ordered and bullet lists, using data-list="bullet"|"ordered"
+// on each <li> and .ql-ui spans for visual markers. This function converts that to standard
+// semantic HTML so it renders correctly without Quill's CSS.
+export function normalizeQuillHtml(html: string): string {
+  if (!html || !html.includes('data-list')) return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('.ql-ui').forEach(el => el.remove());
+  div.querySelectorAll('ol').forEach(ol => {
+    if (ol.querySelector('li[data-list="bullet"]')) {
+      const ul = document.createElement('ul');
+      while (ol.firstChild) ul.appendChild(ol.firstChild);
+      ol.parentNode?.replaceChild(ul, ol);
+    }
+  });
+  div.querySelectorAll('[data-list]').forEach(el => el.removeAttribute('data-list'));
+  return div.innerHTML;
+}
 
 export function applyAddColumn(prev: any[], gridId: string, afterColId: string): any[] {
   const block = prev.find((b: any) => b.InfoId === gridId && b.InfoType === 'TileGrid');
@@ -11,7 +31,7 @@ export function applyAddColumn(prev: any[], gridId: string, afterColId: string):
   const ts = Date.now();
   const newCol = {
     ColId: `col-${ts}`,
-    Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }],
+    Tiles: [{ Id: `tile-${ts}`, Text: i18n.t('tile.title'), BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }],
   };
   const resetCols = cols.map((col: any) => ({
     ...col, Tiles: (col.Tiles ?? []).map((t: any) => ({ ...t, Height: TILE_H })),
@@ -56,7 +76,7 @@ export function applyDeleteTile(prev: any[], gridId: string, colId: string, tile
 export function applyAddStandaloneTile(prev: any[], ts = Date.now()): any[] {
   return [...prev, {
     InfoId: `grid-${ts}`, InfoType: 'TileGrid',
-    Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
+    Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: i18n.t('tile.title'), BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
   }];
 }
 
@@ -65,7 +85,7 @@ export function applyAddBlock(prev: any[], blockType: string, insertBeforeInfoId
   if (blockType === 'TileGrid') {
     newBlock = {
       InfoId: `grid-${ts}`, InfoType: 'TileGrid',
-      Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
+      Columns: [{ ColId: `col-${ts}`, Tiles: [{ Id: `tile-${ts}`, Text: i18n.t('tile.title'), BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true }] }],
     };
   } else if (blockType.startsWith('Cta_')) {
     const ctaType = blockType.slice(4);
@@ -134,7 +154,7 @@ export function applyAddTilesToColumn(prev: any[], gridId: string, colId: string
       Columns: (block.Columns ?? []).map((col: any) => {
         if (col.ColId !== colId) return col;
         const newTiles = Array.from({ length: count }, (_, i) => ({
-          Id: `tile-${ts}-${i}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true,
+          Id: `tile-${ts}-${i}`, Text: i18n.t('tile.title'), BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true,
         }));
         return { ...col, Tiles: [...(col.Tiles ?? []), ...newTiles] };
       }),
@@ -157,7 +177,7 @@ export function applyFreeResizeRelease(
   if (zoneCount > initialCount) {
     const extraCount = zoneCount - initialCount;
     const extraTiles = Array.from({ length: extraCount }, (_, i) => ({
-      Id: `tile-extra-${ts}-${i}`, Text: 'Title', BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true,
+      Id: `tile-extra-${ts}-${i}`, Text: i18n.t('tile.title'), BGColor: '', Color: '#333333', Align: 'center', Height: TILE_H, _new: true,
     }));
     const newCols = (block.Columns ?? []).map((col: any) =>
       col.ColId === oppColId

@@ -3,6 +3,7 @@ import './SidebarRight.css';
 import type { ThemeCtaColor } from '../types';
 import { ctaIcons } from '../data/ctaIcons';
 import { dataStore } from '../data/datastore';
+import { validateWeblinkUrl, normalizeYoutubeUrl } from '../utils/urlValidators';
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
 
@@ -125,9 +126,10 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
 
   const [ctaLabel, setCtaLabel] = useState(attrs.CtaLabel ?? '');
   const [ctaAction, setCtaAction] = useState(displayAction);
+  const [ctaActionError, setCtaActionError] = useState<string | null>(null);
 
   useEffect(() => { setCtaLabel(attrs.CtaLabel ?? ''); }, [ctaId, attrs.CtaLabel]);
-  useEffect(() => { setCtaAction(decodeAddressFromCtaAction(attrs.CtaAction ?? '')); }, [ctaId]);
+  useEffect(() => { setCtaAction(decodeAddressFromCtaAction(attrs.CtaAction ?? '')); setCtaActionError(null); }, [ctaId]);
 
   const allForms: any[] = dataStore.get('SDT_DynamicFormsCollection') ?? [];
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
@@ -223,26 +225,32 @@ export function SidebarCtaControls({ selectedCta, palette, onEditCta, onBeforeCt
             ))}
           </select>
         ) : (
-          <input
-            className="sr-input"
-            type="text"
-            placeholder={attrs.CtaType === 'Phone' ? 'Phone number' : attrs.CtaType === 'Email' ? 'Email address' : attrs.CtaType === 'Weblink' ? 'URL' : 'Value'}
-            value={ctaAction}
-            onFocus={() => onBeforeCtaEdit?.()}
-            onChange={e => setCtaAction(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            onBlur={() => {
-              if (ctaAction !== (attrs.CtaAction ?? '')) {
+          <>
+            <input
+              className={`sr-input${ctaActionError ? ' sr-input--error' : ''}`}
+              type="text"
+              placeholder={attrs.CtaType === 'Phone' ? 'Phone number' : attrs.CtaType === 'Email' ? 'Email address' : attrs.CtaType === 'Weblink' ? 'URL' : 'Value'}
+              value={ctaAction}
+              onFocus={() => onBeforeCtaEdit?.()}
+              onChange={e => { setCtaAction(e.target.value); setCtaActionError(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+              onBlur={() => {
                 if (attrs.CtaType === 'Weblink') {
-                  onWeblinkSave?.(ctaAction, ctaLabel);
-                } else if (attrs.CtaType === 'Address') {
-                  onAddressSave?.(ctaAction, ctaLabel);
-                } else {
-                  patch({ CtaAction: ctaAction });
+                  const err = validateWeblinkUrl(ctaAction);
+                  if (err) { setCtaActionError(err); return; }
+                  const normalized = normalizeYoutubeUrl(ctaAction.trim());
+                  if (normalized !== (attrs.CtaAction ?? '')) onWeblinkSave?.(normalized, ctaLabel);
+                } else if (ctaAction !== (attrs.CtaAction ?? '')) {
+                  if (attrs.CtaType === 'Address') {
+                    onAddressSave?.(ctaAction, ctaLabel);
+                  } else {
+                    patch({ CtaAction: ctaAction });
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+            {ctaActionError && <span className="sr-url-error">{ctaActionError}</span>}
+          </>
         )}
       </div>
 
