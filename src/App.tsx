@@ -22,7 +22,7 @@ import { VersionHistorySidebar } from "./components/appversion/VersionHistorySid
 import { PageBubbleTree } from "./components/tree/PageBubbleTree";
 import { AlertMessage, type AlertStatus } from "./components/AlertMessage";
 import { dataStore } from "./data/datastore";
-import type { Theme, CategoryTemplates, TrnPageTemplate } from "./types";
+import type { Theme, ThemeColors, CategoryTemplates, TrnPageTemplate, Mood } from "./types";
 import {
   parseInfoContent,
   applyEditTile,
@@ -547,6 +547,25 @@ function App() {
   // ── Derived state ────────────────────────────────────────────────────────
 
   const selectedTheme = themes.find((t) => t.ThemeId === selectedThemeId);
+  const moods: Mood[] = dataStore.get("Moods") ?? [];
+  const effectiveThemeColors = useMemo((): ThemeColors | undefined => {
+    const base = selectedTheme?.ThemeColors;
+    if (!base || !currentVersion?.MoodId) return base;
+    const mood = moods.find((m) => m.MoodId === currentVersion.MoodId);
+    if (!mood?.MoodColors?.length) return base;
+    let colorNames: string[] = [];
+    try { colorNames = JSON.parse(mood.MoodColorNames ?? "[]"); } catch { /* */ }
+    if (!colorNames.length) return base;
+    const merged = { ...(base as unknown as Record<string, string>) };
+    for (let i = 0; i < colorNames.length; i++) {
+      const key = colorNames[i];
+      const mc = mood.MoodColors[i];
+      if (key && mc?.MoodColorCode) {
+        merged[key] = mc.MoodColorCode;
+      }
+    }
+    return merged as unknown as ThemeColors;
+  }, [selectedTheme, currentVersion?.MoodId, moods]);
   const allPages: any[] = dataStore.get("Current_Version")?.Page ?? [];
   const pageGraph = usePageGraph(allPages, infoContent, navContents);
   let activePageId = navStack[navStack.length - 1];
@@ -2499,7 +2518,7 @@ function App() {
         infoContent={infoContent}
         linkedFrames={linkedFrames}
         homePageId={homePageId}
-        themeColors={selectedTheme?.ThemeColors}
+        themeColors={effectiveThemeColors}
         themeIcons={selectedTheme?.ThemeIcons ?? []}
         themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
         onSelectTile={handlePreviewTileSelect}
@@ -2643,7 +2662,7 @@ function App() {
         onCloseShare={() => setShowShareModal(false)}
         showCreateModal={showCreateModal}
         templatesCollection={templatesCollection}
-        themeColors={selectedTheme?.ThemeColors}
+        themeColors={effectiveThemeColors}
         themeIcons={selectedTheme?.ThemeIcons ?? []}
         onCloseCreate={() => setShowCreateModal(false)}
         onVersionCreated={handleVersionCreated}
@@ -2699,7 +2718,7 @@ function App() {
             infoContent={infoContent}
             navContents={navContents}
             navStack={navStack}
-            themeColors={selectedTheme?.ThemeColors}
+            themeColors={effectiveThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             themeCtaColors={selectedTheme?.ThemeCtaColors ?? []}
             appVersionId={currentVersion?.AppVersionId}
@@ -2733,7 +2752,7 @@ function App() {
         )}
         <MainCanvas
           isReadOnly={isTranslationOpen || isViewingHistory}
-          themeColors={selectedTheme?.ThemeColors}
+          themeColors={effectiveThemeColors}
           themeIcons={selectedTheme?.ThemeIcons ?? []}
           infoContent={infoContent}
           selectedTileId={selectedTileId}
@@ -2815,7 +2834,7 @@ function App() {
             pageName={transPageName}
             pageType={transPageType}
             pageUrl={navUrls[transPageId]}
-            themeColors={selectedTheme?.ThemeColors}
+            themeColors={effectiveThemeColors}
             themeIcons={selectedTheme?.ThemeIcons ?? []}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
             highlightBlockId={translationHighlight?.blockId}
@@ -2837,7 +2856,7 @@ function App() {
         ) : (
           <SidebarRight
             themeIcons={selectedTheme?.ThemeIcons ?? []}
-            themeColors={selectedTheme?.ThemeColors}
+            themeColors={effectiveThemeColors}
             ctaColors={selectedTheme?.ThemeCtaColors ?? []}
             moodId={currentVersion?.MoodId}
             selectedThemeId={selectedThemeId}

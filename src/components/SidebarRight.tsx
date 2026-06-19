@@ -363,6 +363,7 @@ export function SidebarRight({
             onEditTile={onEditTile}
             moodId={moodId}
             selectedThemeId={selectedThemeId}
+            effectiveThemeColors={themeColors}
           />
           {/* 2b. Image tools */}
           <div className="sr-image-tools">

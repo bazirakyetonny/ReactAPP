@@ -66,12 +66,12 @@ export function AppVersionMoodSelection1({
       /* */
     }
 
-    // Use the selected mood's own theme so the preview shows that mood's actual colors.
     const selectedMoodTheme = themes.find(
       (t) => t.ThemeId === selectedMood?.ThemeId,
     );
-    const moodColors = (selectedMoodTheme?.ThemeColors ??
+    const moodThemeColors = (selectedMoodTheme?.ThemeColors ??
       base) as unknown as Record<string, string>;
+    const selectedMc = selectedMood?.MoodColors ?? [];
 
     const result = { ...(base as unknown as Record<string, string>) };
 
@@ -79,7 +79,7 @@ export function AppVersionMoodSelection1({
       const oldKey = originalNames[i];
       const newKey = selectedNames[i];
       if (oldKey && newKey) {
-        result[oldKey] = moodColors[newKey] ?? result[oldKey];
+        result[oldKey] = selectedMc[i]?.MoodColorCode || moodThemeColors[newKey] || result[oldKey];
       }
     }
 

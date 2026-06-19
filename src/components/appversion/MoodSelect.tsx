@@ -28,7 +28,8 @@ function getSwatches(
     (themes.find((t) => t.ThemeId === mood.ThemeId)?.ThemeColors as unknown as
       | Record<string, string>
       | undefined);
-  return colorNames.slice(0, 4).map((name) => source?.[name] ?? "#ccc");
+  const mc = mood.MoodColors ?? [];
+  return colorNames.slice(0, 4).map((name, i) => mc[i]?.MoodColorCode || source?.[name] || "#ccc");
 }
 
 function ChevronIcon({ up }: { up: boolean }) {

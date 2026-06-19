@@ -52,15 +52,16 @@ export function AppVersionMoodSelection2({
                 <span className="ms2-name">{mood.MoodName}</span>
               </div>
               <div className="ms2-swatches">
-                {colorNames.slice(0, 4).map((name) => (
-                  <span
-                    key={name}
-                    className="ms2-swatch"
-                    style={{
-                      background:
-                        (moodTheme?.ThemeColors as unknown as Record<string, string> | undefined)?.[name] ?? "#ccc",
-                    }}
-                  />
+                {colorNames.slice(0, 4).map((name, i) => (
+                    <span
+                      key={name}
+                      className="ms2-swatch"
+                      style={{
+                        background:
+                          (mood.MoodColors ?? [])[i]?.MoodColorCode ||
+                          (moodTheme?.ThemeColors as unknown as Record<string, string> | undefined)?.[name] || "#ccc",
+                      }}
+                    />
                 ))}
               </div>
             </label>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Mood } from "../../types";
+import type { Mood, ThemeColors } from "../../types";
 import { dataStore } from "../../data/datastore";
 import "./ColorPalette.css";
 
@@ -32,12 +32,14 @@ export function ColorPalette({
   onEditTile,
   moodId,
   selectedThemeId,
+  effectiveThemeColors,
 }: {
   selectedTile: any;
   activeBgHex?: string;
   onEditTile?: (tileId: string, patch: Record<string, any>) => void;
   moodId?: string;
   selectedThemeId?: string;
+  effectiveThemeColors?: ThemeColors;
 }) {
   const moods: Mood[] = dataStore.get("Moods") ?? [];
   const themes: any[] = dataStore.get("themes") ?? [];
@@ -47,24 +49,23 @@ export function ColorPalette({
   const activeMood = moodId
     ? moods.find((m) => m.MoodId === moodId)
     : undefined;
-  // Both palettes resolve colors from the currently selected theme
   const activeThemeId = selectedThemeId ?? dataStore.get("CurrentThemeId");
-  const activeTheme = themes.find((t) => t.ThemeId === activeThemeId);
+  const activeTheme = themes.find((t: any) => t.ThemeId === activeThemeId);
+  const resolvedColors = (effectiveThemeColors ?? activeTheme?.ThemeColors) as unknown as Record<string, string> | undefined;
 
   const moodColorNames = JSON.parse(activeMood?.MoodColorNames ?? "[]") as string[];
-  const moodColors = moodColorNames.map((n) => ({
+  const mc = activeMood?.MoodColors ?? [];
+  const moodColors = moodColorNames.map((n, i) => ({
     ColorId: n,
     ColorName: n,
-    ColorCode: activeTheme?.ThemeColors[n] as string | undefined,
+    ColorCode: mc[i]?.MoodColorCode || resolvedColors?.[n],
   }));
 
-  const themeColors = Object.entries(activeTheme?.ThemeColors ?? {}).map(([k, v]) => {
-    return {
-      ColorId: k,
-      ColorName: k,
-      ColorCode: v,
-    };
-  });
+  const themeColors = Object.entries(resolvedColors ?? {}).map(([k, v]) => ({
+    ColorId: k,
+    ColorName: k,
+    ColorCode: v,
+  }));
 
   const activeMoodName = activeMood?.MoodName;
   const [showMoods, setShowMoods] = useState(!!activeMoodName);
