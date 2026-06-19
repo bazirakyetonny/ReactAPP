@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { dataStore } from "../../data/datastore";
 import "./AddCtaModal.css";
 import { i18n } from "../../i18n/i18n";
+import { validateWeblinkUrl, normalizeYoutubeUrl } from "../../utils/urlValidators";
 
 interface CtaConfirmAttrs {
   CtaLabel: string;
@@ -28,22 +29,6 @@ function validateEmail(v: string): string | null {
     ? null
     : i18n.t("cta_modal_forms.email_error_addr");
 }
-function validateUrl(v: string): string | null {
-  const trimmed = v.trim();
-  if (!/^https?:\/\/.+/.test(trimmed)) return i18n.t("cta_modal_forms.url_error");
-  if (/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/i.test(trimmed)) {
-    return /^https:\/\/(www\.)?youtube\.com\/watch\?([^#]*&)?v=[a-zA-Z0-9_-]+/.test(trimmed)
-      ? null
-      : i18n.t("cta_modal_forms.youtube_url_error");
-  }
-  return null;
-}
-
-function normalizeYoutubeUrl(url: string): string {
-  const match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-  return match ? `https://www.youtube.com/watch?v=${match[1]}` : url;
-}
-
 function normalizeUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return trimmed;
@@ -139,7 +124,7 @@ export function AddCtaModal({
       title: i18n.t("cta_modal_forms.web_link.modal_title"),
       actionLabel: i18n.t("cta_modal_forms.web_link.url_label"),
       actionPlaceholder: "https://example.com",
-      validate: validateUrl,
+      validate: validateWeblinkUrl,
     },
     Address: {
       title: i18n.t("cta_modal_forms.address.modal_title"),
