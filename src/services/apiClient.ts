@@ -52,7 +52,6 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   });
   if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
   const data = await res.json();
-  console.log(`POST ${path} response JSON:`, data);
   if (res.status !== 200) checkError(data.error);
   return data as T;
 }
