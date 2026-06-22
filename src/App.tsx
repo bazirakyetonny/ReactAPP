@@ -1649,11 +1649,9 @@ function App() {
       .catch(() => {});
   }
 
-  function handleVersionDuplicated() {
+  function handleVersionDuplicated(newVersionId: string) {
     setDuplicateVersion(null);
-    getAppVersions()
-      .then(setAppVersions)
-      .catch(() => {});
+    handleVersionSelect(newVersionId);
   }
 
   async function handleCategoryChange(versionId: string, categoryId: string) {
@@ -3080,6 +3078,10 @@ function App() {
             appVersionId={currentVersion?.AppVersionId}
             onClose={handleHistoryClose}
             onRestored={handleVersionRestored}
+            onVersionCopied={(newVersionId) => {
+              handleHistoryClose();
+              handleVersionSelect(newVersionId);
+            }}
             onPreviewVersion={handleHistoryPreview}
             previewingNumber={previewingNumber}
             loadingPreview={loadingPreview}
