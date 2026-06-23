@@ -633,20 +633,21 @@ export function applyPasteBlocks(
   return content;
 }
 
-export function applyCopyTile(prev: any[], tileId: string, ts = Date.now()): any[] {
-  return prev.map((block: any) => {
-    if (block.InfoType !== 'TileGrid') return block;
-    let changed = false;
-    const newCols = (block.Columns ?? []).map((col: any) => {
-      const tiles: any[] = col.Tiles ?? [];
-      const idx = tiles.findIndex((t: any) => t.Id === tileId);
-      if (idx === -1) return col;
-      changed = true;
-      const copy = { ...tiles[idx], Id: `tile-${ts}`, Action: undefined };
-      return { ...col, Tiles: [...tiles.slice(0, idx + 1), copy, ...tiles.slice(idx + 1)] };
-    });
-    return changed ? { ...block, Columns: newCols } : block;
-  });
+export function buildTileClipboardItem(content: any[], tileId: string): any | null {
+  for (const block of content) {
+    if (block.InfoType !== "TileGrid") continue;
+    for (const col of block.Columns ?? []) {
+      const tile = (col.Tiles ?? []).find((t: any) => t.Id === tileId);
+      if (tile) {
+        return {
+          ...block,
+          InfoId: `grid-clip-${block.InfoId}`,
+          Columns: [{ ...col, Tiles: [tile] }],
+        };
+      }
+    }
+  }
+  return null;
 }
 
 export function applyMoodColorRemapToPages(
