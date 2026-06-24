@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useAppBodyHeight } from "./hooks/useAppBodyHeight";
 import "./App.css";
 import {
   getAppVersions,
@@ -69,6 +70,7 @@ function App() {
   i18n.locale = langMap[dataStore.get("Current_Language") as string] ?? "en";
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
   const [reviewOnly, setReviewOnly] = useState(false);
+  const appBodyHeight = useAppBodyHeight();
 
   const isPreviewMode =
     reviewOnly || (dataStore.get("Mode") ?? "EditorMode") === "PreviewMode";
@@ -2964,7 +2966,7 @@ function App() {
         onConfirmCta={handleConfirmCta}
         onCancelCta={() => setPendingCta(null)}
       />
-      <div className="app-body">
+      <div className="app-body" style={{ minHeight: appBodyHeight }}>
         {treeOpen && (
           <PageBubbleTree
             allPages={allPages.filter(
