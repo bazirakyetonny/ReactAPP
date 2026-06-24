@@ -3002,7 +3002,6 @@ function App() {
               }));
               setSelectedTileId(null);
               setSelectedCtaId(null);
-              setTreeOpen(false);
             }}
             onDeletePage={handleDeletePage}
           />
