@@ -21,6 +21,7 @@ interface PageBubbleTreeProps {
   appVersionId?: string;
   onClose: () => void;
   onNavigateToPath: (pageIds: string[]) => void;
+  onActivatePage?: (pageId: string) => void;
   onDeletePage: (pageId: string) => void;
   onBeforeDeletePage?: () => void;
 }
@@ -51,6 +52,7 @@ export function PageBubbleTree({
   appVersionId,
   onClose,
   onNavigateToPath,
+  onActivatePage,
   onDeletePage,
   onBeforeDeletePage,
 }: PageBubbleTreeProps) {
@@ -213,6 +215,7 @@ export function PageBubbleTree({
     const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id;
     const fullPath = [...pathToInContext(srcId), targetId];
     onNavigateToPath(fullPath);
+    onActivatePage?.(targetId);
     onClose();
   }
 

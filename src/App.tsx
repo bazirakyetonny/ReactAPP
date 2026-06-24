@@ -3003,6 +3003,7 @@ function App() {
               setSelectedTileId(null);
               setSelectedCtaId(null);
             }}
+            onActivatePage={(pageId) => setActiveFramePageId(pageId)}
             onDeletePage={handleDeletePage}
           />
         )}
