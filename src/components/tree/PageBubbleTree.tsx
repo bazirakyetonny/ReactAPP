@@ -21,6 +21,7 @@ interface PageBubbleTreeProps {
   appVersionId?: string;
   onClose: () => void;
   onNavigateToPath: (pageIds: string[]) => void;
+  onActivatePage?: (pageId: string) => void;
   onDeletePage: (pageId: string) => void;
   onBeforeDeletePage?: () => void;
 }
@@ -51,6 +52,7 @@ export function PageBubbleTree({
   appVersionId,
   onClose,
   onNavigateToPath,
+  onActivatePage,
   onDeletePage,
   onBeforeDeletePage,
 }: PageBubbleTreeProps) {
@@ -212,9 +214,9 @@ export function PageBubbleTree({
     const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id;
     const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id;
     const fullPath = [...pathToInContext(srcId), targetId];
-    setFocusedPageId(targetId);
-    setCurrentPath(fullPath);
     onNavigateToPath(fullPath);
+    onActivatePage?.(targetId);
+    onClose();
   }
 
   function handleNodeContextMenu(e: React.MouseEvent, node: SimNode) {
@@ -319,7 +321,13 @@ export function PageBubbleTree({
                 return (
                   <span key={id} className="tree-breadcrumb-item">
                     {i > 0 && <span className="tree-breadcrumb-sep">›</span>}
-                    <button type="button" className="tree-breadcrumb-btn" onClick={() => { setFocusedPageId(id); setCurrentPath(getPath(id)); }}>
+                    <button type="button" className="tree-breadcrumb-btn" onClick={() => {
+                      const pathSlice = i === 0 ? [] : currentPath.slice(0, i);
+                      setFocusedPageId(id);
+                      setCurrentPath(pathSlice);
+                      setViewMode('focused');
+                      onNavigateToPath(pathSlice);
+                    }}>
                       {name}
                     </button>
                   </span>

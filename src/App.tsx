@@ -3002,8 +3002,8 @@ function App() {
               }));
               setSelectedTileId(null);
               setSelectedCtaId(null);
-              setTreeOpen(false);
             }}
+            onActivatePage={(pageId) => setActiveFramePageId(pageId)}
             onDeletePage={handleDeletePage}
           />
         )}
