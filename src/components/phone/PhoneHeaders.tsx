@@ -122,11 +122,12 @@ export function PhoneLinkedHeader({
 
   function commit() {
     const name = draft.trim();
+    const isReserved = name.toLowerCase() === "home";
     if (isNew) {
-      if (name) onRename?.(name);
-      // empty name: stay in edit mode, don't cancel
+      if (name && !isReserved) onRename?.(name);
+      // empty or reserved name: stay in edit mode, don't cancel
     } else {
-      if (name && name !== pageName) onRename?.(name);
+      if (name && !isReserved && name !== pageName) onRename?.(name);
       else setDraft(pageName);
       setEditing(false);
     }
