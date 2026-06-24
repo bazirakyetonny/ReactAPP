@@ -9,6 +9,7 @@ interface CopyVersionModalProps {
   historyNumber: number;
   defaultName: string;
   onClose: () => void;
+  onCopied?: (newVersionId: string) => void;
 }
 
 export function CopyVersionModal({
@@ -16,6 +17,7 @@ export function CopyVersionModal({
   historyNumber,
   defaultName,
   onClose,
+  onCopied,
 }: CopyVersionModalProps) {
   const [name, setName] = useState(defaultName);
   const [loading, setLoading] = useState(false);
@@ -30,9 +32,15 @@ export function CopyVersionModal({
     setLoading(true);
     setError(null);
     try {
-      await copyHistoryVersion(appVersionId, historyNumber, trimmed);
+      const newVersion = await copyHistoryVersion(
+        appVersionId,
+        historyNumber,
+        trimmed,
+      );
+      console.log("Copied version:", newVersion);
       onClose();
-    } catch {
+      onCopied?.(newVersion.AppVersionId);
+    } catch (e) {
       setError(i18n.t("version_history.copy_failure_message"));
     } finally {
       setLoading(false);
@@ -48,7 +56,9 @@ export function CopyVersionModal({
     <div className="dv-overlay" onMouseDown={onClose}>
       <div className="dv-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="dv-header">
-          <span className="dv-title">{i18n.t("version_history.makeACopy")}</span>
+          <span className="dv-title">
+            {i18n.t("version_history.makeACopy")}
+          </span>
           <button
             className="dv-close"
             type="button"
@@ -90,12 +100,17 @@ export function CopyVersionModal({
             disabled={loading || !name.trim()}
             onClick={handleSave}
           >
-            {loading ? i18n.t("version_history.copying") : i18n.t("navbar.appversion.save")}
+            {loading
+              ? i18n.t("version_history.copying")
+              : i18n.t("navbar.appversion.save")}
           </button>
         </div>
       </div>
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById("root") ?? document.body);
+  return ReactDOM.createPortal(
+    modal,
+    document.getElementById("root") ?? document.body,
+  );
 }

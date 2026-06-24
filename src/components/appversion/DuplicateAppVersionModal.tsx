@@ -8,7 +8,7 @@ interface DuplicateAppVersionModalProps {
   versionId: string;
   currentName: string;
   onClose: () => void;
-  onDuplicated: () => void;
+  onDuplicated: (newVersionId: string) => void;
 }
 
 export function DuplicateAppVersionModal({
@@ -30,8 +30,8 @@ export function DuplicateAppVersionModal({
     setLoading(true);
     setError(null);
     try {
-      await copyAppVersion(versionId, trimmed);
-      onDuplicated();
+      const newVersion = await copyAppVersion(versionId, trimmed);
+      onDuplicated(newVersion.AppVersionId);
     } catch {
       setError(i18n.t("navbar.appversion.duplicate_error"));
     } finally {

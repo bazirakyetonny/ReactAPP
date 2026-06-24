@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useAppBodyHeight } from "./hooks/useAppBodyHeight";
 import "./App.css";
 import {
   getAppVersions,
@@ -27,7 +28,7 @@ import {
   parseInfoContent,
   applyEditTile,
   applyAddBlock,
-  applyCopyTile,
+  buildTileClipboardItem,
   applyDeleteTile,
   applyPasteBlocks,
 } from "./utils/contentTransforms";
@@ -69,6 +70,7 @@ function App() {
   i18n.locale = langMap[dataStore.get("Current_Language") as string] ?? "en";
   const isBusy: boolean = dataStore.get("isBusy") ?? false;
   const [reviewOnly, setReviewOnly] = useState(false);
+  const appBodyHeight = useAppBodyHeight();
 
   const isPreviewMode =
     reviewOnly || (dataStore.get("Mode") ?? "EditorMode") === "PreviewMode";
@@ -1649,11 +1651,9 @@ function App() {
       .catch(() => {});
   }
 
-  function handleVersionDuplicated() {
+  function handleVersionDuplicated(newVersionId: string) {
     setDuplicateVersion(null);
-    getAppVersions()
-      .then(setAppVersions)
-      .catch(() => {});
+    handleVersionSelect(newVersionId);
   }
 
   async function handleCategoryChange(versionId: string, categoryId: string) {
@@ -1860,14 +1860,14 @@ function App() {
     if (!cv) return;
 
     if (action.type === "copy-tile") {
-      pushSnapshot();
-      setInfoContent((prev) => applyCopyTile(prev, tileId));
-      setNavContents((prev) => {
-        const next: Record<string, any[]> = {};
-        for (const [id, blocks] of Object.entries(prev))
-          next[id] = applyCopyTile(blocks, tileId);
-        return next;
-      });
+      let item = buildTileClipboardItem(infoContent, tileId);
+      if (!item) {
+        for (const blocks of Object.values(navContents)) {
+          item = buildTileClipboardItem(blocks, tileId);
+          if (item) break;
+        }
+      }
+      if (item) setClipboard([item]);
       return;
     }
 
@@ -2966,7 +2966,7 @@ function App() {
         onConfirmCta={handleConfirmCta}
         onCancelCta={() => setPendingCta(null)}
       />
-      <div className="app-body">
+      <div className="app-body" style={{ minHeight: appBodyHeight }}>
         {treeOpen && (
           <PageBubbleTree
             allPages={allPages.filter(
@@ -3079,6 +3079,10 @@ function App() {
             appVersionId={currentVersion?.AppVersionId}
             onClose={handleHistoryClose}
             onRestored={handleVersionRestored}
+            onVersionCopied={(newVersionId) => {
+              handleHistoryClose();
+              handleVersionSelect(newVersionId);
+            }}
             onPreviewVersion={handleHistoryPreview}
             previewingNumber={previewingNumber}
             loadingPreview={loadingPreview}
