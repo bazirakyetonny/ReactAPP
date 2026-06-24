@@ -135,16 +135,18 @@ export function TileActionMenu({
   const directLinkTypeRef = useRef<string | null>(null);
   directLinkTypeRef.current = directLinkType;
 
-  const [computedPos, setComputedPos] = useState<{ left: number; top: number } | null>(null);
+  const [computedPos, setComputedPos] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
     const menuH = ref.current.offsetHeight;
     const menuW = ref.current.offsetWidth;
     const boundary = pos.containerBottom ?? window.innerHeight;
-    const top = pos.y + menuH > boundary - 8
-      ? Math.max(8, pos.y - menuH - 28)
-      : pos.y;
+    const top =
+      pos.y + menuH > boundary - 8 ? Math.max(8, pos.y - menuH - 28) : pos.y;
     const left = Math.min(pos.x, window.innerWidth - menuW - 8);
     setComputedPos({ left, top });
   }, [pos.x, pos.y, pos.containerBottom]);
@@ -172,7 +174,7 @@ export function TileActionMenu({
     { id: "direct-link", label: i18n.t("tile.call_to_action"), hasSub: true },
     { id: "forms", label: i18n.t("tile.forms"), hasSub: true },
     { id: "modules", label: i18n.t("tile.modules"), hasSub: true },
-    // { id: "copy-tile", label: i18n.t("tile.copy_tile"), hasSub: false },
+    { id: "copy-tile", label: i18n.t("tile.copy_tile"), hasSub: false },
   ];
 
   const directLinkTypes = [
@@ -237,9 +239,10 @@ export function TileActionMenu({
       <div
         ref={ref}
         className="tam"
-        style={computedPos
-          ? { left: computedPos.left, top: computedPos.top }
-          : { left: pos.x, top: pos.y, visibility: 'hidden' }
+        style={
+          computedPos
+            ? { left: computedPos.left, top: computedPos.top }
+            : { left: pos.x, top: pos.y, visibility: "hidden" }
         }
       >
         {menuItems.map((item) => (

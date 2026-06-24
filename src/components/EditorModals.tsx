@@ -54,7 +54,7 @@ interface EditorModalsProps {
 
   duplicateVersion: SDTAppVersion | null;
   onCloseDuplicate: () => void;
-  onVersionDuplicated: () => void;
+  onVersionDuplicated: (newVersionId: string) => void;
 
   updateDescriptionVersion: SDTAppVersion | null;
   onCloseUpdateDescription: () => void;

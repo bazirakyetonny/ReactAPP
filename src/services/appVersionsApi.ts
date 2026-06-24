@@ -124,7 +124,10 @@ export function copyHistoryVersion(
       AppVersionHistoryNumber: historyNumber,
       AppVersionName: appVersionName,
     }
-  ).then((d) => d.AppVersion);
+  ).then((d) => {
+    console.log("copyHistoryVersion response:", d);
+    return d.AppVersion;
+  });
 }
 
 export function restoreHistoryVersion(

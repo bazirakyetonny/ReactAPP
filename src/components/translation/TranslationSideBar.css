@@ -108,11 +108,9 @@
 
 /* Editable spans: dashed underline hint on hover */
 .ts-editable-text {
-  cursor: text;
-  display: inline-block;
+  cursor: pointer;
   min-width: 20px;
   min-height: 1em;
-  cursor: pointer;
   transition: border-color 0.15s;
 }
 

@@ -397,6 +397,17 @@ export function TranslationSideBar({
                               <span
                                 className="phone-tile-text ts-editable-text"
                                 title="Click to edit"
+                                style={{
+                                  WebkitLineClamp: Math.max(
+                                    1,
+                                    Math.floor(
+                                      (parseInt(tileHeight, 10) -
+                                        16 -
+                                        (iconSVG ? 26 : 0)) /
+                                        (15 * 1.3),
+                                    ),
+                                  ),
+                                }}
                                 onClick={() => setEditingKey(tileKey)}
                               >
                                 {decodeHtml(tile.Text ?? "")}

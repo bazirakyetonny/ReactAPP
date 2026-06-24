@@ -32,6 +32,7 @@ interface EntryMenuProps {
   item: AppVersionHistoryEntry;
   appVersionId: string;
   onRestored?: () => void;
+  onVersionCopied?: (newVersionId: string) => void;
   onClose: () => void;
 }
 
@@ -39,6 +40,7 @@ function EntryMenu({
   item,
   appVersionId,
   onRestored,
+  onVersionCopied,
   onClose,
 }: EntryMenuProps) {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
@@ -95,6 +97,7 @@ function EntryMenu({
           historyNumber={item.AppVersionNumber}
           defaultName={`${item.AppVersionName} Copy`}
           onClose={() => { setShowCopyModal(false); onClose(); }}
+          onCopied={onVersionCopied}
         />
       )}
     </>
@@ -107,6 +110,7 @@ interface VersionHistorySidebarProps {
   appVersionId?: string;
   onClose?: () => void;
   onRestored?: () => void;
+  onVersionCopied?: (newVersionId: string) => void;
   onPreviewVersion?: (item: AppVersionHistoryEntry) => void;
   previewingNumber?: number | null;
   loadingPreview?: boolean;
@@ -116,6 +120,7 @@ export function VersionHistorySidebar({
   appVersionId,
   onClose,
   onRestored,
+  onVersionCopied,
   onPreviewVersion,
   previewingNumber,
   loadingPreview,
@@ -225,6 +230,7 @@ export function VersionHistorySidebar({
                     item={item}
                     appVersionId={appVersionId}
                     onRestored={onRestored}
+                    onVersionCopied={onVersionCopied}
                     onClose={() => setOpenMenuIndex(null)}
                   />
                 )}

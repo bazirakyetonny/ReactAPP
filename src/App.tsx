@@ -27,7 +27,7 @@ import {
   parseInfoContent,
   applyEditTile,
   applyAddBlock,
-  applyCopyTile,
+  buildTileClipboardItem,
   applyDeleteTile,
   applyPasteBlocks,
 } from "./utils/contentTransforms";
@@ -1649,11 +1649,9 @@ function App() {
       .catch(() => {});
   }
 
-  function handleVersionDuplicated() {
+  function handleVersionDuplicated(newVersionId: string) {
     setDuplicateVersion(null);
-    getAppVersions()
-      .then(setAppVersions)
-      .catch(() => {});
+    handleVersionSelect(newVersionId);
   }
 
   async function handleCategoryChange(versionId: string, categoryId: string) {
@@ -1860,14 +1858,14 @@ function App() {
     if (!cv) return;
 
     if (action.type === "copy-tile") {
-      pushSnapshot();
-      setInfoContent((prev) => applyCopyTile(prev, tileId));
-      setNavContents((prev) => {
-        const next: Record<string, any[]> = {};
-        for (const [id, blocks] of Object.entries(prev))
-          next[id] = applyCopyTile(blocks, tileId);
-        return next;
-      });
+      let item = buildTileClipboardItem(infoContent, tileId);
+      if (!item) {
+        for (const blocks of Object.values(navContents)) {
+          item = buildTileClipboardItem(blocks, tileId);
+          if (item) break;
+        }
+      }
+      if (item) setClipboard([item]);
       return;
     }
 
@@ -3080,6 +3078,10 @@ function App() {
             appVersionId={currentVersion?.AppVersionId}
             onClose={handleHistoryClose}
             onRestored={handleVersionRestored}
+            onVersionCopied={(newVersionId) => {
+              handleHistoryClose();
+              handleVersionSelect(newVersionId);
+            }}
             onPreviewVersion={handleHistoryPreview}
             previewingNumber={previewingNumber}
             loadingPreview={loadingPreview}
